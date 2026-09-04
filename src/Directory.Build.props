@@ -1,0 +1,8 @@
+<!-- GORT: centraliza TODA saída de build/teste fora de src/.
+     bin/ + obj/ de todos os projetos vão para releases/build/.
+     Nada gerado fica dentro de src/ (decisão do dono). -->
+<Project>
+  <PropertyGroup>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)../releases/build/</ArtifactsPath>
+  </PropertyGroup>
+</Project>

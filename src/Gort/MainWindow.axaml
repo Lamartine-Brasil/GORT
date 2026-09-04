@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Gort.MainWindow"
+        Title="GORT" Width="1080" Height="700" MinWidth="880" MinHeight="560">
+  <DockPanel LastChildFill="True" Background="#F7F8FB">
+    <!-- Cabeçalho de marca: logo + nome -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10"
+                Margin="20,14,20,0" VerticalAlignment="Center">
+      <Image x:Name="LogoImg" Width="28" Height="28" />
+      <TextBlock Text="GORT" FontSize="16" FontWeight="SemiBold"
+                 Foreground="#1A1D26" VerticalAlignment="Center" />
+      <TextBlock Text="Tradutor de tela em tempo real" FontSize="13"
+                 Foreground="#4B5563" VerticalAlignment="Center" />
+    </StackPanel>
+    <!-- Rodapé padrão: branco, borda superior, ação + meta-info -->
+    <Border DockPanel.Dock="Bottom" Background="White"
+            BorderBrush="#E2E4EB" BorderThickness="0,1,0,0" Padding="20,8">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" Grid.Column="0">
+          <Button x:Name="ApplyBtn" Content="✔ Aplicar" MinWidth="120" Height="32"
+                  Background="#3550F2" Foreground="White" FontWeight="SemiBold"
+                  CornerRadius="6" />
+          <Button x:Name="DonateBtn" Content="♥ Doar" Height="32"
+                  Background="White" BorderBrush="#E2E4EB" BorderThickness="1"
+                  CornerRadius="6" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="12" Grid.Column="2"
+                    VerticalAlignment="Center">
+          <TextBlock x:Name="VersionText" FontSize="12" Foreground="#6B7280"
+                     VerticalAlignment="Center" />
+          <Button x:Name="MemoryBtn" Content="Memória: —" FontSize="12"
+                  Foreground="#6B7280" Background="Transparent" BorderThickness="0" />
+        </StackPanel>
+      </Grid>
+    </Border>
+    <!-- Navegação por tarefa, tudo por aba com rolagem (nada escondido):
+         Traduzir → Ler → Dicionário e idiomas → Mostrar → Avançado → Sistema.
+         Uma só verdade por assunto; o ajuste fino mora na Avançado. -->
+    <TabControl x:Name="Tabs" Margin="12,12,12,0" TabStripPlacement="Top">
+      <TabItem x:Name="TabTranslate" Header="Traduzir" />
+      <TabItem x:Name="TabRead" Header="Ler" />
+      <TabItem x:Name="TabDict" Header="Dicionário e idiomas" />
+      <TabItem x:Name="TabDisplay" Header="Mostrar" />
+      <TabItem x:Name="TabAdvanced" Header="Avançado" />
+      <TabItem x:Name="TabSystem" Header="Sistema" />
+      <TabItem x:Name="TabDebug" Header="Depuração" IsVisible="False" />
+    </TabControl>
+  </DockPanel>
+</Window>

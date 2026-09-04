@@ -1,0 +1,110 @@
+# GORT — tradutor de tela em tempo real (.NET + Avalonia, multiplataforma)
+# Regra de ouro: aqui só entra o que é GERADO. Código-fonte, Assets,
+# AGENTS.md e releases/PUBLICAR.md são sempre versionados (ver fim).
+
+# ── Build .NET (nunca versionar) ──
+bin/
+obj/
+out/
+publish/
+artifacts/
+dist/
+[Dd]ebug/
+!src/Gort/Debug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+ARM/
+ARM64/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+.vs/
+*.nupkg
+*.snupkg
+*.pidb
+project.lock.json
+project.fragment.lock.json
+**/Properties/launchSettings.json
+*.orig
+*.rej
+*.bak
+*.tmp
+*.temp
+.env
+.env.*
+*.dmp
+*.mdmp
+
+# ── Releases publicadas (fora do código-fonte; só o PUBLICAR.md é versionado) ──
+releases/*
+!releases/PUBLICAR.md
+
+# ── Testes / cobertura ──
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage*/
+CoverageReport/
+lcov.info
+BenchmarkDotNet.Artifacts/
+
+# ── IDEs / editores ──
+.vscode/
+.idea/
+.ionide/
+.omnisharp/
+_ReSharper*/
+*.ReSharper
+*.DotSettings.user
+*.swp
+*~
+
+# ── SO (Windows / macOS / Linux) ──
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ── Dados locais do usuário (perfis, credenciais, dicionários, logs) ──
+# O app grava em %AppData%/GORT (Win), ~/Library/Application Support/GORT
+# (macOS) ou ~/.config/gort (Linux); isto cobre execuções de dev a partir
+# da raiz do repo. Ancorado na raiz (/...) de propósito: NÃO pode casar
+# com pastas de código-fonte (ex.: src/Gort/Debug/).
+/profiles/
+/dicts/
+/collect/
+profile.toml
+advanced.toml
+app.toml
+shortcuts.toml
+creds-*.toml
+!**/exemplo*.toml
+allow-multi-instance.marker
+/results.txt
+*.log
+
+# ── Capturas de tela e temporários ──
+# ATENÇÃO: logos e ícone em Gort/Assets/ SÃO versionados (exceções abaixo,
+# com a caixa exata + variante minúscula para filesystems case-sensitive).
+*.png
+!Gort/Assets/**/*.png
+!**/Assets/**/*.png
+!**/assets/**/*.png
+*.bmp
+!Gort/Assets/**/*.bmp
+!**/Assets/**/*.bmp
+opencode/
+gort-visual/
+
+# ── NUNCA ignorar (lembrete; sem efeito prático, só documentação) ──
+# src/*.sln, src/Directory.Build.props, src/Gort/** -> código-fonte
+# src/Gort/Debug/*.cs  -> código-fonte do retrato de depuração
+# src/Gort/Assets/*    -> logos e ícone do programa
+# AGENTS.md, releases/PUBLICAR.md -> documentação versionada

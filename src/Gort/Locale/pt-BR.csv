@@ -1,0 +1,192 @@
+key,pt-BR
+tab.basic,Configuração básica
+tab.text,Texto
+tab.extra,Configuração adicional
+tab.translation,Tradução
+tab.other,Outros
+tab.quick,Configuração rápida
+tab.debug,Depuração
+ocr.engine,Motor de OCR
+ocr.show_result,Exibir resultado do OCR
+ocr.save_file,Gravar resultado em arquivo
+ocr.copy_clipboard,Copiar para a área de transferência
+ocr.dataset,Conjunto de dados de idioma
+ocr.fast_mode,Modo rápido
+ocr.add_language,Adicionar idioma
+ocr.cloud_cred,Credencial da nuvem
+ocr.cloud_usage,Uso mensal
+ocr.cloud_priority,Priorizar nuvem no pontual
+ocr.install,Instalar…
+tr.service,Serviço de tradução
+tr.help,Abrir documentação de tradução
+tr.db_file,Arquivo do banco
+tr.ignore_case,Ignorar maiúsculas
+tr.partial_match,Correspondência parcial
+tr.key_id,Identificador
+tr.key_secret,Segredo
+tr.manage_keys,Gerenciar chaves
+tr.sheet,Planilha
+tr.client_id,Identificador de cliente
+tr.clear_tokens,Apagar todos os tokens
+tr.browser_state,Estado do navegador
+tr.check_state,Verificar estado
+tr.eu_key,Chave
+tr.endpoint_free,Endpoint gratuito
+tr.endpoint_paid,Endpoint pago
+tr.llm_key,Chave
+tr.llm_model,Modelo
+tr.custom_hint,Configure os presets nas opções avançadas
+dict.use,Usar dicionário
+dict.file,Arquivo
+dict.by_word,Por palavra
+dict.passes,Passadas adicionais
+img.filter_rgb,RGB exato
+img.filter_hsv,Faixas HSV
+img.filter_threshold,Limiar
+img.erode,Erosão
+img.view_result,Ver resultado da imagem
+img.group,Grupo de cor
+img.zoom,Ampliação
+img.zoom_default,Restaurar padrão
+text.font,Fonte…
+text.size,Tamanho
+text.restore_colors,Restaurar cores padrão
+text.center,Centralizar
+text.remove_spaces,Remover espaços do OCR
+text.use_bg,Usar cor de fundo
+text.area_numbers,Exibir número da área
+cap.active_window,Capturar da janela ativa
+cap.attached,Capturar de janela anexada…
+cap.zoom,Ampliação
+speed.title,Velocidade
+win.mode,Janela de tradução
+win.dark,Escuro
+win.layer,Camada
+win.overlay,Sobreposição
+win.always_on_top,Sempre no topo
+profile.load,Carregar perfil…
+profile.save,Salvar perfil…
+profile.defaults,Restaurar padrões
+community.browse,Buscar configurações da comunidade…
+community.export,Exportar configuração
+advanced.open,Configuração avançada…
+advanced.apply,Aplicar
+advanced.restore,Restaurar padrões
+app.check_update,Verificar a última versão ao iniciar
+app.basic_default,Começar no assistente de início rápido
+apply,Aplicar
+donate,Doar
+memory.title,Memória em uso
+tts.enable,Leitura em voz alta
+tts.wait,Aguardar fim da leitura
+hotkeys.title,Atalhos
+hotkeys.toggle,Iniciar/parar tradução
+hotkeys.once,Traduzir uma vez
+hotkeys.snapshot,Área instantânea
+hotkeys.quick,Área rápida
+hotkeys.dict,Abrir editor de dicionário
+hotkeys.hide,Ocultar/exibir janela
+hotkeys.follow,Área que segue o mouse
+hotkeys.default,Padrão
+hotkeys.clear,Limpar
+help.manual,Manual
+help.errors,Erros conhecidos
+links.repo,Repositório
+links.page,Página do projeto
+links.community,Comunidade
+quick.color,Qual é a cor do texto?
+quick.color_dark,Texto escuro
+quick.color_light,Texto claro
+quick.color_unknown,Não sei
+quick.area,Selecione na tela a área onde o texto aparece
+quick.select,Selecionar área…
+quick.next,Avançar
+quick.done,Concluir
+quick.finish_links,Veja a documentação de tradução e de uso básico
+adv.app_title,Aplicativo
+adv.tray_mode,Modo bandeja
+adv.rtl,Da direita para a esquerda
+adv.remote_top,Controle remoto sempre no topo
+adv.follow_compat,Modo compatível do segue-mouse
+adv.follow_only,Usar somente a área que segue o mouse
+adv.yellow_border,Borda amarela na captura
+adv.sel_bg,Cor de fundo da seleção
+adv.sel_accent,Cor de destaque
+adv.sel_preview,Pré-visualizar
+adv.sel_restore,Restaurar padrões
+adv.shortcuts_title,Atalhos avançados
+adv.open_profile,Abrir perfil
+adv.pick_file,Escolher arquivo…
+adv.forced_transparency,Transparência forçada
+adv.switch_service,Trocar serviço
+adv.win_title,Janela de tradução
+adv.auto_font,Tamanho automático de fonte
+adv.merge_blocks,Fusão automática de blocos
+adv.keep_dir,Preservar direção do original
+adv.use_outline,Usar contorno de fonte
+adv.use_bg_alpha,Usar transparência do fundo
+adv.auto_color,Cor automática
+adv.auto_fg,Cor de fonte automática
+adv.auto_bg,Cor de fundo automática
+adv.min_size,Tamanho mínimo
+adv.max_size,Tamanho máximo
+adv.snapshot_stay,Permanência do instantâneo (s)
+adv.dark_font,Fonte do modo escuro…
+adv.layer_bottom,Alinhamento inferior
+adv.layer_right,Alinhamento à direita
+adv.top_during,Sempre no topo só durante a tradução
+adv.ignore_empty,Ignorar tradução vazia
+adv.hide_translates,Ocultar também alterna a tradução
+adv.disp_mem,Memória de exibição
+adv.disp_n,Quantidade
+adv.disp_s,Tempo (s)
+adv.collect_title,Coletânea de tradução
+adv.select_all,Marcar todos
+adv.unselect_all,Desmarcar todos
+adv.as_db,Modo banco de dados
+adv.db_ignore_case,Ignorar maiúsculas
+adv.tr_title,Tradução
+adv.bridge,Tradução ponte
+adv.fallback_alt,Tradutor alternativo em caso de erro
+adv.custom_list,Presets de API personalizada
+adv.add,Adicionar
+adv.remove,Remover
+adv.custom_url,URL
+adv.custom_headers,Cabeçalhos
+adv.custom_req,Modelo de requisição
+adv.custom_res,Modelo de resposta
+adv.custom_same_codes,Usar os mesmos códigos do tradutor web
+adv.llm_instruction,Instrução personalizada
+adv.llm_custom_model,Modelo personalizado
+adv.llm_no_default,Não enviar a instrução padrão
+adv.llm_preset_default,Padrão
+adv.llm_preset_eco,Econômico
+adv.llm_preset_custom,Personalizado
+adv.llm_temp,Temperatura
+adv.llm_reason,Nível de raciocínio
+adv.llm_maxout,Limite de saída
+adv.clip_use,Traduzir a área de transferência
+adv.clip_orig,Exibir original
+adv.clip_working,Exibir "traduzindo"
+adv.clip_format,Formato da cópia
+adv.ocr_title,OCR
+adv.cloud_limit,Limite mensal
+adv.dict_title,Dicionário
+about.title,Sobre
+about.version,Versão
+remote.area,Definir área
+remote.snap,Instantâneo
+remote.start,Iniciar
+remote.stop,Parar
+remote.settings,Configurações
+areas.title,Gerenciamento de áreas
+areas.add,Adicionar área
+areas.add_excl,Adicionar exclusão
+areas.clear,Limpar tudo
+areas.apply,Aplicar
+exit.title,Sair do GORT?
+exit.question,Encerrar o programa?
+exit.yes,Sair
+exit.no,Cancelar
+msg.applied,Configuração aplicada e salva.
+no_area.title,Sem área de OCR
