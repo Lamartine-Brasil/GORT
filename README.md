@@ -27,6 +27,7 @@ Fluxo básico: **Área de OCR → Motor de OCR → Serviço de tradução → Ja
 | **Sobreposição** | Tradução desenhada sobre o texto original, no mesmo lugar. |
 | **Camada** | Janela transparente posicionável, com contorno duplo de leitura. |
 | **Escuro** | Janela com fundo escuro e texto rolável, ideal para textos longos. |
+| **Substituição** | Como a sobreposição, mas cobre o original com fundo opaco. |
 
 Opções comuns: sempre no topo, tamanho automático de fonte e contorno.
 

@@ -42,6 +42,8 @@ public sealed class OverlayWindow : Window
     private readonly object _drawLock = new();                                  // RF-381
     private bool _running;
     private bool _suspended;
+    /// <summary>Fase 2: cobre o original sob a tradução (modo novo).</summary>
+    public bool Substitute { get; set; }
     private int _winX, _winY;
     private int _accX1, _accY1, _accX2, _accY2;
     private bool _hasAcc;
@@ -618,7 +620,16 @@ public sealed class OverlayWindow : Window
                     (float)(it.W * s), (float)(it.H * s), dbgPaint);
                 continue;
             }
-            if (p.TextBackground && _running)                    // RF-377
+            if (Substitute && _running)
+            {
+                // Fase 2: cobre o original com fundo opaco no retângulo
+                // inteiro do bloco — a tradução substitui o texto de baixo.
+                var bg = new SKColor(col.Bg.R, col.Bg.G, col.Bg.B, 255);
+                using var paint = new SKPaint { Color = bg };
+                canvas.DrawRect((float)(it.X * s), (float)(it.Y * s),
+                    (float)(it.W * s), (float)(it.H * s), paint);
+            }
+            else if (p.TextBackground && _running)                    // RF-377
             {
                 var bg = new SKColor(col.Bg.R, col.Bg.G, col.Bg.B,
                     p.BgTransparency ? col.BgAlpha : (byte)255); // RF-378 🔒

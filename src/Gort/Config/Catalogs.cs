@@ -33,7 +33,7 @@ public static class Catalogs
         new() { Id = "sheets", DisplayPtBr = "Tradutor por planilha em nuvem" },
         new() { Id = "embedded-browser", DisplayPtBr = "Tradutor por navegador embutido" },
         new() { Id = "commercial-eu", DisplayPtBr = "Tradutor comercial por chave (EU)" },
-        new() { Id = "llm", DisplayPtBr = "Tradutor por modelo de linguagem" },
+        new() { Id = "llm", DisplayPtBr = "Gemini (modelo de linguagem)" },
         new() { Id = "local-worker", DisplayPtBr = "Tradutor local por processo auxiliar" },
         new() { Id = "custom", DisplayPtBr = "API personalizada" },
     ];
@@ -43,6 +43,9 @@ public static class Catalogs
         new() { Id = "overlay", DisplayPtBr = "Sobreposição" },
         new() { Id = "layer", DisplayPtBr = "Camada" },
         new() { Id = "dark", DisplayPtBr = "Escuro" },
+        // Fase 2 do roadmap: substitui o original sob a tradução (modo novo,
+        // não troca o padrão camada).
+        new() { Id = "replace", DisplayPtBr = "Substituição" },
     ];
 
     public static bool KnownId(List<CatalogItem> catalog, string id)

@@ -45,7 +45,7 @@ public sealed class HotkeyActions
             _app.ConcludeAreas();                                // RF-085
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                _app.Windows.ShowForMode(_app.Config.Profile.WindowMode);
+                _app.Windows.ShowForMode(_app.Config.Profile.WindowMode, _app.Regions.CaptureRects());
                 _app.CheckSelfCapture();
                 var loop = new Loop.TranslationLoop(_app.Config, _app.Regions,
                     _app.Pipe, _app.Windows.MakeSink(), _app.LoopEffects);
@@ -55,7 +55,11 @@ public sealed class HotkeyActions
                 _app.Controller.StartLoop(loop, Loop.LoopMode.Continuous);
             });
         }
-        else _app.Controller.RequestStopFromHook();   // RF-450: prazo curto
+        else
+        {
+            _app.Controller.RequestStopFromHook();   // RF-450: prazo curto
+            _app.Windows.HideAll();                  // parou: fecha a saída
+        }
     }
 
     private async Task OnceAsync()

@@ -10,14 +10,14 @@ using Gort.Core;
 namespace Gort.Translate;
 
 /// <summary>
-/// Tradutor por modelo de linguagem (VI.7, RF-273..283): POST de geração com
+/// Gemini por modelo de linguagem (VI.7, RF-273..283): POST de geração com
 /// instrução de sistema, texto, segurança sem bloqueio e geração por preset.
 /// Bloqueio → refaz na web gratuita (RF-277). Recurso secundário (RF-226).
 /// </summary>
 public sealed class LlmTranslator : HttpTranslator
 {
     public override string Id => "llm";
-    public override string Display => "Tradutor por modelo de linguagem";
+    public override string Display => "Gemini (modelo de linguagem)";
     public override string DefaultToken => RemoteDefaults.DefaultToken;
 
     private readonly Func<string> _key;

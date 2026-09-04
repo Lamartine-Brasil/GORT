@@ -481,6 +481,9 @@ public sealed class AdvancedPanel : UserControl
             _customWired = true;
             CustomList.SelectionChanged += (_, _) =>
             {
+                // Trava de reentrância: RefreshCustom troca a lista e
+                // redispararia este handler até estourar a pilha (crash).
+                if (_refreshingCustom) return;
                 SaveEditingPreset(selectNew: false);              // RF-527
                 if (CustomList.SelectedItem is string name)
                     _editing = FindPreset(name);
@@ -586,6 +589,8 @@ public sealed class AdvancedPanel : UserControl
         CustomRes.Text = _editing.ResTemplate;
     }
 
+    private bool _refreshingCustom;
+
     private void RefreshCustom()
     {
         var items = new List<string>();
@@ -595,7 +600,9 @@ public sealed class AdvancedPanel : UserControl
                 _w.CustomPresets.Add(f);
         foreach (var p in _w.CustomPresets)
             items.Add(p.FromFile ? "[arq] " + p.Name : p.Name);   // RF-528
-        CustomList.ItemsSource = items;
+        _refreshingCustom = true;
+        try { CustomList.ItemsSource = items; }
+        finally { _refreshingCustom = false; }
     }
 
     private void RefreshLlm()

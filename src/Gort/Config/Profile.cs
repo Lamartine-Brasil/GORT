@@ -56,7 +56,7 @@ public sealed class Profile
     // Identificadores textuais (RF-026)
     // RF-225: padrão = Google Tradutor (id estável "web-free", endpoint
     // translate.googleapis.com). RF-309: origens en/ja; RF-314: destino pt-BR.
-    public string WindowMode { get; set; } = "overlay";
+    public string WindowMode { get; set; } = "layer";
     public string TranslationService { get; set; } = "web-free";
     public string CustomPresetSubkey { get; set; } = "";   // RF-030
     public string OcrEngine { get; set; } = "modern";
@@ -115,7 +115,7 @@ public sealed class Profile
 
     // Texto (aba 1)
     public string FontFamily { get; set; } = "";           // "" = SO (RF-387)
-    public double FontSize { get; set; } = 15;             // P-127 🔒
+    public double FontSize { get; set; } = 14;             // decisão do dono (era 15)
     public double AutoMinPt { get; set; } = 10;            // P-129 (Etapa 17: UI)
     public double AutoMaxPt { get; set; } = 50;            // P-130
     public byte[] TextColor { get; set; } = [255, 255, 255];
@@ -151,7 +151,7 @@ public sealed class Profile
     {
         notices = new();
         if (!Catalogs.KnownId(Catalogs.WindowModes, WindowMode))
-        { notices.Add($"window_mode desconhecido '{WindowMode}'; padrão overlay."); WindowMode = "overlay"; }
+        { notices.Add($"window_mode desconhecido '{WindowMode}'; padrão layer."); WindowMode = "layer"; }
         if (!Catalogs.KnownId(Catalogs.TranslationServices, TranslationService))
         { notices.Add($"translation_service desconhecido '{TranslationService}'; padrão web-free."); TranslationService = "web-free"; }
         if (!Catalogs.KnownId(Catalogs.OcrEngines, OcrEngine))

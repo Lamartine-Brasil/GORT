@@ -153,7 +153,7 @@ public partial class MainWindow
                 ? "1 : Hello 世界 123\n2 : テスト Test 456"
                 : "- Hello 世界 123";
             if (_u.RmSpaces.IsChecked == true) sample = sample.Replace(" ", "");
-            double size = Num(_u.FontSize, 8, 72, 15);
+            double size = Num(_u.FontSize, 8, 72, 14);
             using var face = UI.SkiaText.ResolveFont(
                 string.IsNullOrWhiteSpace(_u.FontFam.Text) ? null : _u.FontFam.Text);
             float px = (float)(size * 96 / 72);
@@ -247,9 +247,10 @@ public partial class MainWindow
         _u.MDark.Content = Strings._("win.dark");
         _u.MLayer.Content = Strings._("win.layer");
         _u.MOverlay.Content = Strings._("win.overlay");
-        _u.MDark.GroupName = _u.MLayer.GroupName = _u.MOverlay.GroupName = "winmode";
+        _u.MReplace.Content = Catalogs.WindowModes.First(c => c.Id == "replace").DisplayPtBr;
+        _u.MDark.GroupName = _u.MLayer.GroupName = _u.MOverlay.GroupName = _u.MReplace.GroupName = "winmode";
         _u.Top.Content = Strings._("win.always_on_top");
-        p.Children.Add(Row(_u.MDark, _u.MLayer, _u.MOverlay, _u.Top));
+        p.Children.Add(Row(_u.MDark, _u.MLayer, _u.MOverlay, _u.MReplace, _u.Top));
         // Camada — teto de tamanho: controle fácil (números) em vez de só
         // arrastar a borda — que nem dá com a janela atravessável traduzindo.
         p.Children.Add(H("Camada — tamanho"));

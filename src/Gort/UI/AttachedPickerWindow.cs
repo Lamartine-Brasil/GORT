@@ -21,7 +21,7 @@ public sealed class AttachedPickerWindow : Window
     public AttachedPickerWindow()
     {
         Title = "Capturar de janela anexada";
-        Width = 460; Height = 480;
+        Width = 620; Height = 480;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Refresh();
         Content = new DockPanel
@@ -82,7 +82,8 @@ public sealed class AttachedPickerWindow : Window
             var name = new TextBlock
             {
                 Text = w.Title,
-                TextTrimming = TextTrimming.CharacterEllipsis,
+                TextWrapping = TextWrapping.Wrap,
+                MaxLines = 2,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 8, 0),
             };

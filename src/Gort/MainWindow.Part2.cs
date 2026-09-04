@@ -321,6 +321,10 @@ public partial class MainWindow
         (_u.EuFree.IsChecked, _u.EuPaid.IsChecked) =
             p.DeepLEndpoint == "paid" ? (false, true) : (true, false);
         _u.LlmKey.Text = "";
+        // Indica sem expor o segredo: o campo sempre abre vazio por segurança.
+        _u.LlmKeyState.Text = Store.ConfigService.LoadCreds("llm")
+                .Any(k => !string.IsNullOrEmpty(k.Secret))
+            ? "chave salva ✔" : "sem chave — cole, teste e aplique";
         SetCombo(_u.LlmModel,
             Translate.RemoteDefaults.LlmModels.Concat(["custom"]).ToList(),
             p.LlmModel == "" ? Translate.RemoteDefaults.LlmDefaultModel
@@ -357,6 +361,7 @@ public partial class MainWindow
         _u.MDark.IsChecked = p.WindowMode == "dark";
         _u.MLayer.IsChecked = p.WindowMode == "layer";
         _u.MOverlay.IsChecked = p.WindowMode == "overlay";
+        _u.MReplace.IsChecked = p.WindowMode == "replace";
         _u.Top.IsChecked = _cfg.App.TranslationAlwaysOnTop;
         _u.LayerFit.IsChecked = p.LayerAutoFit;
         _u.LayerMaxW.Text = p.LayerMaxW.ToString();
@@ -489,7 +494,7 @@ public partial class MainWindow
         SaveGroupFields();
 
         p.FontFamily = _u.FontFam.Text ?? "";
-        p.FontSize = Math.Clamp(double.TryParse(_u.FontSize.Text, out var fs) ? fs : 15, 8, 72);
+        p.FontSize = Math.Clamp(double.TryParse(_u.FontSize.Text, out var fs) ? fs : 14, 8, 72);
         p.TextColor = (byte[])_u.CText.Clone();
         p.Outline1 = (byte[])_u.CC1.Clone();
         p.Outline2 = (byte[])_u.CC2.Clone();
@@ -506,7 +511,8 @@ public partial class MainWindow
         for (int i = 0; i < 5; i++)
             if (_u.Speeds[i].IsChecked == true) p.Speed = i + 1;
         string mode = _u.MLayer.IsChecked == true ? "layer"
-            : _u.MOverlay.IsChecked == true ? "overlay" : "dark";
+            : _u.MOverlay.IsChecked == true ? "overlay"
+            : _u.MReplace.IsChecked == true ? "replace" : "dark";
         if (mode != p.WindowMode) p.WindowMode = mode;             // RF-318 na UI
         _cfg.App.TranslationAlwaysOnTop = _u.Top.IsChecked == true;
         p.LayerAutoFit = _u.LayerFit.IsChecked == true;

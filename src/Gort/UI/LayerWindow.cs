@@ -125,7 +125,8 @@ public sealed class LayerWindow : Window
 
     /// <summary>
     /// Auto-ajuste: a janela cola no texto até o máximo configurado; se o
-    /// texto estourar a altura, a fonte encolhe até caber (mínimo 8 pt).
+    /// texto estourar a altura, a fonte encolhe até caber, nunca abaixo do
+    /// mínimo configurado (legibilidade; piso absoluto 6 pt no extremo).
     /// Só traduzindo — pausado, o tamanho manual do usuário manda.
     /// 0 em largura/altura = livre = sem auto-ajuste.
     /// </summary>
@@ -138,7 +139,8 @@ public sealed class LayerWindow : Window
         if (p.LayerMaxW <= 0 && p.LayerMaxH <= 0) return;
         double scale = Screens.ScreenFromWindow(this)?.Scaling
             ?? Screens.Primary?.Scaling ?? 1.0;
-        var (w, h, pt) = ComputeFit(_text, p.FontSize, scale, p.LayerMaxW, p.LayerMaxH);
+        double floorPt = System.Math.Clamp(p.AutoMinPt, 6, 72);
+        var (w, h, pt) = ComputeFit(_text, p.FontSize, scale, p.LayerMaxW, p.LayerMaxH, floorPt);
         // Trava na área útil do monitor e mantém a janela toda visível.
         var scr = Screens.ScreenFromWindow(this);
         var wa = scr?.WorkingArea;
@@ -160,11 +162,12 @@ public sealed class LayerWindow : Window
     /// <summary>
     /// Núcleo puro do auto-ajuste (testável): devolve largura/altura da
     /// janela em DIPs e a fonte em pt. Largura/altura ≤ 0 = sem limite.
+    /// A fonte encolhe para caber, nunca abaixo de minPt (legibilidade).
     /// </summary>
     internal static (double WDip, double HDip, double FontPt) ComputeFit(
-        string text, double fontPt, double scale, double maxWDip, double maxHDip)
+        string text, double fontPt, double scale, double maxWDip, double maxHDip,
+        double minPt)
     {
-        const double minPt = 8;
         double margin = Core.Params.P86_LayerMargin;
         double adv = Core.Params.P98_LineAdvance;
         if (string.IsNullOrWhiteSpace(text))

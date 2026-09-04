@@ -24,9 +24,10 @@ public static class RemoteDefaults
     /// <summary>Modelos de linguagem (dado, RF-279) + padrão.</summary>
     public static List<string> LlmModels { get; set; } = new()
     {
-        "gemini-2.0-flash", "gemini-2.0-pro", "gemini-1.5-flash", "gemini-1.5-pro",
+        "gemini-2.0-flash", "gemini-3.5-flash-lite",
+        "gemini-2.0-pro", "gemini-1.5-flash", "gemini-1.5-pro",
     };
-    public static string LlmDefaultModel { get; set; } = "gemini-2.0-flash";
+    public static string LlmDefaultModel { get; set; } = "gemini-3.5-flash-lite";
 
     /// <summary>Navegador embutido: formato da URL e script (RF-270, REMOTO).</summary>
     public static string BrowserUrlFormat { get; set; } =

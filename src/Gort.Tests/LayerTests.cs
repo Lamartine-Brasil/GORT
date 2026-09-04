@@ -86,7 +86,7 @@ public class LayerTests
     [Fact]
     public void AutoFit_ShortText_KeepsFont()
     {
-        var (w, h, pt) = LayerWindow.ComputeFit("Oi", 15, 1.0, 800, 600);
+        var (w, h, pt) = LayerWindow.ComputeFit("Oi", 15, 1.0, 800, 600, 8);
         Assert.Equal(15, pt);                    // cabe: fonte intacta
         Assert.True(w <= 800 && h <= 600);
         Assert.True(w >= 200 && h >= 100);       // piso P-87/88
@@ -96,17 +96,20 @@ public class LayerTests
     public void AutoFit_TallText_ShrinksFontToMaxH()
     {
         string text = "Palavra " + string.Concat(System.Linq.Enumerable.Repeat("muito longa ", 60));
-        var (w, h, pt) = LayerWindow.ComputeFit(text, 15, 1.0, 800, 120);
+        var (w, h, pt) = LayerWindow.ComputeFit(text, 15, 1.0, 800, 120, 8);
         Assert.True(pt < 15);                    // estourou: encolheu
         Assert.True(pt >= 8);                    // nunca abaixo do mínimo
         Assert.True(h <= 120 || pt <= 8);        // cabe ou chegou ao piso
         Assert.True(w <= 800);
+        // Piso configurável (legibilidade): com mínimo 12, nunca abaixo.
+        var (_, _, pt12) = LayerWindow.ComputeFit(text, 15, 1.0, 800, 120, 12);
+        Assert.True(pt12 >= 12);
     }
 
     [Fact]
     public void AutoFit_UnlimitedWidth_NoShrinkSideways()
     {
-        var (w, h, pt) = LayerWindow.ComputeFit("Hello world", 15, 1.0, 0, 600);
+        var (w, h, pt) = LayerWindow.ComputeFit("Hello world", 15, 1.0, 0, 600, 8);
         Assert.Equal(15, pt);                    // sem teto lateral: sem quebra forçada
         Assert.True(h <= 600);
     }
@@ -114,7 +117,7 @@ public class LayerTests
     [Fact]
     public void AutoFit_EmptyText_FallsBackToMin()
     {
-        var (w, h, pt) = LayerWindow.ComputeFit("  ", 15, 1.0, 800, 600);
+        var (w, h, pt) = LayerWindow.ComputeFit("  ", 15, 1.0, 800, 600, 8);
         Assert.Equal(15, pt);
         Assert.True(w >= 200 && h >= 100);
     }

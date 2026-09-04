@@ -4,26 +4,62 @@
 > REFINO (código bonito, textos PT-BR, visual). Nada de reforma,
 > nada de arquitetura nova. A spec antiga (`instrucoes.md`) foi
 > removida de propósito pelo dono — não recrie, não restaure.
+>
+> SE VOCÊ ACABOU DE CHEGAR (contexto novo): leia as seções
+> "Estado atual", "Comandos" e "Regras de ferro". O resto é referência.
+
+## Estado atual (04/09/2026 — continuar daqui)
+
+- **Build:** 0 erros. **Testes: 204/204 verdes** (198 `Gort.Tests` + 6
+  `Gort.VisualTests`). **Warnings:** zero `CS0618`/`xUnit`; restam só
+  nullable pré-existentes (`CS8602` etc.) — não caçar sem motivo.
+- **Git:** repo `https://github.com/Lamartine-Brasil/GORT`, branch `master`.
+  Commits: `1.0` + `Links para o repositorio + contribuidor unico`.
+  Dono configurou `user.name/email` local. Sem push/commit sem pedido.
+- **Publicado em:** `releases/windows-x64/Gort.exe` (última versão sempre
+  aqui, publicada por cima após limpar a pasta).
+- **Últimos ciclos feitos:** teto de threads ONNX (4) + descarte de quadros
+  parados por hash + `Sleep(1)` no anexo (CPU); `SnapshotArea` limpa no
+  `finally` (bug do instantâneo grudado); saída com 3 botões
+  (`App.ExitApp()` público); contorno unificado em `Profile.OverlayOutline`
+  (default true) com checkbox em Mostrar; `SetLangCombo`; `ApplyHint`
+  inline; CPU no rodapé; 403 tratado como 429; banco avisa se vazio;
+  planilha com troca de código; `gemini-3.5-flash-lite` na lista;
+  varredura de mortos (50 frentes) + testes reescritos p/ estado atual.
+- **Último ciclo (visual EXCELENTE):** crash de recursão nos presets
+  corrigido com trava; anexador mais largo com quebra; serviço LLM
+  renomeado p/ Gemini com placeholder/ajuda/indicador de chave salva;
+  `LlmCustom` só com custom; `Testar chave…`; `OnApply` fora da UI;
+  `LlmDefaultModel` = 3.5-flash-lite.
+- **Último ciclo (comportamento):** saída estreia fora das áreas
+  (`PlaceOutside`, tela cheia → inf-direita); camada usa piso de fonte
+  configurável (`AutoMinPt`, absoluto 6); parar fecha a saída
+  (`HideAll`, pontual preservado); **padrão = camada**; roadmap em
+  `docs/ROADMAP.md` (Fase 1: OCR ignora saída; Fase 2: sobreposição
+  substitutiva como modo novo).
+- **Pausado pelo dono (não mexer sem pedido):** otimizações bloco 2 de
+  `docs/sugestoes-ocr.md` (itens 7–24); migração restante é só refino.
 
 ## O projeto em 30 segundos
 
-- **GORT**: tradutor de tela em tempo real, **Avalonia UI + .NET 9**,
-  **multiplataforma** (Windows / Linux / macOS), interface em **PT-BR**.
+- **GORT - Game Ocr RealTime**: tradutor de tela em tempo real,
+  **Avalonia UI + .NET 9**, **multiplataforma** (Windows / Linux / macOS),
+  interface em **PT-BR**. Japonês e inglês → PT-BR.
 - `src/Gort/` — aplicativo (~25 pastas: `Lifecycle`, `Loop`, `Ocr`,
   `Translate`, `UI`, `Overlay`, `Regions`, `Locale`, ...).
-- `src/Gort.Tests/` — 190 testes xUnit. `src/Gort.VisualTests/` — 6 testes
+- `src/Gort.Tests/` — 196 testes xUnit. `src/Gort.VisualTests/` — 6 testes
   de render headless (PNGs em `releases/visual-tests/`, nunca no TEMP).
-- `releases/` — TODA saída gerada: binários publicados, PNGs visuais,
-  resultados de teste e o `build/` centralizado (`bin/`+`obj/` de todos
-  os projetos via `src/Directory.Build.props`). Ignorado no git (só o
-  PUBLICAR.md é versionado). Nada gerado fica dentro de `src/`.
-  Regra do dono: SEMPRE só a última versão aqui — publicar por cima da
-  pasta fixa da plataforma (limpar antes), nunca criar `v2/` ou `-copia/`.
+- `src/Directory.Build.props` — centraliza `bin/`+`obj/` em
+  `releases/build/` (`ArtifactsPath`). `src/` tem SÓ código-fonte.
+- `releases/` — TODA saída gerada: `windows-x64/` (versão única),
+  `visual-tests/`, `test-results/`, `build/`. Ignorado no git (só o
+  PUBLICAR.md é versionado). Regra do dono: SEMPRE só a última versão —
+  limpar a pasta da plataforma antes de republicar, nunca `v2/` ou `-copia/`.
+- `docs/` — `imagens/` (10 PNGs curatorados do README, versionados) +
+  `sugestoes-ocr.md` (24 ideias numeradas, itens 1–6 feitos).
 - `README.md` (raiz) — página do GitHub em PT-BR (autor único, só links
   do dono). Criado via pipeline 3 criadores + 3 revisores + 1 aprovador;
   manter o padrão em refinos futuros.
-- `bin/`, `obj/`, `TestResults/` são lixo regenerável. Não versionar,
-  não copiar nada de lá.
 
 ## Comandos (Windows PowerShell 5.1, `workdir=.../src`)
 
@@ -32,12 +68,13 @@ dotnet build Gort.sln -c Release --nologo -v q
 dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../releases/test-results
 ```
 
-- Padrão atual: **0 erros, 201/201 testes verdes, 0 warnings CS0618/xUnit**.
-  Restam só warnings pré-existentes de nullable (`CS8602` etc.) — não sair
-  caçando sem motivo (código funcionando = ajuste fino, não reforma).
 - Encadear com `; if ($?) { ... }` (sem `&&`). Não usar `cd`; usar `workdir`.
 - Operações de arquivo: ferramentas dedicadas (`read`/`edit`/`write`/
   `glob`/`grep`), nunca `bash` para ler/editar/criar arquivos.
+- Publicar: limpar `../releases/windows-x64` antes; `dotnet publish
+  Gort/Gort.csproj -c Release -r win-x64 --self-contained true
+  -o ../releases/windows-x64`. NÃO publicar se o `Gort.exe` estiver
+  rodando (trava o `.dll` — pedir ao dono fechar com Sair de verdade).
 
 ## Regras de ferro (todas aprendidas na marra)
 
@@ -96,12 +133,24 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
   (`SetLangCombo`); fonte da verdade continua nos rádios en/ja.
 - Aplicar confirma inline no rodapé (`ApplyHint`, some em 2,5 s) —
   nunca modal a partir do Aplicar.
+- Listas com `SelectionChanged` que recarregam `ItemsSource` precisam de
+  trava de reentrância (senão: recursão → estouro de pilha → fecha o app).
+- Serviço LLM se chama `Gemini (modelo de linguagem)` (padrão 3.5-flash-lite).
 - `selection.png` em branco é esperado (overlay transparente sem arrasto).
 - Modelos OCR vêm do NuGet (`models/` copiado no publish) — não versionar.
 - Varredura de código morto concluída (50 frentes): suite de testes reflete
   o estado atual; não ressuscitar membros removidos sem checar uso real.
+- CPU: ONNX limitado a 4 threads (`OcrThreadCount`); quadros parados pulam
+  OCR via hash FNV + fingerprint (qualquer mudança de config invalida);
+  `ChangeTracker` textual continua decidindo o redesenho.
+- Web gratuito: 403 tratado como 429 (cai p/ baixa); baixa bloqueada =
+  mensagem p/ aguardar ou trocar de serviço.
+- Chaves (GEMINI etc.) vão em `creds-<serviço>.toml` via Aplicar/KeyManager,
+  na pasta de dados (fora do repo); `.gitignore` barra `creds-*.toml`;
+  nunca hardcoded, nunca `.env`. Instrução do LLM é calibrada (não mexer).
 - Dono/autor único: **Lamartine Barbosa** (`csproj Authors` + Sobre +
   `README.md#Contribuidores`).
   TODOS os links externos apontam para `https://github.com/Lamartine-Brasil/GORT`
   (`Catalogs.Links`, `Update.Dist`) — inclusive doações e atualização;
   ele ajusta os destinos depois. Não reintroduzir `gort.app`.
+- Fonte padrão 14 pt (decisão do dono; era 15).

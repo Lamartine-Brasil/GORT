@@ -161,6 +161,15 @@ public class VisualRenderTests
                 "Texto da camada com contorno duplo para leitura sobre o jogo."));
         Shot(() => new Gort.UI.OverlayWindow(cfg, _ => 1.0), "overlay",
             w => ((Gort.UI.OverlayWindow)w).ApplyRunning(true));
+        // Fase 2: modo novo usa a mesma janela com Substitute ligado.
+        Shot(() => new Gort.UI.OverlayWindow(cfg, _ => 1.0), "replace",
+            w =>
+            {
+                var o = (Gort.UI.OverlayWindow)w;
+                o.Substitute = true;
+                o.ApplyRunning(true);
+                Assert.True(o.Substitute);
+            });
     }
 
     /// <summary>

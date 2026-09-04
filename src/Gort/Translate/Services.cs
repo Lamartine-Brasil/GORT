@@ -154,7 +154,7 @@ public static class Services
             ("sheets", "Tradutor por planilha em nuvem"),
             ("embedded-browser", "Tradutor por navegador embutido"),
             ("commercial-eu", "Tradutor comercial por chave (EU)"),
-            ("llm", "Tradutor por modelo de linguagem"),
+            ("llm", "Gemini (modelo de linguagem)"),
         };
         if (LocalWorker.FindLibrary() is not null)
             list.Add(("local-worker", "Tradutor local por processo auxiliar"));

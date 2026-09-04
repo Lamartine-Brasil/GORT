@@ -125,4 +125,14 @@ public class OverlayTests
         float got = OverlayLayout.ExpandToFit(50, 200, w => w <= 120);
         Assert.InRange(got, 119, 120);   // RF-362: busca binária
     }
+
+    [Fact]
+    public void Overlap_Zero_Disjoint_Full_On_Contain()
+    {
+        // Fase 1: saída sobre a área deve ser detectada; disjunta zera.
+        var area = new Platform.ScreenRect(100, 100, 200, 200);
+        Assert.Equal(0, TranslationWindows.Overlap(0, 0, 50, 50, area));
+        Assert.Equal(200 * 200, TranslationWindows.Overlap(0, 0, 1920, 1080, area));
+        Assert.Equal(100 * 100, TranslationWindows.Overlap(150, 150, 100, 100, area));
+    }
 }

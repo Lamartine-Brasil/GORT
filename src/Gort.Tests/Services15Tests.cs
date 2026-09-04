@@ -140,6 +140,27 @@ public class Services15Tests
     }
 
     [Fact]
+    public void Llm_FlashLite35_In_List_With_New_Format()
+    {
+        Assert.Contains("gemini-3.5-flash-lite", RemoteDefaults.LlmModels);
+        Assert.False(LlmTranslator.IsOldFamily("gemini-3.5-flash-lite"));
+        Assert.False(LlmTranslator.IsPro("gemini-3.5-flash-lite"));
+        var gen = LlmTranslator.Reasoning("gemini-3.5-flash-lite", 2);
+        Assert.Equal("MEDIUM", gen["thinkingLevel"]);   // formato novo
+    }
+
+    [Fact]
+    public void Llm_TestModel_Resolution()
+    {
+        Assert.Equal("gemini-3.5-flash-lite",
+            MainWindow.ResolveLlmTestModel("gemini-3.5-flash-lite", ""));
+        Assert.Equal(RemoteDefaults.LlmDefaultModel,
+            MainWindow.ResolveLlmTestModel("", ""));
+        Assert.Equal("meu-modelo",
+            MainWindow.ResolveLlmTestModel("custom", "meu-modelo"));
+    }
+
+    [Fact]
     public void Template_Substitute_And_Relaxed()
     {
         string s = TemplateEngine.Substitute(

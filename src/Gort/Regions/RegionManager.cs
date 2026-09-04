@@ -251,6 +251,19 @@ public sealed class RegionManager
         return l;
     }
 
+    /// <summary>
+    /// Retângulos capturados (para posicionar a saída fora deles).
+    /// Inclui instantâneo/rápida quando ativos.
+    /// </summary>
+    public List<ScreenRect> CaptureRects()
+    {
+        var l = new List<ScreenRect>();
+        foreach (var a in Areas) l.Add(a.Rect);
+        if (QuickArea is not null) l.Add(QuickArea.Rect);
+        if (SnapshotArea.HasValue) l.Add(SnapshotArea.Value);
+        return l;
+    }
+
     /// <summary>RF-065: exige ao menos uma área incremental.</summary>
     public bool CanTranslate(out string message)
     {
@@ -279,8 +292,7 @@ public sealed class RegionManager
 
     // ---- notificação (RF-059/060) ----
 
-    public void NotifyChanged(bool force = false)
-    {
+    public void NotifyChanged(bool force = false)    {
         if (!Initialized || Applying) return;                 // RF-060
         if (!force && _notifiedOnce && _throttle.Elapsed < Throttle) return;   // RF-059 🔒
         _notifiedOnce = true;

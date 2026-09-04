@@ -227,39 +227,64 @@ public partial class MainWindow : Window
     }
 
     /// <summary>RF-504: aplicar — sem meia-configuração (Etapa 8 completa o protocolo).</summary>
-    private void OnApply(object? sender, RoutedEventArgs e)
+    private bool _applying;
+    private async void OnApply(object? sender, RoutedEventArgs e)
     {
         // Etapa 9: limpar teclas pressionadas. Etapa 3: descartar backup de áreas.
         // RF-012: pausa → aplica → retoma; se não parar, nada é aplicado.
+        // Roda fora da thread de UI: com o laço vivo a parada pode levar
+        // segundos, e a janela não pode congelar (era o travamento ao
+        // configurar chave com tradução rodando).
+        if (_applying) return;
+        _applying = true;
+        var applyBtn = this.FindControl<Button>("ApplyBtn");
+        applyBtn.IsEnabled = false;
+        this.FindControl<TextBlock>("ApplyHint").Text = "Aplicando…";
         var app = (App)Application.Current!;
-        bool ok = app.Controller.ApplyChange(() =>
+        try
         {
-            _regions.Applying = true;   // RF-467: clipboard não traduz aplicando
-            try
+            bool ok = await System.Threading.Tasks.Task.Run(() => app.Controller.ApplyChange(() =>
             {
-                ApplyFromUi();   // UI → configuração (RF-504)
-                _u.AdvPanel?.Apply();   // aba Avançado edita um clone: grava antes de salvar
-                _cfg.SaveProfile();
-                _cfg.SaveAdvanced();
-                _cfg.SaveApp();
-                _cfg.SaveShortcuts();
+                _regions.Applying = true;   // RF-467: clipboard não traduz aplicando
+                try
+                {
+                    // Controles só na thread de UI (a janela segue respondendo,
+                    // pois ela está livre aguardando este Task).
+                    Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
+                    {
+                        ApplyFromUi();   // UI → configuração (RF-504)
+                        _u.AdvPanel?.Apply();   // aba Avançado edita um clone
+                    });
+                    _cfg.SaveProfile();
+                    _cfg.SaveAdvanced();
+                    _cfg.SaveApp();
+                    _cfg.SaveShortcuts();
+                }
+                finally { _regions.Applying = false; }
+            }, Core.Params.P03_LoopWaitMs));
+            if (!ok)
+            {
+                Notify("Não foi possível aplicar: a tradução não parou a tempo.");
+                return;
             }
-            finally { _regions.Applying = false; }
-        }, Core.Params.P03_LoopWaitMs);
-        if (!ok)
-        {
-            Notify("Não foi possível aplicar: a tradução não parou a tempo.");
-            return;
+            app.ClipWatcher?.Reset();                        // RF-472
+            app.Windows.SaveLayerGeometry();              // RF-340
+            Translate.Services.ReloadDb(_cfg.Profile);   // RF-241: banco no aplicar
+            Translate.Services.InvalidateCustom();       // presets podem ter mudado
+            app.ReloadHotkeys();                          // RF-443: atalhos no aplicar
+            _u.LlmKeyState.Text = Store.ConfigService.LoadCreds("llm")
+                    .Any(k => !string.IsNullOrEmpty(k.Secret))
+                ? "chave salva ✔" : "sem chave — cole, teste e aplique";
+            // Confirmação inline no rodapé (some sozinha): sem modal chato.
+            this.FindControl<TextBlock>("ApplyHint").Text = "✔ " + Strings._("msg.applied");
+            _applyTimer.Stop();
+            _applyTimer.Start();
         }
-        app.ClipWatcher?.Reset();                        // RF-472
-        app.Windows.SaveLayerGeometry();              // RF-340
-        Translate.Services.ReloadDb(_cfg.Profile);   // RF-241: banco no aplicar
-        Translate.Services.InvalidateCustom();       // presets podem ter mudado
-        app.ReloadHotkeys();                          // RF-443: atalhos no aplicar
-        // Confirmação inline no rodapé (some sozinha): sem modal chato.
-        this.FindControl<TextBlock>("ApplyHint").Text = "✔ " + Strings._("msg.applied");
-        _applyTimer.Stop();
-        _applyTimer.Start();
+        finally
+        {
+            applyBtn.IsEnabled = true;
+            _applying = false;
+        }
     }
 
     /// <summary>Ciclo único (Etapa 7; atalho na Etapa 9).</summary>

@@ -637,8 +637,9 @@ public partial class App : Application, UI.IRemoteHost
     }
 
     /// <summary>
-    /// RF-343: com escuro/camada e sem janela anexada, avisa se a janela de
-    /// tradução intersecta alguma área (traduziria a si mesma). Dura P-90.
+    /// Fase 1 exclui a saída da captura, então ela nunca é traduzida junto;
+    /// o aviso restante é de UX: a janela sobre a área cobre o texto do jogo.
+    /// Dura P-90.
     /// </summary>
     public void CheckSelfCapture()
     {
@@ -655,7 +656,7 @@ public partial class App : Application, UI.IRemoteHost
             var r = a.Rect;
             if (wr.X < r.X + r.W && r.X < wr.X + wr.W && wr.Y < r.Y + r.H && r.Y < wr.Y + wr.H)
             {
-                const string warn = "A janela de tradução está sobre uma área de OCR e será traduzida junto.";
+                const string warn = "A janela de tradução está sobre uma área de OCR e pode cobrir o texto do jogo.";
                 if (mode == "layer") Windows.LayerWindowOrNull()?.ShowWarning(
                     warn, Core.Params.P90_OverlapWarnSec);   // 🔒 10 s
                 else MainWin?.Notify(warn);
@@ -667,7 +668,8 @@ public partial class App : Application, UI.IRemoteHost
     /// <summary>RF-351: sobreposição exige OCR com posição de palavra.</summary>
     public bool EnsureOverlayOcr()
     {
-        if (Config.Profile.WindowMode != "overlay") return true;
+        string mode = Config.Profile.WindowMode;
+        if (mode != "overlay" && mode != "replace") return true;
         var eng = Ocr.OcrEngines.Get(Config.Profile.OcrEngine);
         if (eng is not null && eng.IsAvailable && eng.ProvidesWordBoxes) return true;
         MainWin?.Notify("O modo Sobreposição exige um motor de OCR com posição " +
@@ -718,7 +720,7 @@ public partial class App : Application, UI.IRemoteHost
             if (!EnsureRealtimeOcr()) return;                    // RF-122
             ConcludeAreas();                                     // RF-085
             Windows.ScaleOf = ScaleOfRect;
-            Windows.ShowForMode(Config.Profile.WindowMode);   // RF-317
+            Windows.ShowForMode(Config.Profile.WindowMode, Regions.CaptureRects());   // RF-317
             CheckSelfCapture();                                          // RF-343
             var loop = new Loop.TranslationLoop(Config, Regions, Pipe,
                 Windows.MakeSink(), LoopEffects);
@@ -731,7 +733,13 @@ public partial class App : Application, UI.IRemoteHost
             if (!Controller.StartLoop(loop, Loop.LoopMode.Continuous))
                 MainWin?.Notify("Não foi possível iniciar: o laço anterior não parou.");
         }
-        else Controller.RequestStop(Core.Params.P03_LoopWaitMs);
+        else
+        {
+            Controller.RequestStop(Core.Params.P03_LoopWaitMs);
+            // Parou: fecha a saída (não deixa texto/erro velho na tela).
+            // O pontual/instantâneo não passa aqui — o resultado dele permanece.
+            Windows.HideAll();
+        }
         RefreshToggleLabel();
     }
 
@@ -805,7 +813,8 @@ public partial class App : Application, UI.IRemoteHost
         ClipWatcher = new Clipboard.ClipboardWatcher(
             enabled: () => Config.Advanced.ClipboardTranslate,
             idle: () => Controller.State == LoopState.Idle,
-            overlay: () => Config.Profile.WindowMode == "overlay",
+            overlay: () => Config.Profile.WindowMode == "overlay"
+                || Config.Profile.WindowMode == "replace",
             busy: () => Regions.Applying,                     // RF-467: sem aplicar
             showOriginal: _ => Config.Advanced.ClipboardShowOriginal,
             showWorking: () => Config.Advanced.ClipboardShowWorking,
@@ -829,7 +838,7 @@ public partial class App : Application, UI.IRemoteHost
                 {
                     // RF-471: janela ativa (nunca sobreposição — RF-467).
                     if (Config.Profile.WindowMode == "layer" && Windows.LayerWindowOrNull() is { } layer)
-                    { layer.SetText(text); if (!layer.IsVisible) layer.Show(); }
+                    { layer.SetText(text); if (!layer.IsVisible) UI.TranslationWindows.ShowExcluded(layer); }
                     else
                     {
                         Windows.ShowDark();

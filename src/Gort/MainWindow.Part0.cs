@@ -57,6 +57,7 @@ public partial class MainWindow : Window
         public TextBox LlmKey = new();
         public ComboBox LlmModel = new();
         public TextBox LlmCustom = new();
+        public TextBlock LlmKeyState = new();
         public CheckBox DictUse = new(), DictWord = new();
         public TextBox DictFile = new();
         public RadioButton FRgb = new(), FHsv = new(), FThr = new();
@@ -78,7 +79,7 @@ public partial class MainWindow : Window
         public CheckBox ActiveWin = new();
         public TextBox Zoom = new();
         public RadioButton[] Speeds = new RadioButton[5];
-        public RadioButton MDark = new(), MLayer = new(), MOverlay = new();
+        public RadioButton MDark = new(), MLayer = new(), MOverlay = new(), MReplace = new();
         public CheckBox Top = new(), CheckUpdate = new(), BasicDefault = new();
         public CheckBox LayerFit = new();
         public TextBox LayerMaxW = new(), LayerMaxH = new();
@@ -323,9 +324,20 @@ public partial class MainWindow : Window
         _u.PEu.Children.Add(Row(_u.EuFree, _u.EuPaid));
         _u.LlmKey.Width = 260;
         _u.LlmCustom.Width = 200;
+        _u.LlmKey.PlaceholderText = "Cole aqui a chave do Google AI Studio…";
         _u.PLlm.Children.Add(Row(new TextBlock { Text = Strings._("tr.llm_key") }, _u.LlmKey));
+        _u.PLlm.Children.Add(UI.GortTheme.Help("Chave do Google AI Studio (aistudio.google.com). Fica só na sua máquina."));
         _u.PLlm.Children.Add(Row(new TextBlock { Text = Strings._("tr.llm_model") }, _u.LlmModel));
         _u.PLlm.Children.Add(_u.LlmCustom);
+        _u.LlmModel.SelectionChanged += (_, _) => SyncLlmCustom();
+        SyncLlmCustom();
+        // Testa a chave na hora (sem aplicar nem travar): chama o modelo
+        // com texto mínimo e mostra o resultado. Vale para qualquer modelo
+        // da lista — e o mecanismo de chave em arquivo serve a todos os
+        // serviços com chave (escalável, sem nada hardcoded).
+        var llmTest = new Button { Content = "Testar chave…" };
+        llmTest.Click += async (_, _) => await TestLlmKeyAsync();
+        _u.PLlm.Children.Add(Row(llmTest, _u.LlmKeyState));
         _u.PLocal.Children.Add(new TextBlock { Text = "Processo auxiliar (biblioteca local)" });
         _u.PCustom.Children.Add(new TextBlock { Text = Strings._("tr.custom_hint") });
         p.Children.Add(_u.PDb); p.Children.Add(_u.PWeb); p.Children.Add(_u.PNoKey);
@@ -435,6 +447,49 @@ public partial class MainWindow : Window
                 "Só inglês disponível neste motor. O japonês exige o par de modelos japoneses.");
         }
         finally { _syncingOcrLang = false; }
+    }
+
+    /// <summary>
+    /// Campo de modelo personalizado só aparece com "custom" selecionado
+    /// (fora isso polui a seção à toa).
+    /// </summary>
+    private void SyncLlmCustom()
+    {
+        _u.LlmCustom.IsVisible =
+            (_u.LlmModel.SelectedItem as string) == "custom";
+    }
+
+    /// <summary>Resolve o modelo do teste da chave (puro, testável).</summary>
+    internal static string ResolveLlmTestModel(string? selected, string? custom)
+    {
+        if (selected == "custom") return custom ?? "";
+        if (string.IsNullOrWhiteSpace(selected)) return Translate.RemoteDefaults.LlmDefaultModel;
+        return selected;
+    }
+
+    private async System.Threading.Tasks.Task TestLlmKeyAsync()
+    {
+        string key = _u.LlmKey.Text ?? "";
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            Notify("Cole a chave primeiro.");
+            return;
+        }
+        string model = ResolveLlmTestModel(
+            _u.LlmModel.SelectedItem as string, _u.LlmCustom.Text);
+        var t = new Translate.LlmTranslator(
+            () => key, () => model, () => "", () => "default",
+            () => 0, () => 0, () => 0, () => "", () => false, () => null);
+        try
+        {
+            var r = await t.TranslateAsync(
+                new System.Collections.Generic.List<string> { "Olá" },
+                "pt", "pt", System.Threading.CancellationToken.None);
+            Notify(r.Error is not null ? r.Error
+                : r.Translations.Count > 0 ? "Chave válida. Resposta: " + r.Translations[0]
+                : "Resposta vazia do modelo.");
+        }
+        catch (System.Exception ex) { Notify("Falha ao testar: " + ex.Message); }
     }
 
     private async void PickFile(TextBox target, string ext)

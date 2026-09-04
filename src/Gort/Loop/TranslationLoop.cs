@@ -91,7 +91,7 @@ public sealed class TranslationLoop : ILoopBody
             // Oculta as janelas próprias que intersectam as áreas durante as
             // capturas (multiplataforma; no Windows é no-op — C8 resolve).
             using var conceal = ConcealForCapture(plan.Rects);
-            bool overlay = p.WindowMode == "overlay";
+            bool overlay = p.WindowMode == "overlay" || p.WindowMode == "replace";
             var flatBlocks = new List<(int Area, string Text)>();
             var areaCounts = new List<int>();
             var areaTexts = new List<string>();

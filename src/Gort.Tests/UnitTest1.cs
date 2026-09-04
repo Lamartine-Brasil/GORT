@@ -19,7 +19,7 @@ public class Etapa1Tests
     public void Defaults_Match_PartIV_12()
     {
         var p = Profile.Defaults();
-        Assert.Equal("overlay", p.WindowMode);
+        Assert.Equal("layer", p.WindowMode);   // padrão: camada fora das áreas
         Assert.Equal("web-free", p.TranslationService);
         Assert.Equal("modern", p.OcrEngine);
         Assert.Equal("en", p.OcrLanguage);
@@ -30,7 +30,7 @@ public class Etapa1Tests
         Assert.True(p.UseDict);
         Assert.True(p.ShowOcrText);
         Assert.Equal(950, p.CloudMonthlyLimit);  // P-29 🔒
-        Assert.Equal(15, p.FontSize);        // P-127 🔒
+        Assert.Equal(14, p.FontSize);        // decisão do dono (era 15)
         Assert.Equal(300, Params.P05_Speed1Ms);  // 🔒
         Assert.Equal(1000, Params.P06_Speed2Ms);
         Assert.Equal(2500, Params.P09_Speed5Ms);
@@ -73,7 +73,7 @@ public class Etapa1Tests
         var svc = new ConfigService();
         svc.LoadProfile(path, isMain: false);
         Assert.Equal(5, svc.Profile.Speed);
-        Assert.Equal("overlay", svc.Profile.WindowMode);
+        Assert.Equal("layer", svc.Profile.WindowMode);
         Assert.Equal(2.0, svc.Profile.Zoom);
     }
 
@@ -157,6 +157,9 @@ public class Etapa1Tests
         Assert.Contains(Catalogs.OcrEngines, c => c.Id == "modern");
         Assert.Contains(Catalogs.TranslationServices, c => c.Id == "web-free");
         Assert.Contains(Catalogs.WindowModes, c => c.Id == "overlay");
+        // Fase 2: modo novo sem trocar o padrão (que é camada).
+        Assert.Contains(Catalogs.WindowModes, c => c.Id == "replace");
+        Assert.Contains(Catalogs.WindowModes, c => c.Id == "layer");
     }
 
     [Fact]
