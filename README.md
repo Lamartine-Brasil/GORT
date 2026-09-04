@@ -30,6 +30,46 @@ Fluxo básico: **Área de OCR → Motor de OCR → Serviço de tradução → Ja
 
 Opções comuns: sempre no topo, tamanho automático de fonte e contorno.
 
+## Telas
+
+Janela principal (abas Traduzir, Ler e Dicionário e idiomas):
+
+![Aba Traduzir](docs/imagens/01-aba-traduzir.png)
+![Aba Ler](docs/imagens/02-aba-ler.png)
+![Aba Dicionário e idiomas](docs/imagens/03-aba-dicionario.png)
+
+Abas Mostrar, Avançado e Sistema:
+
+![Aba Mostrar](docs/imagens/04-aba-mostrar.png)
+![Aba Avançado](docs/imagens/05-aba-avancado.png)
+![Aba Sistema](docs/imagens/06-aba-sistema.png)
+
+Os três modos de tradução:
+
+![Modo Escuro](docs/imagens/08-modo-escuro.png)
+![Modo Camada](docs/imagens/09-modo-camada.png)
+![Modo Sobreposição](docs/imagens/10-modo-sobreposicao.png)
+
+## Sobre o controle remoto
+
+![Controle remoto](docs/imagens/07-controle-remoto.png)
+
+O controle remoto é a barrinha que fica sempre à mão enquanto você usa
+outro programa. Cinco botões, cada um com ícone e nome:
+
+| Botão | O que faz |
+|---|---|
+| **Áreas** | Abre o gerenciamento de áreas de OCR (desenhar, mover, excluir). |
+| **Rápida** | Cria uma área temporária que não é salva (`Ctrl+Shift+X`). |
+| **Instantâneo** | Traduz um trecho agora, uma única vez (`Ctrl+Shift+A`). |
+| **Traduzir** | Inicia o laço; vira **Parar** (verde) enquanto traduz (`Ctrl+Shift+Z`). |
+| **Ajustes** | Abre a janela principal de configurações. |
+
+Detalhes úteis: a barrinha pode ser arrastada por qualquer ponto e
+redimensionada pelo canto (mantém a proporção); o `×` do título só a
+esconde — o programa continua rodando; passar o mouse mostra o que cada
+botão faz mais o atalho.
+
 ## Como usar
 
 1. Clique em **Áreas** e arraste na tela o retângulo onde o texto aparece.

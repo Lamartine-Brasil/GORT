@@ -286,10 +286,29 @@ public partial class MainWindow : Window
         catch { /* RF-561 */ }
     }
 
+    private TimeSpan _lastCpuTime;   // CPU: amostra anterior (TotalProcessorTime)
+    private DateTime _lastCpuAt;     // CPU: instante da amostra anterior (UTC)
+    private double _cpuPct;          // CPU: último percentual calculado
+
     private void UpdateMemory()
     {
-        var mb = Process.GetCurrentProcess().WorkingSet64 / 1048576.0;
-        this.FindControl<Button>("MemoryBtn").Content = $"Memória: {mb:F0} MB";
+        var proc = Process.GetCurrentProcess();
+        var mb = proc.WorkingSet64 / 1048576.0;
+        // CPU multiplataforma sem API de SO: fração do tempo de processador
+        // consumido entre dois tiques, dividida pelos núcleos. O _memTimer
+        // (2 s) dá a janela de média — mesma amostragem da memória (RF-558).
+        var now = DateTime.UtcNow;
+        if (_lastCpuAt != default)
+        {
+            double dt = (now - _lastCpuAt).TotalSeconds;
+            double dcpu = (proc.TotalProcessorTime - _lastCpuTime).TotalSeconds;
+            if (dt > 0)
+                _cpuPct = 100.0 * dcpu / dt / Environment.ProcessorCount;
+        }
+        _lastCpuTime = proc.TotalProcessorTime;
+        _lastCpuAt = now;
+        this.FindControl<Button>("MemoryBtn").Content =
+            $"Memória: {mb:F0} MB · CPU: {_cpuPct:F0}%";
     }
 
     private async void OnMemoryDetail(object? sender, RoutedEventArgs e)
@@ -299,12 +318,13 @@ public partial class MainWindow : Window
         var p = Process.GetCurrentProcess();
         var box = new Window
         {
-            Title = "Memória em uso", Width = 420, Height = 220,
+            Title = "Memória e CPU em uso", Width = 420, Height = 240,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Content = new TextBlock
             {
                 Margin = new(16),
                 Text = $"Total do processo: {p.WorkingSet64 / 1048576.0:F1} MB\n" +
+                       $"CPU do processo: {_cpuPct:F1}% (de {Environment.ProcessorCount} núcleos)\n" +
                        $"Imagens de região: 0,0 MB\n" +
                        $"Cache de traduções: 0 entradas\n" +
                        $"Bitmap da sobreposição: —",

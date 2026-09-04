@@ -97,6 +97,8 @@ allow-multi-instance.marker
 !Gort/Assets/**/*.png
 !**/Assets/**/*.png
 !**/assets/**/*.png
+# Exceção: prints curatorados para o README (nomes fixos, só última versão)
+!docs/imagens/*.png
 *.bmp
 !Gort/Assets/**/*.bmp
 !**/Assets/**/*.bmp

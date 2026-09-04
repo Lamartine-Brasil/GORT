@@ -81,6 +81,8 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
 - `NativeMenuItem` usa `MenuItemToggleType.CheckBox`; `IsChecked` é
   definido por código (menu nativo varia por SO).
 - `DarkWindow` evita eco duplo `OCR: OCR:`; `_status` tem `MinHeight`.
+- Rodapé mostra `Memória: X MB · CPU: Y%` (CPU por delta de
+  `TotalProcessorTime`/núcleos no `_memTimer` de 2 s — sem API de SO).
 - `tmp-remote.png` era artefato manual obsoleto (apagado); `remote.png`
   agora é gerado pelo teste `Render_AuxWindows`.
 - `selection.png` em branco é esperado (overlay transparente sem arrasto).
