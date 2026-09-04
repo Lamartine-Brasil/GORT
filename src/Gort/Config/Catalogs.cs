@@ -56,7 +56,7 @@ public static class Catalogs
     // (inclusive doações; ele ajusta depois).
     public static class Links
     {
-        private const string GitHub = "https://github.com/Lamartine-Brasil";
+        private const string GitHub = "https://github.com/Lamartine-Brasil/GORT";
         public const string Donate = GitHub;
         public const string Repo = GitHub;
         public const string ProjectPage = GitHub;

@@ -85,7 +85,8 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
   agora é gerado pelo teste `Render_AuxWindows`.
 - `selection.png` em branco é esperado (overlay transparente sem arrasto).
 - Modelos OCR vêm do NuGet (`models/` copiado no publish) — não versionar.
-- Dono/autor único: **Lamartine Barbosa** (`csproj Authors` + Sobre).
-  TODOS os links externos apontam para `https://github.com/Lamartine-Brasil`
+- Dono/autor único: **Lamartine Barbosa** (`csproj Authors` + Sobre +
+  `README.md#Contribuidores`).
+  TODOS os links externos apontam para `https://github.com/Lamartine-Brasil/GORT`
   (`Catalogs.Links`, `Update.Dist`) — inclusive doações e atualização;
   ele ajusta os destinos depois. Não reintroduzir `gort.app`.

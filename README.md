@@ -131,13 +131,19 @@ Tudo fica na sua máquina, em arquivos TOML:
 
 | Destino | Endereço |
 |---|---|
-| Repositório | https://github.com/Lamartine-Brasil |
-| Página do projeto | https://github.com/Lamartine-Brasil |
-| Comunidade | https://github.com/Lamartine-Brasil |
-| Manual | https://github.com/Lamartine-Brasil |
-| Erros conhecidos | https://github.com/Lamartine-Brasil |
-| Doações | https://github.com/Lamartine-Brasil |
+| Repositório | https://github.com/Lamartine-Brasil/GORT |
+| Página do projeto | https://github.com/Lamartine-Brasil/GORT |
+| Comunidade | https://github.com/Lamartine-Brasil/GORT |
+| Manual | https://github.com/Lamartine-Brasil/GORT |
+| Erros conhecidos | https://github.com/Lamartine-Brasil/GORT |
+| Doações | https://github.com/Lamartine-Brasil/GORT |
 
 ## Autor
 
 **Lamartine Barbosa** — autor e publicador único.
+
+## Contribuidores
+
+| Nome | Papel |
+|---|---|
+| [Lamartine Barbosa](https://github.com/Lamartine-Brasil) | Autor único — código, textos, visual e publicação |

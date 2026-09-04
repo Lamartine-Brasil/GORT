@@ -13,7 +13,7 @@ namespace Gort.Update;
 /// </summary>
 public static class Dist
 {
-    private const string GitHub = "https://github.com/Lamartine-Brasil";
+    private const string GitHub = "https://github.com/Lamartine-Brasil/GORT";
     public const string VersionUrl = GitHub;
     public const string RemoteConfigUrl = GitHub;
     public const string CommunityIndexUrl = GitHub;
