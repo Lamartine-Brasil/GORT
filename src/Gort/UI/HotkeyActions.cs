@@ -45,7 +45,7 @@ public sealed class HotkeyActions
             _app.ConcludeAreas();                                // RF-085
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                _app.Windows.ShowForMode(_app.Config.Profile.WindowMode, _app.MainWin);
+                _app.Windows.ShowForMode(_app.Config.Profile.WindowMode);
                 _app.CheckSelfCapture();
                 var loop = new Loop.TranslationLoop(_app.Config, _app.Regions,
                     _app.Pipe, _app.Windows.MakeSink(), _app.LoopEffects);
@@ -128,7 +128,7 @@ public sealed class HotkeyActions
             bool anyVisible = (dark?.IsVisible ?? false)
                 || (layer?.IsVisible ?? false) || (over?.IsVisible ?? false);
             if (anyVisible) _app.Windows.HideAll();
-            else _app.Windows.ShowForMode(_app.Config.Profile.WindowMode, _app.MainWin);
+            else _app.Windows.ShowForMode(_app.Config.Profile.WindowMode);
             if (_app.Config.Advanced.HideAlsoTranslates) Toggle();   // RF-322
         });
     }

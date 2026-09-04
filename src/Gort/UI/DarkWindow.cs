@@ -153,8 +153,10 @@ public sealed class TranslationWindows
     /// <summary>Escala do monitor da área (RF-075); o App injeta via Screens.</summary>
     public Func<Platform.ScreenRect, double> ScaleOf { get; set; } = _ => 1.0;
 
-    /// <summary>RF-317/318: mostra o modo pedido, destruindo o anterior.</summary>
-    public void ShowForMode(string mode, Window? owner = null)
+    /// <summary>RF-317/318: mostra o modo pedido, destruindo o anterior.
+    /// Janelas de tradução são independentes da principal (sem dono): minimizar
+    /// uma não minimiza a outra.</summary>
+    public void ShowForMode(string mode)
     {
         if (mode == "overlay")
         {
@@ -175,30 +177,22 @@ public sealed class TranslationWindows
             _dark?.Close();
             _dark = null;
             var w = Layer();
-            if (!w.IsVisible)
-            {
-                if (owner is not null) w.Show(owner);
-                else w.Show();
-            }
+            if (!w.IsVisible) w.Show();
             w.Activate();
         }
         else
         {
             _layer?.Close();
             _layer = null;
-            ShowDark(owner);
+            ShowDark();
         }
     }
 
-    public void ShowDark(Window? owner = null)
+    public void ShowDark()
     {
         var w = Dark();
         w.ApplySettings(_cfg.Profile, _cfg.Advanced, _cfg.App);
-        if (!w.IsVisible)
-        {
-            if (owner is not null) w.Show(owner);
-            else w.Show();
-        }
+        if (!w.IsVisible) w.Show();
         w.Activate();
     }
 

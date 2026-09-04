@@ -49,6 +49,8 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
    Ícones: vetores do Avalonia (`Shapes`/`Path`/`Geometry`), nunca fonte
    de ícones externa. `RemoteWindow` usa `IRemoteHost` (stub no teste
    headless) — nunca volte a exigir `App` real no construtor.
+   Janelas de tradução são independentes da principal (sem dono): nunca
+   usar `Show(owner)` — minimizar uma não pode minimizar a outra.
 3. **Números com 🔒 e `RF-xxx` vêm da spec original** (hoje vivem em
    `Core/Params.cs` e nos comentários do código). Não "melhorar" valor
    calibrado. Conjuntos (idiomas, motores, serviços) são dados

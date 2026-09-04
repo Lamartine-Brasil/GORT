@@ -225,7 +225,7 @@ public partial class App : Application, UI.IRemoteHost
             var showItem = new NativeMenuItem("Mostrar janela de tradução");
             // Traz a janela DO MODO ATUAL (antes abria sempre a escura, e
             // quem escondia a camada não tinha como trazê-la de volta).
-            showItem.Click += (_, _) => Windows.ShowForMode(Config.Profile.WindowMode, MainWin);
+            showItem.Click += (_, _) => Windows.ShowForMode(Config.Profile.WindowMode);
             menu.Add(showItem);
             _toggleItem = new NativeMenuItem("Iniciar tradução");
             _toggleItem.Click += (_, _) => ToggleLoop();
@@ -718,7 +718,7 @@ public partial class App : Application, UI.IRemoteHost
             if (!EnsureRealtimeOcr()) return;                    // RF-122
             ConcludeAreas();                                     // RF-085
             Windows.ScaleOf = ScaleOfRect;
-            Windows.ShowForMode(Config.Profile.WindowMode, MainWin);   // RF-317
+            Windows.ShowForMode(Config.Profile.WindowMode);   // RF-317
             CheckSelfCapture();                                          // RF-343
             var loop = new Loop.TranslationLoop(Config, Regions, Pipe,
                 Windows.MakeSink(), LoopEffects);
@@ -832,7 +832,7 @@ public partial class App : Application, UI.IRemoteHost
                     { layer.SetText(text); if (!layer.IsVisible) layer.Show(); }
                     else
                     {
-                        Windows.ShowDark(MainWin);
+                        Windows.ShowDark();
                         Windows.Dark().ShowTranslation(text, "", false,
                             Config.Advanced.IgnoreEmpty);
                     }
