@@ -47,14 +47,15 @@
   interface em **PT-BR**. Japonês e inglês → PT-BR.
 - `src/Gort/` — aplicativo (~25 pastas: `Lifecycle`, `Loop`, `Ocr`,
   `Translate`, `UI`, `Overlay`, `Regions`, `Locale`, ...).
-- `src/Gort.Tests/` — 196 testes xUnit. `src/Gort.VisualTests/` — 6 testes
+- `src/Gort.Tests/` — 198 testes xUnit. `src/Gort.VisualTests/` — 6 testes
   de render headless (PNGs em `releases/visual-tests/`, nunca no TEMP).
 - `src/Directory.Build.props` — centraliza `bin/`+`obj/` em
   `releases/build/` (`ArtifactsPath`). `src/` tem SÓ código-fonte.
-- `releases/` — TODA saída gerada: `windows-x64/` (versão única),
-  `visual-tests/`, `test-results/`, `build/`. Ignorado no git (só o
-  PUBLICAR.md é versionado). Regra do dono: SEMPRE só a última versão —
-  limpar a pasta da plataforma antes de republicar, nunca `v2/` ou `-copia/`.
+- `releases/` — TODA saída gerada: `windows-x64/` (versão única,
+  completa), `visual-tests/`, `test-results/`, `build/`. Ignorado no git
+  (só o PUBLICAR.md é versionado). Regra do dono: SEMPRE só a última
+  versão — limpar a pasta da plataforma antes de republicar, nunca `v2/`
+  ou `-copia/`. (A variante leve sem .NET foi descartada: 247 MB está bom.)
 - `docs/` — `imagens/` (10 PNGs curatorados do README, versionados) +
   `sugestoes-ocr.md` (24 ideias numeradas, itens 1–6 feitos).
 - `README.md` (raiz) — página do GitHub em PT-BR (autor único, só links

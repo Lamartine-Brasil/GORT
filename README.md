@@ -93,30 +93,29 @@ botão faz mais o atalho.
 | `Ctrl+Shift+D` | Ocultar / exibir janela |
 | `Ctrl+Shift+F` | Área que segue o mouse |
 
-## Requisitos
+## Baixar e instalar (Windows)
+
+Na página de releases do GitHub, baixe o `Gort.exe` e execute — a versão
+é completa (com o .NET junto) e não precisa instalar nada.
+
+## Requisitos (para compilar)
 
 - SDK do .NET 9 instalado.
 - Windows x64, Linux x64, macOS x64 ou macOS ARM64 (Apple Silicon).
 
-## Instalação por plataforma
+## Instalação por plataforma (para compilar)
 
 Comandos a partir da pasta `src/`. A saída vai para `releases/`, que guarda
 sempre só a última versão publicada.
 
 ```powershell
-# Limpa a plataforma antes (evita resto de versão antiga)
+# Versão COMPLETA (com .NET junto)
 Remove-Item ../releases/windows-x64 -Recurse -Force -ErrorAction SilentlyContinue
-
-# Windows x64
 dotnet publish Gort/Gort.csproj -c Release -r win-x64 --self-contained true -o ../releases/windows-x64
 
-# Linux x64
+# Linux x64 / macOS (completas)
 dotnet publish Gort/Gort.csproj -c Release -r linux-x64 --self-contained true -o ../releases/linux-x64
-
-# macOS x64
 dotnet publish Gort/Gort.csproj -c Release -r osx-x64 --self-contained true -o ../releases/osx-x64
-
-# macOS ARM64 (Apple Silicon)
 dotnet publish Gort/Gort.csproj -c Release -r osx-arm64 --self-contained true -o ../releases/osx-arm64
 ```
 
@@ -147,9 +146,9 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
 | Pasta | Conteúdo |
 |---|---|
 | `src/Gort/` | Aplicativo (.NET 9, Avalonia): `Lifecycle`, `Loop`, `Ocr`, `Translate`, `UI`, `Overlay`, `Regions`, `Locale` e outras |
-| `src/Gort.Tests/` | 190 testes xUnit |
+| `src/Gort.Tests/` | 198 testes xUnit |
 | `src/Gort.VisualTests/` | Testes de render headless (PNGs em `releases/visual-tests/`) |
-| `releases/` | Toda saída gerada (não versionada, só o `PUBLICAR.md` é versionado) |
+| `releases/` | Toda saída gerada: `windows-x64/` (versão única, completa), `visual-tests/`, `test-results/`, `build/` (não versionada, só o `PUBLICAR.md` é versionado) |
 
 ## Privacidade e dados locais
 

@@ -3,6 +3,15 @@
 Esta pasta recebe os **binários publicados** (prontos para distribuir).
 Ela NÃO é versionada (ver `.gitignore`): só este PUBLICAR.md fica no git.
 
+## Dois tipos de release — SÓ A COMPLETA (decisão do dono)
+
+| Pasta | Tipo | Uso |
+|---|---|---|
+| `windows-x64/` | **Completa** (`--self-contained true`, ~247 MB) | Única versão: roda sem nada instalado. |
+
+A versão leve sem .NET foi descartada (247 MB é um tamanho bom).
+Só gerar outra variante se o dono pedir explicitamente.
+
 ## Como gerar (a partir de `src/`)
 
 > Regra do dono: `releases/` guarda SEMPRE só a última versão — sem
@@ -14,7 +23,7 @@ Ela NÃO é versionada (ver `.gitignore`): só este PUBLICAR.md fica no git.
 # Limpa a plataforma antes (evita resto de versão antiga)
 Remove-Item ../releases/windows-x64 -Recurse -Force -ErrorAction SilentlyContinue
 
-# Windows x64
+# Windows x64 (completo)
 dotnet publish Gort/Gort.csproj -c Release -r win-x64 --self-contained true -o ../releases/windows-x64
 
 # Linux x64
