@@ -228,6 +228,6 @@ public sealed class TranslationWindows
             return new LayerSink(_layer);
         if (_cfg.Profile.WindowMode == "overlay" && _overlay is not null)
             return new OverlaySink(_overlay);
-        return new DarkSink(this, Dark());
+        return new DarkSink(Dark());
     }
 }

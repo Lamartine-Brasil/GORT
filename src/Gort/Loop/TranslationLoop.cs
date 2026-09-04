@@ -31,8 +31,13 @@ public sealed class TranslationLoop : ILoopBody
     private ChangeTracker _change = new();
     private DateTime _cycleStart = DateTime.UtcNow;
     private List<List<string>> _lastTreated = new();
-    /// <summary>RF-123: prioriza a nuvem neste laço pontual.</summary>
-    public string? OcrOverrideId { get; set; }
+    // Descarte por imagem: hash FNV da captura por área. Tela parada pula
+    // pré-processo + OCR (o gargalo, com ONNX usando vários núcleos).
+    // ChangeTracker textual continua decidindo o redesenho (RF-193).
+    private readonly Dictionary<int, ulong> _lastHash = new();
+    private readonly Dictionary<int, (Text.RegionText? Region, List<Text.Block> Blocks)> _lastKept = new();
+    private int _lastFingerprint;
+    private bool _hasFingerprint;
     /// <summary>Avisos à UI (fundo preto — RF-570).</summary>
     public Action<string>? Notice { get; set; }
     private int _blackStreak;
@@ -98,7 +103,16 @@ public sealed class TranslationLoop : ILoopBody
             bool needOrig = overlay && p.AutoColorMaster
                 && (p.AutoColorFg || p.AutoColorBg);
             var origKept = new List<Imaging.RegionImage?>();
-
+            // Qualquer mudança de config/áreas invalida os hashes (full pass).
+            int fingerprint = Fingerprint(p, plan, needOrig, _cfg.Advanced,
+                overlay, Debug.DebugFlags.OneLinePerBlock);
+            if (!_hasFingerprint || fingerprint != _lastFingerprint)
+            {
+                _lastHash.Clear();
+                _lastKept.Clear();
+                _lastFingerprint = fingerprint;
+                _hasFingerprint = true;
+            }
             for (int r = 0; r < plan.Rects.Count; r++)
             {
                 if (ctx.StopRequested) { _sink.SetRunning(false); return false; }
@@ -116,9 +130,12 @@ public sealed class TranslationLoop : ILoopBody
                     continue;
                 }
                 origKept.Add(needOrig ? img : null);
-                // RF-570: quadros pretos seguidos → sugerir modo janela.
-                if (img is not null
-                    && Imaging.ColorFilter.IsBlack(img.Bytes, img.Channels))
+                List<string>? treated = null;
+                Text.RegionText? keptRegion = null;
+                List<Text.Block> keptBlocks = new();
+                // RF-570 conta todo ciclo (antes do descarte): preto estático
+                // também precisa chegar a 3 para sugerir modo janela.
+                if (Imaging.ColorFilter.IsBlack(img.Bytes, img.Channels))
                 {
                     if (++_blackStreak == 3)
                         Notice?.Invoke("A captura devolve quadros pretos. " +
@@ -126,19 +143,31 @@ public sealed class TranslationLoop : ILoopBody
                             "tela cheia exclusiva não funciona.");
                 }
                 else _blackStreak = 0;
-                var proc = Preprocess.Run(img, LocalExclusions(rect, plan.Exclusions),   // passo 8
-                    FilterModeOf(p.ColorFilter), Tuples(plan.GroupsPerRect[r]),
-                    p.Threshold, p.Erode, p.Zoom, p.PreprocessOff);
-
-                var ocr = RunOcr(proc, p, ctx);              // passos 9–10
-                List<string> treated;
-                Text.RegionText? keptRegion = null;
-                List<Text.Block> keptBlocks = new();
-                if (ocr is null)                             // RF-205: reusa anterior
+                // Tela parada: reusa tratado + geometria anteriores, sem
+                // pré-processo nem OCR. O ChangeTracker abaixo descarta
+                // (texto igual) salvo repintar ocioso.
+                if (r < _lastTreated.Count
+                    && _lastHash.TryGetValue(r, out ulong prev)
+                    && prev == ImageHash(img.Bytes)
+                    && _lastKept.TryGetValue(r, out var kprev))
                 {
-                    treated = r < _lastTreated.Count
-                        ? new List<string>(_lastTreated[r]) : new List<string>();
+                    treated = new List<string>(_lastTreated[r]);
+                    keptRegion = kprev.Region;
+                    keptBlocks = kprev.Blocks;
                 }
+                else
+                {
+                    _lastHash[r] = ImageHash(img.Bytes);
+                    var proc = Preprocess.Run(img, LocalExclusions(rect, plan.Exclusions),   // passo 8
+                        FilterModeOf(p.ColorFilter), Tuples(plan.GroupsPerRect[r]),
+                        p.Threshold, p.Erode, p.Zoom, p.PreprocessOff);
+
+                    var ocr = RunOcr(proc, p, ctx);              // passos 9–10
+                    if (ocr is null)                             // RF-205: reusa anterior
+                    {
+                        treated = r < _lastTreated.Count
+                            ? new List<string>(_lastTreated[r]) : new List<string>();
+                    }
                 else if (ocr.Error is not null)
                 {
                     treated = new List<string> { ocr.Error };  // erro vira conteúdo
@@ -158,6 +187,8 @@ public sealed class TranslationLoop : ILoopBody
                             overlay, oneLine, isDbService: false));
                     if (Debug.DebugFlags.NativeShowReplace)           // RF-500
                         System.Diagnostics.Trace.WriteLine("GORT nat: blocos=" + keptBlocks.Count);
+                    _lastKept[r] = (keptRegion, keptBlocks);
+                }
                 }
                 foreach (var t in treated) flatBlocks.Add((r, t));
                 areaCounts.Add(treated.Count);
@@ -236,7 +267,6 @@ public sealed class TranslationLoop : ILoopBody
                     {
                         var ob = new OverlayBlock
                         {
-                            AreaIndex = r,
                             Text = batch.Error ?? batch.PerText[bj] ?? "",
                         };
                         if (k < kept.Count)
@@ -348,11 +378,38 @@ public sealed class TranslationLoop : ILoopBody
             (false, 0, 0));
     }
 
-    private OcrResult? RunOcr(ProcessedImage proc, Profile p, LoopContext ctx)
+    /// <summary>
+    /// Assinatura do que influencia pixels+tratamento: qualquer mudança
+    /// força um ciclo completo (os hashes de imagem caducam).
+    /// </summary>
+    internal static int Fingerprint(Config.Profile p,
+        RegionManager.CapturePlan plan, bool needOrig,
+        Config.AdvancedOptions adv, bool overlay, bool oneLine)
     {
-        var engine = OcrOverrideId is not null
-            ? OcrEngines.Get(OcrOverrideId) ?? OcrEngines.Get(p.OcrEngine)
-            : OcrEngines.Get(p.OcrEngine);
+        var h = new HashCode();
+        h.Add(p.Zoom); h.Add(p.Threshold); h.Add(p.Erode);
+        h.Add(p.ColorFilter); h.Add(p.PreprocessOff); h.Add(needOrig);
+        // Tudo que muda o tratado: motor/idioma OCR, agrupamento, dicionário.
+        h.Add(p.OcrEngine); h.Add(p.OcrLanguage);
+        h.Add(p.MergeLinesOverlay); h.Add(p.RemoveSpaces);
+        h.Add(p.UseDict); h.Add(p.DictByWord); h.Add(adv.DictExtraPasses);
+        h.Add(p.WindowMode); h.Add(overlay); h.Add(oneLine);
+        h.Add(plan.Rects.Count);
+        foreach (var rc in plan.Rects) { h.Add(rc.X); h.Add(rc.Y); h.Add(rc.W); h.Add(rc.H); }
+        foreach (var g in plan.GroupsPerRect) foreach (var i in g) h.Add(i);
+        return h.ToHashCode();
+    }
+
+    /// <summary>FNV-1a 64 sobre os bytes capturados (1 passada, sem alocação).</summary>
+    internal static ulong ImageHash(byte[] b)
+    {
+        ulong h = 1469598103934665603ul;
+        foreach (byte x in b) { h ^= x; h *= 1099511628211ul; }
+        return h;
+    }
+
+    private OcrResult? RunOcr(ProcessedImage proc, Profile p, LoopContext ctx)    {
+        var engine = OcrEngines.Get(p.OcrEngine);
         if (engine is null || !engine.IsAvailable)
             return OcrResult.Fail(engine?.UnavailableReason
                 ?? $"Motor de OCR '{p.OcrEngine}' indisponível.");

@@ -30,7 +30,6 @@ public sealed class AdvancedOptions
     public bool OverlayAutoFont { get; set; } = false;
     public bool OverlayMerge { get; set; } = false;
     public bool OverlayKeepDir { get; set; } = false;
-    public bool OverlayOutline { get; set; } = false;
     public bool OverlayBgAlpha { get; set; } = false;
     public bool AutoColorMaster { get; set; } = true;
     public bool AutoColorFg { get; set; } = true;

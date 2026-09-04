@@ -30,8 +30,12 @@ public partial class MainWindow
         once.Click += OnTranslateOnce;
         var restart = new Button { Content = "Configuração rápida" };
         restart.Click += (_, _) => { _u.WizStep = 0; RenderWizard(); };
+        // Reabre o controle remoto se foi escondido pelo × (RF-521).
+        var remote = new Button { Content = "Mostrar controle remoto" };
+        remote.Click += (_, _) => ((App)Avalonia.Application.Current!).ShowRemote();
         UI.GortTheme.Secondary(areas); UI.GortTheme.Secondary(once); UI.GortTheme.Secondary(restart);
-        p.Children.Add(Wrap(areas, once, restart));
+        UI.GortTheme.Secondary(remote);
+        p.Children.Add(Wrap(areas, once, restart, remote));
         _u.AreaStatus.FontSize = 12;
         p.Children.Add(_u.AreaStatus);
         _u.StartBtn.MinHeight = 44;
@@ -195,6 +199,27 @@ public partial class MainWindow
         box.SelectedIndex = i >= 0 ? i : (items.Count > 0 ? 0 : -1);
     }
 
+    /// <summary>
+    /// Combo de idioma por motor: explica para que serve e desabilita quando
+    /// só há uma opção (ex.: moderno sem o par japonês mostra só "en").
+    /// </summary>
+    private void SetLangCombo(ComboBox box, List<string> items, string current,
+        string singleTip)
+    {
+        SetCombo(box, items, current);
+        if (items.Count > 1)
+        {
+            box.IsEnabled = true;
+            Avalonia.Controls.ToolTip.SetTip(box,
+                "Idioma usado por este motor. Os botões Inglês/Japonês no topo valem para todos.");
+        }
+        else
+        {
+            box.IsEnabled = false;
+            Avalonia.Controls.ToolTip.SetTip(box, singleTip);
+        }
+    }
+
     /// <summary>Seleciona pelo identificador (itens "id — nome").</summary>
     private static void SetComboById(ComboBox box, string id)
     {
@@ -258,21 +283,27 @@ public partial class MainWindow
         _u.SaveFile.IsChecked = p.SaveResultFile;
         _u.CopyClip.IsChecked = p.CopyToClipboard;
         _u.Dataset.Text = p.ClassicDataset;
-        SetCombo(_u.OcrLangClassic, ["en", "ja"], p.OcrLanguage);
+        SetLangCombo(_u.OcrLangClassic, ["en", "ja"], p.OcrLanguage,
+            "Só há uma opção disponível.");
         _u.Fast.IsChecked = p.ClassicFast;
-        SetCombo(_u.OsLang, [], "");
-        SetCombo(_u.ModernLang,
+        SetLangCombo(_u.OsLang, [],
+            "",
+            "Nenhum idioma de OCR instalado no sistema.");
+        SetLangCombo(_u.ModernLang,
             Ocr.OcrEngines.Get("modern")?.SupportedOcrLanguages()
                 .Select(LangCodes.KeyForOcr).Where(k => k != "").ToList() ?? ["en"],
-            p.OcrLanguage);
+            p.OcrLanguage,
+            "Só inglês disponível neste motor. O japonês exige o par de modelos japoneses.");
         _u.ModernVertical.IsChecked = p.ModernVertical;
-        SetCombo(_u.CloudLang, ["auto", "en", "ja"],
-            p.OcrLanguage == "ja" ? "ja" : "en");
+        SetLangCombo(_u.CloudLang, ["auto", "en", "ja"],
+            p.OcrLanguage == "ja" ? "ja" : "en",
+            "Só há uma opção disponível.");
         _u.CloudCred.Text = p.CloudCredFile;
         var cloud = Ocr.OcrEngines.Get("cloud") as Ocr.Cloud.CloudEngine;
         _u.CloudUsage.Text = $"{Strings._("ocr.cloud_usage")}: {cloud?.UsageText() ?? "—"}";
         _u.CloudPriority.IsChecked = a.CloudPriority;
-        SetCombo(_u.VenvLang, ["en", "ja"], p.OcrLanguage);
+        SetLangCombo(_u.VenvLang, ["en", "ja"], p.OcrLanguage,
+            "Só há uma opção disponível.");
 
         SetComboById(_u.TrService,
             Translate.Services.ResolveOrFallback(p.TranslationService));
@@ -317,6 +348,7 @@ public partial class MainWindow
         _u.RmSpaces.IsChecked = p.RemoveSpaces;
         _u.UseBg.IsChecked = p.TextBackground;
         _u.AreaNum.IsChecked = p.AreaNumbering;
+        _u.Outline.IsChecked = p.OverlayOutline;
         RenderPreview();
 
         _u.ActiveWin.IsChecked = p.CaptureActiveWindow;
@@ -466,6 +498,7 @@ public partial class MainWindow
         p.RemoveSpaces = _u.RmSpaces.IsChecked == true;
         p.TextBackground = _u.UseBg.IsChecked == true;
         p.AreaNumbering = _u.AreaNum.IsChecked == true;
+        p.OverlayOutline = _u.Outline.IsChecked == true;
 
         p.CaptureActiveWindow = _u.ActiveWin.IsChecked == true;
         p.Zoom = Imaging.Preprocess.ClampZoomSteps(                 // RF-114

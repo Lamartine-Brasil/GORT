@@ -55,11 +55,11 @@ public class HotkeyTests
     [Fact]
     public void Normalize_Merges_Sides()
     {
-        Assert.Equal(0x10, Platform.Windows.WinHook.Normalize(0x10, 0, 0));
-        Assert.Equal(0x11, Platform.Windows.WinHook.Normalize(0x11, 0, 0));
-        Assert.Equal(0x12, Platform.Windows.WinHook.Normalize(0x12, 0, 0));
-        Assert.Equal(0x5B, Platform.Windows.WinHook.Normalize(0x5C, 0, 0));
-        Assert.Equal(0x41, Platform.Windows.WinHook.Normalize(0x41, 0, 0));
+        Assert.Equal(0x10, Platform.Windows.WinHook.Normalize(0x10));
+        Assert.Equal(0x11, Platform.Windows.WinHook.Normalize(0x11));
+        Assert.Equal(0x12, Platform.Windows.WinHook.Normalize(0x12));
+        Assert.Equal(0x5B, Platform.Windows.WinHook.Normalize(0x5C));
+        Assert.Equal(0x41, Platform.Windows.WinHook.Normalize(0x41));
     }
 
     [Fact]

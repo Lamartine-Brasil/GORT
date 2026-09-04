@@ -7,13 +7,11 @@ namespace Gort.UI;
 /// <summary>Adapta o DarkWindow ao laço: desenho na thread de UI.</summary>
 public sealed class DarkSink : IDisplaySink
 {
-    private readonly TranslationWindows _windows;
     private DarkWindow? _win;
     private bool _alive = true;
 
-    public DarkSink(TranslationWindows windows, DarkWindow win)
+    public DarkSink(DarkWindow win)
     {
-        _windows = windows;
         _win = win;
         win.Closed += (_, _) => _alive = false;
     }

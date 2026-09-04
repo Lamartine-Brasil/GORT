@@ -119,7 +119,6 @@ public abstract class CliCapture : IScreenCapture
                 Width = clip.W, Height = clip.H, Channels = 4, Bytes = bytes,
                 OrigWidth = needOriginal ? clip.W : 0,
                 OrigHeight = needOriginal ? clip.H : 0,
-                OrigChannels = needOriginal ? 4 : 0,
                 OrigBytes = needOriginal ? (byte[])bytes.Clone() : null,
             };
         }

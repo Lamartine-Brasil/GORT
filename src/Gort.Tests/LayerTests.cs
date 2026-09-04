@@ -40,12 +40,30 @@ public class LayerTests
         var (w, h) = SkiaText.DrawOutlined(canvas,
             new List<string> { "Hi" }, 5, 5, face, 24,
             SKColors.White, new SKColor(192, 192, 192), SKColors.Black,
-            SkiaText.HAlign.Left, 190);
+            SkiaText.HAlign.Left, 190, outline: true);
         Assert.True(w > 10 && h > 10);
         bool any = false;
         foreach (var px in bmp.Pixels)
             if (px.Alpha > 10) { any = true; break; }
         Assert.True(any);   // RF-336: contorno duplo + preenchimento
+    }
+
+    [Fact]
+    public void NoOutline_Draws_Fill_Only()
+    {
+        using var bmp = new SKBitmap(200, 60);
+        using var canvas = new SKCanvas(bmp);
+        canvas.Clear(SKColors.Transparent);
+        using var face = SkiaText.ResolveFont(null);
+        var (w, h) = SkiaText.DrawOutlined(canvas,
+            new List<string> { "Hi" }, 5, 5, face, 24,
+            SKColors.White, SKColors.Black, SKColors.Black,
+            SkiaText.HAlign.Left, 190, outline: false);
+        Assert.True(w > 10 && h > 10);   // mesma extensão, só preenchimento
+        bool any = false;
+        foreach (var px in bmp.Pixels)
+            if (px.Alpha > 10) { any = true; break; }
+        Assert.True(any);
     }
 
     [Fact]

@@ -68,7 +68,6 @@ public sealed class MacCapture : CliCapture
             {
                 Index = index, Width = w, Height = h, Channels = 4, Bytes = bytes,
                 OrigWidth = needOriginal ? w : 0, OrigHeight = needOriginal ? h : 0,
-                OrigChannels = needOriginal ? 4 : 0,
                 OrigBytes = needOriginal ? (byte[])bytes.Clone() : null,
             };
         }

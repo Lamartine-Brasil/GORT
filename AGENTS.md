@@ -32,7 +32,7 @@ dotnet build Gort.sln -c Release --nologo -v q
 dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../releases/test-results
 ```
 
-- Padrão atual: **0 erros, 196/196 testes verdes, 0 warnings CS0618/xUnit**.
+- Padrão atual: **0 erros, 201/201 testes verdes, 0 warnings CS0618/xUnit**.
   Restam só warnings pré-existentes de nullable (`CS8602` etc.) — não sair
   caçando sem motivo (código funcionando = ajuste fino, não reforma).
 - Encadear com `; if ($?) { ... }` (sem `&&`). Não usar `cd`; usar `workdir`.
@@ -87,8 +87,19 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
   `TotalProcessorTime`/núcleos no `_memTimer` de 2 s — sem API de SO).
 - `tmp-remote.png` era artefato manual obsoleto (apagado); `remote.png`
   agora é gerado pelo teste `Render_AuxWindows`.
+- Diálogo de saída tem 3 botões (sair de verdade = `App.ExitApp()` público,
+  que encerra tudo; fechar a principal com outra janela aberta não sai).
+- Contorno de texto é `Profile.OverlayOutline` (default true); o antigo
+  `AdvancedOptions.OverlayOutline` era morto (escrevia sem leitura).
+- `SnapshotArea` limpa no `finally` do `SnapshotAsync` (sem isso gruda).
+- Combos de idioma com 1 opção ficam desabilitados com tooltip
+  (`SetLangCombo`); fonte da verdade continua nos rádios en/ja.
+- Aplicar confirma inline no rodapé (`ApplyHint`, some em 2,5 s) —
+  nunca modal a partir do Aplicar.
 - `selection.png` em branco é esperado (overlay transparente sem arrasto).
 - Modelos OCR vêm do NuGet (`models/` copiado no publish) — não versionar.
+- Varredura de código morto concluída (50 frentes): suite de testes reflete
+  o estado atual; não ressuscitar membros removidos sem checar uso real.
 - Dono/autor único: **Lamartine Barbosa** (`csproj Authors` + Sobre +
   `README.md#Contribuidores`).
   TODOS os links externos apontam para `https://github.com/Lamartine-Brasil/GORT`

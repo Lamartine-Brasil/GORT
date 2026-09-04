@@ -65,6 +65,13 @@ public sealed class DbTranslator : ITranslationService
     public Task<ServiceResult> TranslateAsync(IReadOnlyList<string> texts,
         string srcCode, string dstCode, CancellationToken ct)
     {
+        // Sem nenhum par carregado: avisa em vez de devolver vazio mudo
+        // (o usuário acha que "não funcionou").
+        if (_exact.Count == 0 && _pairs.Count == 0)
+            return Task.FromResult(new ServiceResult
+            {
+                Error = "Banco de dados vazio ou ausente. Informe o arquivo na seção do banco.",
+            });
         // O lote chega unido por token; consulta por parte e rejunta.
         string joined = texts.Count > 0 ? texts[0] : "";
         var parts = joined.Split(new[] { DefaultToken }, StringSplitOptions.None);

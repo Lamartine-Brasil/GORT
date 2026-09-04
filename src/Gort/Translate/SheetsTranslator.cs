@@ -57,7 +57,10 @@ public sealed class SheetsTranslator : HttpTranslator
 
     public bool HasToken() => LoadRefreshToken(_tokenFile) is not null;
 
-    /// <summary>Troca código de autorização (colado pelo usuário) por tokens.</summary>
+    /// <summary>
+    /// Troca o código de autorização (colado pelo usuário) pelos tokens e
+    /// grava em sheets-token.json. Sem isso a autenticação não se completa.
+    /// </summary>
     public async Task<bool> ExchangeCodeAsync(string clientId, string clientSecret,
         string code, string redirectUri, CancellationToken ct)
     {

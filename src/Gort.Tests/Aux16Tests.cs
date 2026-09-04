@@ -89,11 +89,11 @@ public class Aux16Tests
         var p = cfg.Profile;
         p.CopyToClipboard = true;
         p.CopyFormat = "both";
-        fx.CopyOut("TR", "OCR", p);                        // RF-473: ambos
+        Assert.Null(Record.Exception(() => fx.CopyOut("TR", "OCR", p)));  // RF-473
         p.CopyFormat = "translation-only";
-        fx.CopyOut("TR", "OCR", p);
+        Assert.Null(Record.Exception(() => fx.CopyOut("TR", "OCR", p)));
         p.CopyToClipboard = false;
-        fx.CopyOut("TR", "OCR", p);
+        Assert.Null(Record.Exception(() => fx.CopyOut("TR", "OCR", p)));
     }
 
     [Fact]
@@ -101,7 +101,9 @@ public class Aux16Tests
     {
         using var speech = new SpeechService();
         _ = speech.IsAvailable;                            // RF-480: sem erro
-        speech.Speak("//////olá", waitPrevious: true, "//////");  // RF-477/478
-        speech.Speak("", waitPrevious: false, "//////");
+        Assert.Null(Record.Exception(() =>
+            speech.Speak("//////olá", waitPrevious: true, "//////")));  // RF-477/478
+        Assert.Null(Record.Exception(() =>
+            speech.Speak("", waitPrevious: false, "//////")));
     }
 }

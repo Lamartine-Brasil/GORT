@@ -30,7 +30,6 @@ public sealed class VersionFile
     public string InlineMin = "";
     public string ExeUrl = "";
     public string SumUrl = "";
-    public string NotesUrl = "";
     public Dictionary<string, (string Ver, string Url)> Dicts = new();
 
     public static VersionFile Parse(string text)
@@ -53,7 +52,6 @@ public sealed class VersionFile
                 else if (key == "inline-min") vf.InlineMin = val;
                 else if (key == "url-exe") vf.ExeUrl = val;
                 else if (key == "url-sum") vf.SumUrl = val;
-                else if (key == "url-notes") vf.NotesUrl = val;
             }
             else if (section == "dicts" && key.StartsWith("dict-"))
             {

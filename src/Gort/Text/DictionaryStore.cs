@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using Gort.Core;
 
 namespace Gort.Text;
@@ -12,6 +13,8 @@ namespace Gort.Text;
 public sealed class DictionaryStore
 {
     private readonly List<(string From, string To)> _pairs = new();
+    private int _version;   // incrementado a cada mutação; invalida o cache
+    private readonly Dictionary<bool, (int Ver, Regex Rx, Dictionary<string, string> Map)> _cache = new();
 
     public int Count => _pairs.Count;
 
@@ -19,6 +22,8 @@ public sealed class DictionaryStore
     public void Load(string path)
     {
         _pairs.Clear();
+        _version++;
+        _cache.Clear();
         if (!File.Exists(path)) return;
         string[] lines;
         try { lines = File.ReadAllLines(path); }
@@ -53,23 +58,29 @@ public sealed class DictionaryStore
     public string Apply(string text, bool byWord, int extraPasses)
     {
         if (_pairs.Count == 0) return text;
-        // Mais longo primeiro: prefere o padrão mais específico em sobreposição.
-        var ordered = new List<(string From, string To)>();
-        foreach (var p in _pairs)
-            if (!string.IsNullOrEmpty(p.From)) ordered.Add(p);
-        if (ordered.Count == 0) return text;
-        ordered.Sort((a, b) => b.From.Length.CompareTo(a.From.Length));
-        string alt = string.Join("|", ordered.ConvertAll(p =>
-            System.Text.RegularExpressions.Regex.Escape(p.From)));
-        string pattern = byWord ? @"\b(" + alt + @")\b" : "(" + alt + ")";
-        var map = new Dictionary<string, string>();
-        foreach (var (from, to) in ordered)
-            if (!map.ContainsKey(from)) map[from] = to;
-        var rx = new System.Text.RegularExpressions.Regex(pattern);
+        if (!_cache.TryGetValue(byWord, out var hit) || hit.Ver != _version)
+        {
+            // Mais longo primeiro: prefere o padrão mais específico em sobreposição.
+            var ordered = new List<(string From, string To)>();
+            foreach (var p in _pairs)
+                if (!string.IsNullOrEmpty(p.From)) ordered.Add(p);
+            if (ordered.Count == 0) return text;
+            ordered.Sort((a, b) => b.From.Length.CompareTo(a.From.Length));
+            string alt = string.Join("|", ordered.ConvertAll(p =>
+                Regex.Escape(p.From)));
+            string pattern = byWord ? @"\b(" + alt + @")\b" : "(" + alt + ")";
+            var map = new Dictionary<string, string>();
+            foreach (var (from, to) in ordered)
+                if (!map.ContainsKey(from)) map[from] = to;
+            hit = (_version, new Regex(pattern, RegexOptions.Compiled), map);
+            _cache[byWord] = hit;
+        }
         string cur = text;
         int passes = 1 + System.Math.Clamp(extraPasses, 0, 3);
+        var rx = hit.Rx;
+        var m = hit.Map;
         for (int p = 0; p < passes; p++)
-            cur = rx.Replace(cur, m => map[m.Groups[1].Value]);
+            cur = rx.Replace(cur, x => m[x.Groups[1].Value]);
         return cur;
     }
 }

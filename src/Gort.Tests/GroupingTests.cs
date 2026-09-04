@@ -23,12 +23,6 @@ public class GroupingTests
         return r;
     }
 
-    private static List<Line> MkLines(OcrResult ocr)
-    {
-        var reg = Lines.Build(ocr, 0, false);
-        return reg.Lines;
-    }
-
     private static Line MkLine(string text, int x, int y, int w, int h, int font)
     {
         var l = new Line { Text = text, X = x, Y = y, W = w, H = h, FontSize = font };
@@ -137,8 +131,7 @@ public class GroupingTests
             new[] { ("hi", 0, 0, 20, 20), ("there", 25, 0, 30, 20) }), 3, true);
         Assert.Single(reg.Lines);
         Assert.Equal("hi there ", reg.Lines[0].Text);      // RF-152 🔒
-        Assert.Equal(3, reg.Index);
-        Assert.True(reg.IsSnapshot);
+        Assert.Empty(reg.Blocks);   // Build só monta linhas; blocos vêm do Group
     }
 
     [Fact]

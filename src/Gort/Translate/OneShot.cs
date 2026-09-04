@@ -39,7 +39,7 @@ public sealed class OneShotTranslator
         // já validou. Molduras visíveis só com ele aberto.
         _windows.ShowForMode(_cfg.Profile.WindowMode);
         var loop = new TranslationLoop(_cfg, _regions, _pipe,
-            new DarkSink(_windows, _windows.Dark()), _effects);
+            new DarkSink(_windows.Dark()), _effects);
         if (!_controller.StartLoop(loop, LoopMode.Once)) return;  // RF-013
         // Espera o término do ciclo pontual (passos de 50 ms — P-126).
         while (_controller.State != LoopState.Idle)

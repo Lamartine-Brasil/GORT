@@ -106,8 +106,6 @@ public sealed class AreaFrameWindow : Window
         return bar;
     }
 
-    public void SetIndex(int i) { _index = i; RefreshTitle(); }
-
     public ScreenRect CurrentCapture() =>
         FrameGeometry.FrameToCapture(Position.X, Position.Y, Width, Height, _scaleOf(this));
 

@@ -60,10 +60,7 @@ public sealed class KeyCombo
     public static class VK
     {
         public const int SHIFT = 0x10, CONTROL = 0x11, MENU = 0x12;
-        public const int LWIN = 0x5B, RWIN = 0x5C;
-        public const int LSHIFT = 0xA0, RSHIFT = 0xA1;
-        public const int LCONTROL = 0xA2, RCONTROL = 0xA3;
-        public const int LMENU = 0xA4, RMENU = 0xA5;
+        public const int LWIN = 0x5B;
         public const int ESCAPE = 0x1B, BACK = 0x08, SPACE = 0x20;
 
         public static bool TryParse(string name, out int vk)
@@ -150,6 +147,4 @@ public sealed class HotkeyMatcher
     {
         _pressed.Clear();                             // RF-441
     }
-
-    public void Reset() => _pressed.Clear();
 }

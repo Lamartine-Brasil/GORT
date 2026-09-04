@@ -25,8 +25,6 @@ public sealed class OcrResult
 
     public static OcrResult Fail(string message) =>
         new() { Error = message };
-
-    public static OcrResult Empty() => new();
 }
 
 /// <summary>

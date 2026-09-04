@@ -249,10 +249,8 @@ public class VisualRenderTests
             };
             var block = new Gort.Loop.OverlayBlock
             {
-                AreaIndex = 0,
                 Text = "Olá, mundo traduzido!",
                 OX = 100, OY = 100, OW = 600, OH = 200,
-                FontPrefPx = 28, BodyPx = 28,
             };
             block.LineBoxes.Add((100, 100, 600, 90));
             block.LineBoxes.Add((100, 200, 500, 90));

@@ -878,7 +878,7 @@ public partial class App : Application, UI.IRemoteHost
         catch { /* encerrar limpo */ }
     }
 
-    private void ExitApp()
+    public void ExitApp()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime d)
             d.Shutdown();

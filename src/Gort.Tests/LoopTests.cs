@@ -208,4 +208,34 @@ public class LoopTests
         Assert.True(WaitFor(() => ctl.State == LoopState.Idle));
         Assert.Equal(1, body.Steps);
     }
+
+    // ---- descarte por imagem (economia de CPU) ----
+
+    [Fact]
+    public void ImageHash_Stable_And_Sensitive()
+    {
+        var a = new byte[] { 1, 2, 3, 4 };
+        var b = new byte[] { 1, 2, 3, 4 };
+        var c = new byte[] { 1, 2, 3, 5 };
+        Assert.Equal(TranslationLoop.ImageHash(a), TranslationLoop.ImageHash(b));
+        Assert.NotEqual(TranslationLoop.ImageHash(a), TranslationLoop.ImageHash(c));
+        Assert.Equal(TranslationLoop.ImageHash(Array.Empty<byte>()),
+            TranslationLoop.ImageHash(Array.Empty<byte>()));
+    }
+
+    [Fact]
+    public void Fingerprint_Changes_With_Config()
+    {
+        var cfg = new Gort.Store.ConfigService();
+        var mgr = new Gort.Regions.RegionManager(cfg);
+        int F() => TranslationLoop.Fingerprint(cfg.Profile, mgr.BuildPlan(),
+            false, cfg.Advanced, false, false);
+        int f1 = F();
+        Assert.Equal(f1, F());
+        cfg.Profile.Zoom = 3.0;   // qualquer mudança invalida os hashes
+        Assert.NotEqual(f1, F());
+        cfg.Profile.Zoom = 2.0;
+        cfg.Profile.UseDict = !cfg.Profile.UseDict;   // dicionário também muda o tratado
+        Assert.NotEqual(f1, F());
+    }
 }

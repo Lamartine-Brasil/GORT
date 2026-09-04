@@ -20,7 +20,6 @@ public sealed class RegionImage
 
     public int OrigWidth { get; init; }
     public int OrigHeight { get; init; }
-    public int OrigChannels { get; init; }
     public byte[]? OrigBytes { get; set; }
 
     public bool IsEmpty => Width <= 0 || Height <= 0 || Bytes.Length == 0;

@@ -92,19 +92,6 @@ public sealed class HotkeyService : IDisposable
         }
     }
 
-    /// <summary>Simula pressionamento (testes e controle remoto).</summary>
-    public void Feed(int key, bool down)
-    {
-        if (HotkeyGuard.Suspended)
-        {
-            if (!down) _matcher.KeyUp(key);
-            return;
-        }
-        string? action = down ? _matcher.KeyDown(key) : null;
-        if (!down) _matcher.KeyUp(key);
-        if (action is not null) ActionFired?.Invoke(action);
-    }
-
     public void Dispose()
     {
         _running = false;

@@ -5,13 +5,12 @@ namespace Gort.Platform.Windows;
 
 /// <summary>
 /// C3/C4/C12 — janelas no Windows. C2 (fluxo de janela coberta) chega na Etapa 16;
-/// até lá <see cref="AttachedAvailable"/> é falso e a UI não oferece o modo (RF-576).
+/// até lá a UI não oferece o modo (RF-576).
 /// </summary>
 public sealed class WindowsWindowService : IWindowService
 {
     public bool IsAvailable => true;
     public string? UnavailableReason => null;
-    public bool AttachedAvailable => false;   // Etapa 16 (RF-089..RF-097)
 
     public IReadOnlyList<WindowRef> ListCapturableWindows()
     {

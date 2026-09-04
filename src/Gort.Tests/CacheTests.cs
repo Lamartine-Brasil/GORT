@@ -77,6 +77,16 @@ public class CacheTests
     }
 
     [Fact]
+    public async Task Db_Empty_Guides_Instead_Of_Blank()
+    {
+        var db = new DbTranslator();   // sem Reload: nenhum par
+        var r = await db.TranslateAsync(
+            new List<string> { "hello" }, "en", "pt", CancellationToken.None);
+        Assert.NotNull(r.Error);
+        Assert.Contains("Banco", r.Error);
+    }
+
+    [Fact]
     public async Task Db_Service_Splits_And_Skips_Memory()
     {
         var db = new DbTranslator();

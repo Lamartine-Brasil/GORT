@@ -45,8 +45,6 @@ public sealed class VenvEngine : IOcrEngine, IDisposable
     public IReadOnlyList<string> SupportedOcrLanguages() =>
         IsAvailable ? new List<string> { "eng", "jpn" } : new List<string>();
 
-    public static bool IsJapaneseLang(string code) => code == "jpn";
-
     public void NotifyTranslationRestart() { }
 
     public void Dispose()   // RF-016: encerra o ambiente

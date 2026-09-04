@@ -72,7 +72,7 @@ public sealed class WinHook : IDisposable
                 int w = (int)wParam;
                 bool down = w == WM_KEYDOWN || w == WM_SYSKEYDOWN;
                 bool up = w == WM_KEYUP || w == WM_SYSKEYUP;
-                if (down || up) KeyEvent?.Invoke(Normalize((int)k.vkCode, (int)k.scanCode, k.flags), down);
+                if (down || up) KeyEvent?.Invoke(Normalize((int)k.vkCode), down);
             }
             catch { }
         }
@@ -80,12 +80,10 @@ public sealed class WinHook : IDisposable
     }
 
     /// <summary>
-    /// RF-437: variantes L/R → código único. Distingue por scanCode + bit
-    /// estendido (bit 0 de flags = extended).
+    /// RF-437: variantes L/R → código único (o LL já entrega fundido).
     /// </summary>
-    internal static int Normalize(int vk, int scan, uint flags)
+    internal static int Normalize(int vk)
     {
-        _ = scan; _ = flags;   // L/R já chegam fundidos no LL, salvo Win
         return vk switch
         {
             0x10 => Input.KeyCombo.VK.SHIFT,                        // Shift L/R

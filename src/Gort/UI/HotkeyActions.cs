@@ -84,22 +84,31 @@ public sealed class HotkeyActions
     {        var sel = await _app.SelectAreaAsync();
         if (sel is null) return;
         _app.Regions.SetSnapshot(sel.Value);
-        // RF-452: com captura da janela ativa, espera o foco voltar ao jogo.
-        if (_app.Config.Profile.CaptureActiveWindow)
+        try
         {
-            bool back = false;
-            for (int i = 0; i < Core.Params.P120_ForegroundChecks; i++)   // 🔒 15
+            // RF-452: com captura da janela ativa, espera o foco voltar ao jogo.
+            if (_app.Config.Profile.CaptureActiveWindow)
             {
-                await Task.Delay(Core.Params.P121_ForegroundIntervalMs);  // 100 ms
-                if (!OwnsForeground()) { back = true; break; }
+                bool back = false;
+                for (int i = 0; i < Core.Params.P120_ForegroundChecks; i++)   // 🔒 15
+                {
+                    await Task.Delay(Core.Params.P121_ForegroundIntervalMs);  // 100 ms
+                    if (!OwnsForeground()) { back = true; break; }
+                }
+                if (!back)
+                {
+                    Notify("Tempo esgotado esperando o foco voltar ao jogo; área instantânea cancelada.");
+                    return;
+                }
             }
-            if (!back)
-            {
-                Notify("Tempo esgotado esperando o foco voltar ao jogo; área instantânea cancelada.");
-                return;
-            }
+            await _app.OneShot.RunAsync(System.Threading.CancellationToken.None);
         }
-        await _app.OneShot.RunAsync(System.Threading.CancellationToken.None);
+        finally
+        {
+            // A área instantânea vale um único ciclo: sem limpar, o plano
+            // continua retornando só ela e "gruda" até reiniciar.
+            _app.Regions.ClearSnapshot();
+        }
     }
 
     private bool OwnsForeground()

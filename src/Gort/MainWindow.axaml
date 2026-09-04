@@ -23,6 +23,8 @@
           <Button x:Name="DonateBtn" Content="♥ Doar" Height="32"
                   Background="White" BorderBrush="#E2E4EB" BorderThickness="1"
                   CornerRadius="6" />
+          <TextBlock x:Name="ApplyHint" FontSize="12" Foreground="#2EA043"
+                     VerticalAlignment="Center" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="12" Grid.Column="2"
                     VerticalAlignment="Center">

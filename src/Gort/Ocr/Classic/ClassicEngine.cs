@@ -73,8 +73,6 @@ public sealed class ClassicEngine : IOcrEngine, IDisposable
         _engineKey = null;
     }
 
-    public static bool IsJapaneseLang(string code) => code == "jpn";
-
     public async Task<OcrResult> RecognizeAsync(ProcessedImage img, string ocrLang,
         CancellationToken ct)
     {

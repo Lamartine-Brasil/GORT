@@ -9,6 +9,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Gort.Config;
 using Gort.Lifecycle;
+using Gort.Locale;
 using Gort.Platform;
 using Gort.Regions;
 using Gort.Store;
@@ -22,6 +23,7 @@ public partial class MainWindow : Window
     private readonly RegionManager _regions;
     private readonly DispatcherTimer _memTimer;
     private readonly DispatcherTimer _startTimer;
+    private readonly DispatcherTimer _applyTimer;
     private bool _firstShow = true;
 
     public MainWindow() : this(new ConfigService(), new TranslationController(), null) { }
@@ -83,6 +85,14 @@ public partial class MainWindow : Window
         _startTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _startTimer.Tick += (_, _) => RefreshStartBtn();
         _startTimer.Start();
+
+        // Confirmação do Aplicar: some sozinha, sem modal.
+        _applyTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+        _applyTimer.Tick += (_, _) =>
+        {
+            this.FindControl<TextBlock>("ApplyHint").Text = "";
+            _applyTimer.Stop();
+        };
 
         // RF-086/087: mudança de monitores/resolução com áreas fora da tela.
         Screens.Changed += (_, _) => CheckAreasOnScreen();
@@ -217,7 +227,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>RF-504: aplicar — sem meia-configuração (Etapa 8 completa o protocolo).</summary>
-    private async void OnApply(object? sender, RoutedEventArgs e)
+    private void OnApply(object? sender, RoutedEventArgs e)
     {
         // Etapa 9: limpar teclas pressionadas. Etapa 3: descartar backup de áreas.
         // RF-012: pausa → aplica → retoma; se não parar, nada é aplicado.
@@ -246,12 +256,10 @@ public partial class MainWindow : Window
         Translate.Services.ReloadDb(_cfg.Profile);   // RF-241: banco no aplicar
         Translate.Services.InvalidateCustom();       // presets podem ter mudado
         app.ReloadHotkeys();                          // RF-443: atalhos no aplicar
-        var box = new Window
-        {
-            Title = "GORT", Width = 320, Height = 120, WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Content = new TextBlock { Text = "Configuração aplicada e salva.", Margin = new(16), VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center },
-        };
-        await box.ShowDialog(this);
+        // Confirmação inline no rodapé (some sozinha): sem modal chato.
+        this.FindControl<TextBlock>("ApplyHint").Text = "✔ " + Strings._("msg.applied");
+        _applyTimer.Stop();
+        _applyTimer.Start();
     }
 
     /// <summary>Ciclo único (Etapa 7; atalho na Etapa 9).</summary>
@@ -318,7 +326,7 @@ public partial class MainWindow : Window
         var p = Process.GetCurrentProcess();
         var box = new Window
         {
-            Title = "Memória e CPU em uso", Width = 420, Height = 240,
+            Title = Strings._("memory.title"), Width = 420, Height = 240,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Content = new TextBlock
             {
@@ -351,31 +359,39 @@ public partial class MainWindow : Window
             Input.HotkeyGuard.AdvancedOpen = false;   // oculta: atalhos voltam
             return;
         }
-        var yesBtn = new Button { Content = "Sair", MinWidth = 90 };
-        var noBtn = new Button { Content = "Cancelar", MinWidth = 90 };
+        var yesBtn = new Button { Content = Strings._("exit.yes") };
+        var minBtn = new Button { Content = Strings._("exit.minimize") };
+        var noBtn = new Button { Content = Strings._("exit.no") };
         var dlg = new Window
         {
-            Title = "Sair do GORT?", Width = 320, Height = 140,
+            Title = Strings._("exit.title"), Width = 320, Height = 250,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Content = new StackPanel
             {
                 Margin = new(16), Spacing = 12,
                 Children =
                 {
-                    new TextBlock { Text = "Encerrar o programa?" },
-                    new StackPanel
-                    {
-                        Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8,
-                        Children = { yesBtn, noBtn },
-                    },
+                    new TextBlock { Text = Strings._("exit.question") },
+                    yesBtn, minBtn, noBtn,
                 },
             },
         };
         string choice = "no";
         yesBtn.Click += (_, _) => { choice = "yes"; dlg.Close(); };
+        minBtn.Click += (_, _) => { choice = "min"; dlg.Close(); };
         noBtn.Click += (_, _) => { choice = "no"; dlg.Close(); };
         await dlg.ShowDialog(this);
-        if (choice == "yes") { _reallyClosing = true; Close(); }
+        if (choice == "min")
+        {
+            Hide();
+            Input.HotkeyGuard.AdvancedOpen = false;
+        }
+        else if (choice == "yes")
+        {
+            // Sair de verdade: encerra o aplicativo inteiro (todas as
+            // janelas), não só a principal — senão ele "fica na bandeja".
+            ((App)Application.Current!).ExitApp();
+        }
     }
 
     private static void OpenUrl(string url)

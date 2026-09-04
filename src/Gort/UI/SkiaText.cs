@@ -101,11 +101,13 @@ public static class SkiaText
 
     /// <summary>
     /// Desenha linhas com contorno duplo; devolve extensão real (w,h).
-    /// advance = altura × P-98 (RF-365).
+    /// advance = altura × P-98 (RF-365). Sem contorno: só preenchimento
+    /// (para caixa de texto fora da imagem do jogo).
     /// </summary>
     public static (float W, float H) DrawOutlined(SKCanvas canvas, List<string> lines,
         float x, float y, SKTypeface face, float sizePx,
-        SKColor fill, SKColor c1, SKColor c2, HAlign align, float maxWidth)
+        SKColor fill, SKColor c1, SKColor c2, HAlign align, float maxWidth,
+        bool outline)
     {
         float advance = sizePx * (float)Core.Params.P98_LineAdvance;   // 🔒 1,2
         using var font = new SKFont(face, sizePx);
@@ -138,7 +140,7 @@ public static class SkiaText
                 _ => x,
             };
             float ly = y + sizePx + i * advance;
-            if (VectorOk)
+            if (outline && VectorOk)
             {
                 canvas.DrawText(lines[i], lx, ly, SKTextAlign.Left, font, pOut);
                 canvas.DrawText(lines[i], lx, ly, SKTextAlign.Left, font, pIn);

@@ -15,8 +15,6 @@ public static class LangCodes
         public string Ocr = "";
         public string NameEn = "";
         public Dictionary<string, string> Svc = new();
-        public bool SeparatesWords;
-        public bool Vertical;
         public bool Rtl;
     }
 
@@ -31,7 +29,7 @@ public static class LangCodes
                 ["commercial-eu"] = "JA", ["llm"] = "Japanese",
                 ["local-worker"] = "ja",
             },
-            SeparatesWords = false, Vertical = true, Rtl = false,
+            Rtl = false,
         },
         new() {
             Key = "en", Ocr = "eng", NameEn = "English",
@@ -42,7 +40,7 @@ public static class LangCodes
                 ["commercial-eu"] = "EN", ["llm"] = "English",
                 ["local-worker"] = "en",
             },
-            SeparatesWords = true, Vertical = false, Rtl = false,
+            Rtl = false,
         },
         new() {
             Key = "pt-BR", Ocr = "por", NameEn = "Portuguese (Brazil)",
@@ -53,7 +51,7 @@ public static class LangCodes
                 ["commercial-eu"] = "PT-BR", ["llm"] = "Portuguese (Brazil)",
                 ["local-worker"] = "pt-BR",
             },
-            SeparatesWords = true, Vertical = false, Rtl = false,
+            Rtl = false,
         },
     ];
 

@@ -78,13 +78,6 @@ public static class AttachedCapture
         var pt = new Win32.POINT { x = 0, y = 0 };
         if (!Win32.ClientToScreen(_hwnd, ref pt)) return new ScreenRect(0, 0, 0, 0);
         if (!Win32.GetClientRect(_hwnd, out var rc)) return new ScreenRect(0, 0, 0, 0);
-        // Limites estendidos para validar o alinhamento (RF-092, Etapa 16 usa
-        // o cliente; o quadro estendido ancora a origem).
-        if (Win32.DwmGetWindowAttribute(_hwnd, Win32.DWMWA_EXTENDED_FRAME_BOUNDS,
-                out var ext, System.Runtime.InteropServices.Marshal.SizeOf<Win32.RECT>()) == 0)
-        {
-            _ = ext;
-        }
         return new ScreenRect(pt.x, pt.y, rc.right - rc.left, rc.bottom - rc.top);
     }
 
@@ -112,7 +105,11 @@ public static class AttachedCapture
             while (DateTime.UtcNow < until)
             {
                 if (stopRequested()) return null;
-                System.Threading.Thread.Sleep(0);
+                // Sleep(1) em vez de Sleep(0): acaba com o busy-spin que
+                // queimava CPU girando. Estoura a espera em até ~1 quantum
+                // do timer — irrelevante aqui (só no caminho de miss, onde
+                // o PrintWindow já custa dezenas de ms).
+                System.Threading.Thread.Sleep(1);
             }
         }
     }
@@ -180,7 +177,6 @@ public static class AttachedCapture
         {
             Index = index, Width = w, Height = h, Channels = 4, Bytes = bytes,
             OrigWidth = needOriginal ? w : 0, OrigHeight = needOriginal ? h : 0,
-            OrigChannels = needOriginal ? 4 : 0,
             OrigBytes = needOriginal ? (byte[])bytes.Clone() : null,
         };
     }

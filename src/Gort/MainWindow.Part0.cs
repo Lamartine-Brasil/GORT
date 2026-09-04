@@ -49,7 +49,7 @@ public partial class MainWindow : Window
         public ComboBox WebQuality = new();
         public TextBlock WebState = new();
         public TextBox KrId = new(), KrSecret = new();
-        public TextBox SheetId = new(), SheetsClient = new(), SheetsSecret = new();
+        public TextBox SheetId = new(), SheetsClient = new(), SheetsSecret = new(), SheetsCode = new();
         public TextBlock SheetsToken = new();
         public TextBlock BrowserState = new();
         public TextBox EuKey = new();
@@ -72,7 +72,7 @@ public partial class MainWindow : Window
         public Button SwText = new(), SwC1 = new(), SwC2 = new(), SwBg = new();
         public byte[] CText = [255, 255, 255], CC1 = [192, 192, 192],
             CC2 = [0, 0, 0], CBg = [170, 0, 0, 0];
-        public CheckBox Center = new(), RmSpaces = new(), UseBg = new(), AreaNum = new();
+        public CheckBox Center = new(), RmSpaces = new(), UseBg = new(), AreaNum = new(), Outline = new();
         public Image Preview = new();
         // Aba 2
         public CheckBox ActiveWin = new();
@@ -127,17 +127,6 @@ public partial class MainWindow : Window
         var p = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 8, LineSpacing = 4 };
         foreach (var c in cs) p.Children.Add(c);
         return p;
-    }
-
-    private static TextBox NumBox(string v, int w = 60)
-    {
-        var t = new TextBox { Text = v, Width = w };
-        t.LostFocus += (_, _) =>                                  // RF-506
-        {
-            string d = new string(t.Text?.Where(char.IsDigit).ToArray() ?? []);
-            t.Text = d.Length == 0 ? "0" : d;
-        };
-        return t;
     }
 
     private static int Num(TextBox t, int min, int max, int def = 0)   // RF-042
@@ -305,7 +294,22 @@ public partial class MainWindow : Window
         shClear.Click += (_, _) => new Translate.SheetsTranslator(() => "", () => false).ClearTokens();
         _u.PSheets.Children.Add(Row(new TextBlock { Text = Strings._("tr.sheet") }, _u.SheetId));
         _u.PSheets.Children.Add(Row(new TextBlock { Text = Strings._("tr.client_id") }, _u.SheetsClient));
+        _u.SheetsCode.Width = 200;
+        _u.SheetsCode.PlaceholderText = "Cole aqui o código do Google…";
+        var shExchange = new Button { Content = "Trocar código por token" };
+        shExchange.Click += async (_, _) =>
+        {
+            var t = new Translate.SheetsTranslator(() => "", () => false);
+            bool ok = await t.ExchangeCodeAsync(
+                _u.SheetsClient.Text ?? "", _u.SheetsSecret.Text ?? "",
+                _u.SheetsCode.Text ?? "", "urn:ietf:wg:oauth:2.0:oob",
+                System.Threading.CancellationToken.None);
+            _u.SheetsToken.Text = "token: " + (t.HasToken() ? "ok" : "ausente");
+            Notify(ok ? "Planilha autenticada." :
+                "Falha ao trocar o código. Confira cliente, segredo e código.");
+        };
         _u.PSheets.Children.Add(Row(_u.SheetsSecret, shAuth, shClear));
+        _u.PSheets.Children.Add(Row(_u.SheetsCode, shExchange));
         _u.PSheets.Children.Add(_u.SheetsToken);
         var brBtn = new Button { Content = Strings._("tr.check_state") };
         brBtn.Click += (_, _) => new Translate.BrowserTranslator(() => null, () => false)
@@ -418,13 +422,17 @@ public partial class MainWindow : Window
         {
             _u.OcrEn.IsChecked = lang == "en";
             _u.OcrJa.IsChecked = lang == "ja";
-            SetCombo(_u.OcrLangClassic, ["en", "ja"], lang);
-            SetCombo(_u.CloudLang, ["auto", "en", "ja"], lang);
-            SetCombo(_u.VenvLang, ["en", "ja"], lang);
-            SetCombo(_u.ModernLang,
+            SetLangCombo(_u.OcrLangClassic, ["en", "ja"], lang,
+                "Só há uma opção disponível.");
+            SetLangCombo(_u.CloudLang, ["auto", "en", "ja"], lang,
+                "Só há uma opção disponível.");
+            SetLangCombo(_u.VenvLang, ["en", "ja"], lang,
+                "Só há uma opção disponível.");
+            SetLangCombo(_u.ModernLang,
                 Ocr.OcrEngines.Get("modern")?.SupportedOcrLanguages()
                     .Select(Translate.LangCodes.KeyForOcr).Where(k => k != "").ToList() ?? ["en"],
-                lang);
+                lang,
+                "Só inglês disponível neste motor. O japonês exige o par de modelos japoneses.");
         }
         finally { _syncingOcrLang = false; }
     }

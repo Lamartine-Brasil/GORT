@@ -37,7 +37,7 @@ public sealed class AdvancedPanel : UserControl
     private readonly Dictionary<string, TextBox> _svcKeys = new();
     // janela
     private CheckBox OvAutoFont = new(), OvMerge = new(), OvKeepDir = new(),
-        OvOutline = new(), OvBgAlpha = new(), AutoMaster = new(),
+        OvBgAlpha = new(), AutoMaster = new(),
         AutoFg = new(), AutoBg = new(), LayerBottom = new(), LayerRight = new(),
         TopDuring = new(), IgnoreEmpty = new(), HideTranslates = new(),
         DispMem = new();
@@ -143,7 +143,7 @@ public sealed class AdvancedPanel : UserControl
             c.OpenProfile.Add(new OpenProfileShortcut { Keys = o.Keys, File = o.File });
         foreach (var kv in a.ServiceSwitch) c.ServiceSwitch[kv.Key] = kv.Value;
         c.OverlayAutoFont = a.OverlayAutoFont; c.OverlayMerge = a.OverlayMerge;
-        c.OverlayKeepDir = a.OverlayKeepDir; c.OverlayOutline = a.OverlayOutline;
+        c.OverlayKeepDir = a.OverlayKeepDir;
         c.OverlayBgAlpha = a.OverlayBgAlpha;
         c.AutoColorMaster = a.AutoColorMaster; c.AutoColorFg = a.AutoColorFg;
         c.AutoColorBg = a.AutoColorBg;
@@ -274,7 +274,6 @@ public sealed class AdvancedPanel : UserControl
             var keys = new TextBox { Width = 150, Text = _w.OpenProfile[i].Keys };
             var file = new TextBox { Width = 280, Text = _w.OpenProfile[i].File };
             var pick = new Button { Content = Strings._("adv.pick_file") };
-            int idx = i;
             pick.Click += async (_, _) =>
             {
                 var sp = TopLevel.GetTopLevel(this)?.StorageProvider;
@@ -334,7 +333,6 @@ public sealed class AdvancedPanel : UserControl
         OvAutoFont.Content = Strings._("adv.auto_font"); OvAutoFont.IsChecked = _w.OverlayAutoFont;
         OvMerge.Content = Strings._("adv.merge_blocks"); OvMerge.IsChecked = _w.OverlayMerge;
         OvKeepDir.Content = Strings._("adv.keep_dir"); OvKeepDir.IsChecked = _w.OverlayKeepDir;
-        OvOutline.Content = Strings._("adv.use_outline"); OvOutline.IsChecked = _w.OverlayOutline;
         OvBgAlpha.Content = Strings._("adv.use_bg_alpha"); OvBgAlpha.IsChecked = _w.OverlayBgAlpha;
         AutoMaster.Content = Strings._("adv.auto_color"); AutoMaster.IsChecked = _w.AutoColorMaster;
         if (!_winWired)
@@ -382,7 +380,7 @@ public sealed class AdvancedPanel : UserControl
         return new ScrollViewer
         {
             Content = Sec(
-                H("Sobreposição"), OvAutoFont, OvMerge, OvKeepDir, OvOutline, OvBgAlpha,
+                H("Sobreposição"), OvAutoFont, OvMerge, OvKeepDir, OvBgAlpha,
                 AutoMaster, Row(AutoFg, AutoBg),
                 Row(new TextBlock { Text = Strings._("adv.min_size") }, AutoMin,
                     new TextBlock { Text = Strings._("adv.max_size") }, AutoMax),
@@ -672,7 +670,6 @@ public sealed class AdvancedPanel : UserControl
         a.OverlayAutoFont = OvAutoFont.IsChecked == true;
         a.OverlayMerge = OvMerge.IsChecked == true;
         a.OverlayKeepDir = OvKeepDir.IsChecked == true;
-        a.OverlayOutline = OvOutline.IsChecked == true;
         a.OverlayBgAlpha = OvBgAlpha.IsChecked == true;
         a.AutoColorMaster = AutoMaster.IsChecked == true;
         a.AutoColorFg = AutoFg.IsChecked == true;

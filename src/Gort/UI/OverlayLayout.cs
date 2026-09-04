@@ -17,8 +17,6 @@ public static class OverlayLayout
         public bool Title;
         public bool Vertical;
         public string Text = "";
-        public float PrefPx;
-        public float BodyPx;
         public float X, Y, W, H;          // visualização (tela)
         public float CX, CY, CW, CH;      // conteúdo
         public float FontPx;

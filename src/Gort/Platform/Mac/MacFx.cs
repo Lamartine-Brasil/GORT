@@ -12,9 +12,6 @@ namespace Gort.Platform.Mac;
 /// </summary>
 public static class MacFx
 {
-    [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_getClass")]
-    private static extern nint objc_getClass(string name);
-
     [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "sel_registerName")]
     private static extern nint sel_registerName(string name);
 

@@ -51,9 +51,3 @@ public interface ITranslationMemory
     string? TryGet(string serviceId, string source);
     void Store(string serviceId, string source, string translated);
 }
-
-public sealed class NullMemory : ITranslationMemory
-{
-    public string? TryGet(string serviceId, string source) => null;
-    public void Store(string serviceId, string source, string translated) { }
-}

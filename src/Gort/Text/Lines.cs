@@ -25,7 +25,6 @@ public sealed class Line
 public sealed class Block
 {
     public List<Line> Lines { get; } = new();
-    public string? Translated;
     public bool IsTitle;
     public LineOrientation Orientation;
     public int OX, OY, OW, OH;   // origem
@@ -39,11 +38,8 @@ public sealed class Block
 /// <summary>Resultado de região (7.5, campos textuais; tradução na Etapa 7).</summary>
 public sealed class RegionText
 {
-    public int Index;
-    public bool IsSnapshot;
     public List<Line> Lines { get; } = new();
     public List<Block> Blocks { get; } = new();
-    public int RX, RY, RW, RH;
 }
 
 /// <summary>Construção de linhas (15.1).</summary>
@@ -83,9 +79,8 @@ public static class Lines
     /// <summary>Monta linhas a partir do OCR + caixa de resultado (RF-152..156).</summary>
     public static RegionText Build(OcrResult ocr, int index, bool isSnapshot)
     {
-        var region = new RegionText { Index = index, IsSnapshot = isSnapshot };
+        var region = new RegionText();
         int wi = 0;
-        int rx1 = int.MaxValue, ry1 = int.MaxValue, rx2 = int.MinValue, ry2 = int.MinValue;
         foreach (int count in ocr.WordsPerLine)
         {
             var line = new Line();
@@ -109,11 +104,7 @@ public static class Lines
             line.Orientation = Classify(line.W, line.H);                   // RF-155
             line.FontSize = FontSizeOf(dims);                              // RF-164
             region.Lines.Add(line);
-            rx1 = System.Math.Min(rx1, x1); ry1 = System.Math.Min(ry1, y1);
-            rx2 = System.Math.Max(rx2, x2); ry2 = System.Math.Max(ry2, y2);
         }
-        if (region.Lines.Count > 0)
-        { region.RX = rx1; region.RY = ry1; region.RW = rx2 - rx1; region.RH = ry2 - ry1; }  // RF-156
         return region;
     }
 }

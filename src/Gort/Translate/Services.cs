@@ -24,8 +24,6 @@ public static class Services
         Base[db.Id] = db;
     }
 
-    public static void Configure(Func<AdvancedOptions> adv) => _adv = adv;
-
     public static void Configure(Func<AdvancedOptions> adv, Func<Config.Profile> prof)
     {
         _adv = adv;

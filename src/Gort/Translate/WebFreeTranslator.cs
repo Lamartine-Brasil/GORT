@@ -14,7 +14,7 @@ namespace Gort.Translate;
 /// Google (translate.googleapis.com) com o texto na URL; traduções do
 /// primeiro vetor, concatenadas com espaço.
 /// É o tradutor padrão do programa (RF-225): Google Tradutor.
-/// Cliente de alta qualidade; 429 → baixa + 1 repetição; baixa dura P-53.
+/// Cliente de alta qualidade; 429/403 → baixa + 1 repetição; baixa dura P-53.
 /// Padrão do programa (RF-225). Sem ponte (RF-239: só planilha declara).
 /// </summary>
 public sealed class WebFreeTranslator : ITranslationService
@@ -46,11 +46,6 @@ public sealed class WebFreeTranslator : ITranslationService
         lock (_gate) _lowUntil = DateTime.UtcNow.AddHours(Params.P53_LowQualityHours);  // 🔒
     }
 
-    internal void ResetQuality()
-    {
-        lock (_gate) _lowUntil = DateTime.MinValue;
-    }
-
     public async Task<ServiceResult> TranslateAsync(IReadOnlyList<string> texts,
         string srcCode, string dstCode, CancellationToken ct)
     {
@@ -61,7 +56,7 @@ public sealed class WebFreeTranslator : ITranslationService
         {
             string mode = QualityProvider().ToLowerInvariant();
             // high = sempre alta; low = sempre baixa; auto = alta com
-            // queda automática para baixa em 429 (RF-245, padrão).
+            // queda automática para baixa em 429/403 (RF-245, padrão).
             bool low = mode == "low" || (mode != "high" && IsLowQuality);
             string raw = await GetAsync(texts[0], srcCode, dstCode,
                 low ? RemoteDefaults.WebLowClient : RemoteDefaults.WebHighClient,
@@ -97,13 +92,16 @@ public sealed class WebFreeTranslator : ITranslationService
         req.Headers.TryAddWithoutValidation("Cache-Control", "no-cache");
         using var resp = await Http.SendAsync(req,
             HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-        if (resp.StatusCode == HttpStatusCode.TooManyRequests)   // RF-245
+        if (resp.StatusCode == HttpStatusCode.TooManyRequests
+            || resp.StatusCode == HttpStatusCode.Forbidden)   // RF-245: 429 cota, 403 bloqueio
         {
             // Escolha manual "high": respeita e devolve o erro em vez de
             // trocar sozinho; nos demais modos cai para baixa uma vez.
             if (forceHigh || client == RemoteDefaults.WebLowClient)
                 throw new QuotaException(
-                    "Cota horária do tradutor gratuito esgotada. Aguarde ou troque de serviço.");
+                    resp.StatusCode == HttpStatusCode.Forbidden
+                    ? "Google bloqueou o acesso temporariamente (HTTP 403). Aguarde ou troque de serviço."
+                    : "Cota horária do tradutor gratuito esgotada. Aguarde ou troque de serviço.");
             EnterLowQuality();                                // P-53 🔒
             return await GetAsync(text, src, dst,
                 RemoteDefaults.WebLowClient, false, ct).ConfigureAwait(false);

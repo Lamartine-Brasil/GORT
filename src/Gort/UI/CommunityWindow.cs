@@ -32,7 +32,6 @@ public sealed class CommunityWindow : Window
         public string TitleTr = "";
         public string InfoTitle = "";
         public string Links = "";
-        public string Extra = "";
         public string Desc = "";
         public string Profile = "";
         public string Db = "";
@@ -125,7 +124,6 @@ public sealed class CommunityWindow : Window
             string t = line.Trim();
             if (t.StartsWith("title:")) e.InfoTitle = t["title:".Length..].Trim();
             else if (t.StartsWith("links:")) e.Links = t["links:".Length..].Trim();
-            else if (t.StartsWith("extra:")) e.Extra = t["extra:".Length..].Trim();
             else if (t.StartsWith("profile:")) e.Profile = t["profile:".Length..].Trim();
             else if (t.StartsWith("db:")) e.Db = t["db:".Length..].Trim();
             else if (t.StartsWith("desc:")) e.Desc = t["desc:".Length..].Trim();

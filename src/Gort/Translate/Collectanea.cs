@@ -49,11 +49,8 @@ public sealed class Collectanea
         foreach (var name in _activeFiles())
         {
             string path = Path.Combine(Paths.CollectDir, name);
-            if (!File.Exists(path)) continue;                       // RF-216
-            string text;
-            try { text = File.ReadAllText(path); }
-            catch { continue; }
-            var pairs = ResultMemory.Parse(text);
+            var pairs = CachedPairs(path, name);
+            if (pairs is null) continue;                            // RF-216
             if (!db)
             {
                 foreach (var (o, t) in pairs)
@@ -66,6 +63,28 @@ public sealed class Collectanea
             }
         }
         return null;
+    }
+
+    // Pares em memória por arquivo, invalidados por data/tamanho. Mesma
+    // semântica da leitura direta (RF-216/218/219/220), sem I/O por texto.
+    private readonly Dictionary<string, (DateTime Write, long Len,
+        Dictionary<string, string> Pairs)> _cache = new();
+
+    private Dictionary<string, string>? CachedPairs(string path, string name)
+    {
+        System.IO.FileInfo fi;
+        try { fi = new System.IO.FileInfo(path); }
+        catch { _cache.Remove(name); return null; }
+        if (!fi.Exists) { _cache.Remove(name); return null; }       // RF-216
+        if (_cache.TryGetValue(name, out var hit)
+            && hit.Write == fi.LastWriteTimeUtc && hit.Len == fi.Length)
+            return hit.Pairs;
+        string text;
+        try { text = File.ReadAllText(path); }
+        catch { _cache.Remove(name); return null; }
+        var pairs = ResultMemory.Parse(text);
+        _cache[name] = (fi.LastWriteTimeUtc, fi.Length, pairs);
+        return pairs;
     }
 
     private static bool Eq(string a, string b, bool ic) =>

@@ -22,7 +22,6 @@ public sealed class SelectionWindow : Window
     private readonly double _scale;
     private readonly PixelPoint _originPhys;
     private Point? _startDip;
-    private ScreenRect? _result;
 
     public event Action<ScreenRect>? Selected;
     public event Action? Cancelled;
@@ -107,8 +106,7 @@ public sealed class SelectionWindow : Window
         _startDip = null;
         _rubber.IsVisible = false;
         if (Regions.FrameGeometry.IsAccidentalClick(x2 - x1, y2 - y1)) return;  // RF-052
-        _result = new ScreenRect(x1, y1, x2 - x1, y2 - y1);
-        Selected?.Invoke(_result.Value);
+        Selected?.Invoke(new ScreenRect(x1, y1, x2 - x1, y2 - y1));
         Close();
     }
 

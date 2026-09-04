@@ -20,11 +20,9 @@ public class Services15Tests
             {
                 Content = new StringContent("{}"),
             };
-        public List<HttpRequestMessage> Seen { get; } = new();
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage req,
             CancellationToken ct)
         {
-            Seen.Add(req);
             return Task.FromResult(Reply(req));
         }
     }
@@ -81,6 +79,25 @@ public class Services15Tests
         Assert.InRange(row, 1, 50);                       // P-57 🔒
         Assert.Contains("GOOGLETRANSLATE", f);
         Assert.Contains("\"en\"", f);
+    }
+
+    [Fact]
+    public async Task Sheets_Exchange_Fails_Without_Refresh_Token()
+    {
+        // Resposta sem refresh_token: false, sem gravar nada.
+        var fh = new FakeHandler();
+        fh.Reply = _ => new HttpResponseMessage(HttpStatusCode.OK)
+            { Content = new StringContent("{}") };
+        var svc = new SheetsTranslator(() => "sheet", () => false, fh);
+        string real = Path.Combine(Gort.Core.Paths.BaseDir, "sheets-token.json");
+        string? before = File.Exists(real) ? File.ReadAllText(real) : null;
+        Assert.False(await svc.ExchangeCodeAsync(
+            "id", "secret", "code", "urn:ietf:wg:oauth:2.0:oob",
+            CancellationToken.None));
+        string? after = File.Exists(real) ? File.ReadAllText(real) : null;
+        Assert.Equal(before, after);   // nada gravado no caminho real
+        Assert.Null(SheetsTranslator.LoadRefreshToken(
+            Path.Combine(Path.GetTempPath(), "gort-test-nope.json")));
     }
 
     [Fact]

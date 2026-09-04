@@ -10,19 +10,16 @@ public sealed class SingleInstance : IDisposable
 {
     private Mutex? _mutex;
     private FileStream? _lockFile;
-    public bool IsFirst { get; private set; }
 
     public bool TryAcquire()
     {
         if (File.Exists(Paths.MultiInstanceMarker))
         {
-            IsFirst = true;   // RF-002: desativação explícita
-            return true;
+            return true;   // RF-002: desativação explícita
         }
         if (OperatingSystem.IsWindows())
         {
             _mutex = new Mutex(true, @"Global\GORT_SingleInstance", out bool created);
-            IsFirst = created;
             return created;
         }
         // Unix: prefixo Global\ não existe — usa lock-file em BaseDir.
@@ -31,12 +28,10 @@ public sealed class SingleInstance : IDisposable
             Paths.EnsureAll();
             _lockFile = new FileStream(Path.Combine(Paths.BaseDir, ".instance.lock"),
                 FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            IsFirst = true;
             return true;
         }
         catch
         {
-            IsFirst = false;
             return false;
         }
     }
@@ -73,16 +68,6 @@ public sealed class TranslationController
 
     /// <summary>Fim do laço (gravação da memória — Etapa 10).</summary>
     public event Action? LoopEnded;
-
-    public bool RequestStart()
-    {
-        lock (_gate)
-        {
-            if (State != LoopState.Idle) return false;
-            State = LoopState.Running;
-            return true;
-        }
-    }
 
     /// <summary>
     /// Inicia o corpo na thread do laço. Com laço vivo, para o anterior

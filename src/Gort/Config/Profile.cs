@@ -109,7 +109,7 @@ public sealed class Profile
     public bool AutoColorMaster { get; set; } = true;
     public bool AutoColorBg { get; set; } = true;
     public bool AutoColorFg { get; set; } = true;
-    public bool OverlayOutline { get; set; } = false;
+    public bool OverlayOutline { get; set; } = true;
     public bool BgTransparency { get; set; } = false;
     public bool AutoFontSize { get; set; } = false;
 

@@ -49,12 +49,17 @@ public partial class MainWindow
         _u.RmSpaces.Content = Strings._("text.remove_spaces");
         _u.UseBg.Content = Strings._("text.use_bg");
         _u.AreaNum.Content = Strings._("text.area_numbers");
+        // Sem contorno: para caixa de texto fora da imagem do jogo, o texto
+        // puro fica mais legível que com o contorno duplo.
+        _u.Outline.Content = Strings._("adv.use_outline");
         _u.Center.IsCheckedChanged += (_, _) => RenderPreview();   // RF-508: imediato
         _u.RmSpaces.IsCheckedChanged += (_, _) => RenderPreview();
         _u.UseBg.IsCheckedChanged += (_, _) => RenderPreview();
         _u.AreaNum.IsCheckedChanged += (_, _) => RenderPreview();
+        _u.Outline.IsCheckedChanged += (_, _) => RenderPreview();
         p.Children.Add(Row(_u.Center, _u.RmSpaces));
         p.Children.Add(Row(_u.UseBg, _u.AreaNum));
+        p.Children.Add(Row(_u.Outline));
         p.Children.Add(new TextBlock { Text = "Pré-visualização:" });
         _u.Preview.Height = 120;
         // Moldura escura: o texto claro aparece como no jogo, não no branco.
@@ -163,7 +168,7 @@ public partial class MainWindow
                 new SkiaSharp.SKColor(_u.CText[0], _u.CText[1], _u.CText[2]),
                 new SkiaSharp.SKColor(_u.CC1[0], _u.CC1[1], _u.CC1[2]),
                 new SkiaSharp.SKColor(_u.CC2[0], _u.CC2[1], _u.CC2[2]),
-                align, 744);
+                align, 744, _u.Outline.IsChecked == true);
             var wb = new WriteableBitmap(new PixelSize(bmp.Width, bmp.Height),
                 new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Premul);
             using (var fb = wb.Lock())

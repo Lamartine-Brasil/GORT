@@ -66,20 +66,19 @@ public static class Preprocess
         }
         else
         {
-            var gray8 = ColorFilter.Binarize(work, w, h, mode, groups, threshold);
-            bin = new byte[gray8.Length];
-            for (int i = 0; i < gray8.Length; i++) bin[i] = gray8[i];  // 0/255
+            // Binarize já devolve array novo em 0/255 — sem cópia extra.
+            bin = ColorFilter.Binarize(work, w, h, mode, groups, threshold);
             color = false;
         }
 
         // 3. Erosão 3×3, 1 iteração, sobre a binarizada e ANTES da ampliação (RF-112).
         if (erode && !color) bin = Erode3x3(bin, w, h);
 
-        // 4. Ampliação (RF-113).
+        // 4. Ampliação (RF-113). Zoom 1:1 devolve o buffer, sem resize.
         int zw = Math.Max(1, (int)Math.Round(w * zoom));
         int zh = Math.Max(1, (int)Math.Round(h * zoom));
-        byte[] scaled = color
-            ? ResizeBgra(bin, w, h, zw, zh)
+        byte[] scaled = (zw == w && zh == h) ? bin
+            : color ? ResizeBgra(bin, w, h, zw, zh)
             : ResizeGray(bin, w, h, zw, zh);
 
         return new ProcessedImage

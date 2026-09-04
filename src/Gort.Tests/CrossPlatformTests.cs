@@ -125,8 +125,9 @@ public class CrossPlatformTests
     public void Shell_Which_Never_Throws()
     {
         // Existe ou não — o contrato é nunca lançar.
-        var _ = Shell.Which("definitely-not-a-tool-xyz");
-        var __ = Shell.Which("dotnet");
+        Assert.Null(Record.Exception(() => Shell.Which("definitely-not-a-tool-xyz")));
+        Assert.Null(Record.Exception(() => Shell.Which("dotnet")));
+        Assert.Null(Shell.Which("definitely-not-a-tool-xyz"));
     }
 
     [Fact]
@@ -141,7 +142,7 @@ public class CrossPlatformTests
     {
         using var s = new Audio.SpeechService();
         var _ = s.IsAvailable;   // true/false por SO — nunca exceção
-        s.Speak("", true, "//////");
-        s.Speak("   ", false, "//////");
+        Assert.Null(Record.Exception(() => s.Speak("", true, "//////")));
+        Assert.Null(Record.Exception(() => s.Speak("   ", false, "//////")));
     }
 }

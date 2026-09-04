@@ -122,12 +122,10 @@ public sealed class LocalWorker : HttpTranslator, IDisposable
         {
             if (!await EnsureReadyAsync(ct).ConfigureAwait(false))
                 return Fail("Processo auxiliar indisponível.");
-            string? lib = FindLibrary();
             string payload = texts.Count > 0 ? texts[0] : "";
             string reply = await CommandAsync(
                 $"tr,{srcCode},{dstCode},{payload}", ct)
                 .ConfigureAwait(false);
-            _ = lib;
             if (reply.StartsWith("ok,", StringComparison.Ordinal))
                 return new ServiceResult { Translations = new List<string> { reply[3..] } };
             if (reply.StartsWith("err,", StringComparison.Ordinal))

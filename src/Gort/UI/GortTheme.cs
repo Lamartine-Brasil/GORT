@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Layout;
 using Avalonia.Media;
 
 namespace Gort.UI;
@@ -100,14 +99,4 @@ public static class GortTheme
         b.Foreground = new SolidColorBrush(Accent);
         b.MinHeight = 32;
     }
-
-    /// <summary>Linha de formulário: label com largura fixa e altura de input.</summary>
-    public static TextBlock FieldLabel(string t, double width = 140) =>
-        new()
-        {
-            Text = t,
-            Width = width,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = new SolidColorBrush(Text),
-        };
 }

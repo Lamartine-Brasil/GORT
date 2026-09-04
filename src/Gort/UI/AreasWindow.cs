@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Gort.Imaging;
+using Gort.Locale;
 using Gort.Platform;
 using Gort.Regions;
 using Gort.Store;
@@ -195,17 +196,16 @@ public sealed class AreasWindow : Window
             _cfg.Advanced.SelectBg, _cfg.Advanced.SelectAccent);
         sel.Selected += rect =>
         {
-            var def = _mgr.AddArea(rect, exclusion);
+            _mgr.AddArea(rect, exclusion);
             RebuildFrames();
             RefreshList();
-            _ = def;
         };
         sel.Show(this);
     }
 
     private void OpenDropperFirst()
     {
-        if (_mgr.Working.Count == 0) { Inform("Não há nenhuma área de OCR."); return; }  // RF-084
+        if (_mgr.Working.Count == 0) { Inform(Strings._("no_area.title")); return; }  // RF-084
         var a = _mgr.Working[0];
         OpenDropper(a.Rect, $"Área 1 — {a.Rect.W}×{a.Rect.H}");
     }

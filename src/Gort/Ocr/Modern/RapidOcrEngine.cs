@@ -56,9 +56,6 @@ public sealed class RapidOcrEngine : IOcrEngine, IDisposable
         return langs;
     }
 
-    /// <summary>RF-146: o pipeline informa se o idioma ativo é japonês.</summary>
-    public static bool IsJapaneseLang(string ocrCode) => ocrCode == "jpn";
-
     public void NotifyTranslationRestart() => _blocked = false;   // RF-131
 
     public void Dispose()   // RF-016
@@ -110,14 +107,9 @@ public sealed class RapidOcrEngine : IOcrEngine, IDisposable
                 ?? throw new InvalidOperationException(
                     "Modelos do motor moderno não encontrados. Reinstale o programa.");
             _ocr = new RapidOcr();
-            if (paths.Bundled)
-            {
-                _ocr.InitModels();                                  // forma 1: padrão
-            }
-            else
-            {
-                TryInitWithPaths(paths);                            // formas 2–3
-            }
+            // Forma 1 (padrão) seria _ocr.InitModels() sem args, mas usa todos
+            // os núcleos; com caminhos explícitos dá para limitar as threads.
+            TryInitWithPaths(paths);                             // formas 1–3
         }
         catch (Exception)
         {
@@ -133,7 +125,6 @@ public sealed class RapidOcrEngine : IOcrEngine, IDisposable
     private sealed class ModelPaths
     {
         public string Det = "", Cls = "", Rec = "", Dict = "";
-        public bool Bundled;
     }
 
     private static readonly string[] DetNames =
@@ -182,16 +173,23 @@ public sealed class RapidOcrEngine : IOcrEngine, IDisposable
             catch { /* segue com o caminho original */ }
         }
 
-        bool bundled = SameDir(dir, Path.Combine(exeDir, "models", "v5"));
-        return new ModelPaths { Det = det!, Cls = cls!, Rec = rec!, Dict = dict!, Bundled = bundled };
+        return new ModelPaths { Det = det!, Cls = cls!, Rec = rec!, Dict = dict! };
     }
+
+    /// <summary>
+    /// Teto de threads do ONNX. Com 0 a biblioteca usa TODOS os núcleos —
+    /// num PC gamer de 22 núcleos isso trava o jogo. Teto baixo: o OCR
+    /// continua rápido e o jogo respira.
+    /// </summary>
+    private static int OcrThreadCount() =>
+        System.Math.Max(1, System.Math.Min(4, System.Environment.ProcessorCount));
 
     private void TryInitWithPaths(ModelPaths p)
     {
         // Forma 2: caminhos diretos.
         try
         {
-            _ocr!.InitModels(p.Det, p.Cls, p.Rec, p.Dict, numThread: 0);
+            _ocr!.InitModels(p.Det, p.Cls, p.Rec, p.Dict, numThread: OcrThreadCount());
             return;
         }
         catch { }
@@ -201,7 +199,7 @@ public sealed class RapidOcrEngine : IOcrEngine, IDisposable
         Directory.CreateDirectory(ascii);
         string det = CopyAscii(p.Det, ascii), cls = CopyAscii(p.Cls, ascii);
         string rec = CopyAscii(p.Rec, ascii), dict = CopyAscii(p.Dict, ascii);
-        _ocr!.InitModels(det, cls, rec, dict, numThread: 0);
+        _ocr!.InitModels(det, cls, rec, dict, numThread: OcrThreadCount());
     }
 
     private static string CopyAscii(string src, string dir)

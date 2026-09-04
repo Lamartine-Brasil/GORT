@@ -176,15 +176,19 @@ public sealed class RegionManager
     // ---- rápidas / instantâneo (RF-069..072) ----
 
     public void SetQuick(ScreenRect rect) { QuickArea = new AreaDef { Rect = rect }; NotifyChanged(); }
-    public void ClearQuick() { QuickArea = null; }
     public void SetSnapshot(ScreenRect rect)
     {
         SnapshotArea = rect;
         LastSnapshot = rect;                                  // RF-070 memoriza
         NotifyChanged();
     }
-    public void ClearSnapshot() => SnapshotArea = null;
 
+    /// <summary>
+    /// Fim do instantâneo: a área era para um único ciclo. Sem limpar,
+    /// o plano continua retornando só ela e "gruda" (tudo traduz o mesmo
+    /// lugar até reiniciar). Chamado no finally do SnapshotAsync.
+    /// </summary>
+    public void ClearSnapshot() => SnapshotArea = null;
     /// <summary>RF-071: tradução não-instantânea apaga a memória do instantâneo.</summary>
     public void BeginNonSnapshotTranslation() => LastSnapshot = null;
 
@@ -195,8 +199,6 @@ public sealed class RegionManager
         public List<ScreenRect> Rects { get; } = new();
         public List<ScreenRect> Exclusions { get; } = new();
         public List<List<int>> GroupsPerRect { get; } = new();
-        /// <summary>Índice reverso (para a sobreposição): 0..N−1 normais, N rápida, +1 mouse.</summary>
-        public List<Guid?> SourceId { get; } = new();
         public bool IsSnapshot { get; set; }
     }
 
@@ -210,7 +212,6 @@ public sealed class RegionManager
         {
             plan.Rects.Add(Align(SnapshotArea!.Value));
             plan.GroupsPerRect.Add(AllGroups());
-            plan.SourceId.Add(null);
             plan.IsSnapshot = true;
         }
 
@@ -220,7 +221,6 @@ public sealed class RegionManager
             {
                 plan.Rects.Add(Align(a.Rect));
                 plan.GroupsPerRect.Add(new List<int>(a.Groups));
-                plan.SourceId.Add(a.Id);
             }
         }
 
@@ -230,14 +230,12 @@ public sealed class RegionManager
         {
             plan.Rects.Add(Align(QuickArea.Rect));
             plan.GroupsPerRect.Add(AllGroups());
-            plan.SourceId.Add(QuickArea.Id);
         }
 
         if (FollowActive && FollowArea.HasValue && (!hasSnap || onlyMouse))
         {
             plan.Rects.Add(Align(FollowArea.Value));
             plan.GroupsPerRect.Add(AllGroups());
-            plan.SourceId.Add(null);
         }
 
         return plan;

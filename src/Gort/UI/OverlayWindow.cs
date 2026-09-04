@@ -33,8 +33,11 @@ public sealed class OverlayWindow : Window
     private readonly Func<Platform.ScreenRect, double> _scaleOf;
     private readonly Image _view = new() { Stretch = Stretch.Fill };
     private readonly OverlayReuseCache _reuse = new();
-    private readonly Dictionary<int, List<OverlayLayout.Item>> _prevItems = new();
-    private readonly Dictionary<string, (float W, float H)> _measure = new();  // RF-374
+    // Medidas por (família, orientação, texto, tamanho): persistem entre
+    // quadros com teto (hit ~100% em texto repetido). Chave inclui a
+    // família para invalidação automática ao trocar de fonte.
+    private readonly Dictionary<(string? Fam, bool Vert, string Text, float Size), (float W, float H)> _measure = new();
+    private const int MeasureCap = 2000;
     private SKBitmap? _canvas;                                                  // RF-379
     private readonly object _drawLock = new();                                  // RF-381
     private bool _running;
@@ -79,7 +82,6 @@ public sealed class OverlayWindow : Window
         {
             // RF-383: limpa, zera acúmulo, libera travas, sincroniza.
             _hasAcc = false;
-            _prevItems.Clear();
             _taskId = (_taskId + 1) % Params.P132_TaskCounterReset;
             _stayTimer?.Stop();
             ClearCanvas();
@@ -93,8 +95,6 @@ public sealed class OverlayWindow : Window
             ClearCanvas();
         }
     }
-
-    public bool IsRunning => _running;
 
     /// <summary>RF-347: atalho de captura → capturável por P-91, sem atualizar.</summary>
     public void SetScreenshotCapture()
@@ -152,7 +152,6 @@ public sealed class OverlayWindow : Window
     private void DrawInner(OverlayFrame frame)
     {
         var p = _cfg.Profile;
-        _measure.Clear();                                          // RF-374: por desenho
         if (frame.Regions.Count == 0) { ClearCanvas(); return; }
 
         // União das áreas × P-92, acumulativa (RF-349/350 🔒).
@@ -236,8 +235,16 @@ public sealed class OverlayWindow : Window
         var p = _cfg.Profile;
         var map = new Dictionary<OverlayLayout.Item, BlockColors>();
         bool auto = p.AutoColorMaster && (p.AutoColorFg || p.AutoColorBg);
+        // A análise usa a imagem e as palavras da REGIÃO inteira: resultado
+        // idêntico para todos os blocos da mesma área — calcula uma vez.
+        var areaCache = new Dictionary<int, BlockColors>();
         foreach (var it in items)
         {
+            if (areaCache.TryGetValue(it.Area, out var cached))
+            {
+                map[it] = cached;
+                continue;
+            }
             var col = new BlockColors
             {
                 Font = (p.TextColor[0], p.TextColor[1], p.TextColor[2]),
@@ -279,6 +286,7 @@ public sealed class OverlayWindow : Window
                 }
             }
             map[it] = col;
+            areaCache[it.Area] = col;
         }
         return map;
     }
@@ -435,7 +443,7 @@ public sealed class OverlayWindow : Window
     {
         var p = _cfg.Profile;
         bool vert = p.KeepDirection && it.Vertical;
-        var (ok0, placed0) = Fit(it, size);
+        var (_, placed0) = Fit(it, size);
         if (!vert)
         {
             int origLines = Math.Max(1, placed0.Count);
@@ -499,13 +507,39 @@ public sealed class OverlayWindow : Window
         return OverlayLayout.Place(it, size, hm, vm, vert);      // RF-376 implícito
     }
 
+    // Fonte resolvida uma vez por família + um SKFont por tamanho.
+    // Evita milhares de FromFamilyName por quadro (só invalida ao trocar).
+    private string? _fontFam;
+    private SKTypeface? _fontFace;
+    private readonly Dictionary<float, SKFont> _fontSizes = new();
+
+    private SKFont FontFor(float size)
+    {
+        string? fam = Family();
+        if (fam != _fontFam)
+        {
+            foreach (var f in _fontSizes.Values) f.Dispose();
+            _fontSizes.Clear();
+            _fontFace?.Dispose();
+            _fontFace = null;
+            _fontFam = fam;
+        }
+        if (!_fontSizes.TryGetValue(size, out var font))
+        {
+            _fontFace ??= SkiaText.ResolveFont(fam);
+            font = new SKFont(_fontFace, size);
+            _fontSizes[size] = font;
+        }
+        return font;
+    }
+
     private float HMeasure(string text, float size)
     {
-        string key = $"h|{text}|{size}";
+        string? fam = Family();
+        var key = (fam, false, text, size);
         if (_measure.TryGetValue(key, out var v)) { _measureHits++; return v.W; }
         _measureMiss++;
-        using var face = SkiaText.ResolveFont(Family());
-        using var font = new SKFont(face, size);
+        var font = FontFor(size);
         float wPath = 0;
         try
         {
@@ -515,17 +549,18 @@ public sealed class OverlayWindow : Window
         }
         catch { }
         float w = Math.Max(wPath, font.MeasureText(text));      // RF-373
+        if (_measure.Count >= MeasureCap) _measure.Clear();
         _measure[key] = (w, size);
         return w;
     }
 
     private float VMeasure(string text, float size)
     {
-        string key = $"v|{text}|{size}";
+        string? fam = Family();
+        var key = (fam, true, text, size);
         if (_measure.TryGetValue(key, out var v)) { _measureHits++; return v.H; }
         _measureMiss++;
-        using var face = SkiaText.ResolveFont(Family());
-        using var font = new SKFont(face, size);
+        var font = FontFor(size);
         float hPath = 0;
         try
         {
@@ -536,6 +571,7 @@ public sealed class OverlayWindow : Window
         catch { }
         float stacked = text.Length * size * (float)Core.Params.P98_LineAdvance;
         float h = Math.Max(hPath, stacked);                      // RF-373 + empilhado
+        if (_measure.Count >= MeasureCap) _measure.Clear();
         _measure[key] = (size, h);
         return h;
     }
@@ -599,7 +635,8 @@ public sealed class OverlayWindow : Window
                 if (!vert)
                     DrawOutlined(canvas, text,
                         (float)(lx * s), (float)(ly * s),
-                        face, (float)(it.FontPx * s), fill, c1, c2);
+                        face, (float)(it.FontPx * s), fill, c1, c2,
+                        p.OverlayOutline);
                 else
                 {
                     // Vertical: empilha caracteres de cima para baixo.
@@ -608,7 +645,8 @@ public sealed class OverlayWindow : Window
                         DrawOutlined(canvas, text[i].ToString(),
                             (float)(lx * s),
                             (float)(ly * s + i * adv),
-                            face, (float)(it.FontPx * s), fill, c1, c2);
+                            face, (float)(it.FontPx * s), fill, c1, c2,
+                            p.OverlayOutline);
                 }
             }
         }
@@ -682,7 +720,8 @@ public sealed class OverlayWindow : Window
     }
 
     private static void DrawOutlined(SKCanvas canvas, string text, float x, float y,
-        SKTypeface face, float size, SKColor fill, SKColor c1, SKColor c2)
+        SKTypeface face, float size, SKColor fill, SKColor c1, SKColor c2,
+        bool outline)
     {
         using var font = new SKFont(face, size);
         using var pFill = new SKPaint
@@ -690,7 +729,7 @@ public sealed class OverlayWindow : Window
             Color = fill,
             IsAntialias = true, StrokeJoin = SKStrokeJoin.Round,   // RF-386
         };
-        if (SkiaText.VectorOk)
+        if (outline && SkiaText.VectorOk)
         {
             using var pIn = new SKPaint
             {

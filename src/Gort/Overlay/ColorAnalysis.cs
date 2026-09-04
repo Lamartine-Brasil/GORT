@@ -17,7 +17,6 @@ public static class ColorAnalysis
     {
         public (byte R, byte G, byte B) Font;
         public (byte R, byte G, byte B) Background;
-        public int WordSupport;
         public double Contrast;
         public bool UsedFallback;
         public bool ContrastFixed;
@@ -127,7 +126,7 @@ public static class ColorAnalysis
             };
         }
         // Estratégia 3 — dominante do bloco (RF-403).
-        var dom = Dominant(bgra, w, h, ch, x1, y1, x2, y2, Params.P105_MaxSamplesBg);
+        var dom = Dominant(bgra, w, ch, x1, y1, x2, y2, Params.P105_MaxSamplesBg);
         if (dom is null) return null;                                // RF-404
         return new BgResult { Color = dom.Value, PerWord = perWord };
     }
@@ -168,7 +167,7 @@ public static class ColorAnalysis
         Math.Max(1, (int)Math.Ceiling(Math.Sqrt(area / (double)max)));  // RF-396
 
     private static (byte R, byte G, byte B)? DominantIn(
-        byte[] bgra, int w, int h, int ch, int x1, int y1, int x2, int y2,
+        byte[] bgra, int w, int ch, int x1, int y1, int x2, int y2,
         int maxSamples, out int pop)
     {
         var buckets = new Dictionary<int, Bucket>();
@@ -206,7 +205,7 @@ public static class ColorAnalysis
         var groups = new Dictionary<int, (long R, long G, long B, int N, int Corners, int Pop)>();
         foreach (var pr in probes)
         {
-            var d = DominantIn(bgra, w, h, ch, pr.X1, pr.Y1, pr.X2, pr.Y2,
+            var d = DominantIn(bgra, w, ch, pr.X1, pr.Y1, pr.X2, pr.Y2,
                 Params.P106_MaxSamplesWord, out int pop);
             if (d is null || pop == 0) continue;
             int k = Key(d.Value.R, d.Value.G, d.Value.B);
@@ -238,7 +237,7 @@ public static class ColorAnalysis
         int wordCount)
     {
         var groups = new Dictionary<int, (long R, long G, long B, int Words, int Probes, int Pop)>();
-        foreach (var (_, c, corners, probes, pop) in votes)
+        foreach (var (_, c, _, probes, pop) in votes)
         {
             int k = Key(c.Item1, c.Item2, c.Item3);
             if (!groups.TryGetValue(k, out var g)) g = (0, 0, 0, 0, 0, 0);
@@ -289,7 +288,7 @@ public static class ColorAnalysis
                 if (!buckets.TryGetValue(k, out var bk)) { bk = new Bucket(); buckets[k] = bk; }
                 bk.R += r; bk.G += g; bk.B += b; bk.Count++;
             }
-        int bkk = -1, bc = -1, bp = -1;
+        int bkk = -1, bc = -1;
         foreach (var (k, v) in buckets)
             if (v.Count > bc || (v.Count == bc && k < bkk)) { bkk = k; bc = v.Count; }
         if (bkk < 0) return null;
@@ -297,9 +296,9 @@ public static class ColorAnalysis
         return ((byte)(f.R / f.Count), (byte)(f.G / f.Count), (byte)(f.B / f.Count));
     }
 
-    private static (byte R, byte G, byte B)? Dominant(byte[] bgra, int w, int h, int ch,
+    private static (byte R, byte G, byte B)? Dominant(byte[] bgra, int w, int ch,
         int x1, int y1, int x2, int y2, int max) =>
-        DominantIn(bgra, w, h, ch, x1, y1, x2, y2, max, out _);
+        DominantIn(bgra, w, ch, x1, y1, x2, y2, max, out _);
 
     // ---- fonte (RF-405..411) ----
 
@@ -350,7 +349,6 @@ public static class ColorAnalysis
         {
             var f = buckets[bkk];
             pick = ((byte)(f.R / f.Count), (byte)(f.G / f.Count), (byte)(f.B / f.Count));
-            res.WordSupport = f.WordIds.Count;
         }
         res.Contrast = ContrastRatio(pick, bg);
         if (res.Contrast < Params.P115_MinContrast)                // RF-410

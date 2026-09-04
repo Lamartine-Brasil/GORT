@@ -65,11 +65,6 @@ public sealed class LayerWindow : Window
 
     // ---- geometria persistida (RF-340) ----
 
-    public void RestorePosition(int x, int y)
-    {
-        Position = new PixelPoint(x, y);
-    }
-
     public void SaveGeometry()
     {
         var p = _cfg.Profile;
@@ -111,8 +106,6 @@ public sealed class LayerWindow : Window
         Platform.GuiFx.SetClickThrough(this, transparent);  // C7 (por SO)
         Render();
     }
-
-    public bool IsRunning => _running;
 
     /// <summary>Mensagem de aviso temporária prefixada (RF-342/343).</summary>
     public void ShowWarning(string text, int seconds)
@@ -265,7 +258,7 @@ public sealed class LayerWindow : Window
             SkiaText.DrawOutlined(canvas, lines,
                 (float)(Core.Params.P86_LayerMargin * scale), y,
                 face, sizePx, ToSk(p.TextColor), ToSk(p.Outline1), ToSk(p.Outline2),
-                align, Math.Max(1, maxW));
+                align, Math.Max(1, maxW), p.OverlayOutline);
         }
 
         var wb = new WriteableBitmap(new PixelSize(pw, ph), new Vector(96, 96),

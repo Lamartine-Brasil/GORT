@@ -1,12 +1,6 @@
 key,pt-BR
 tab.basic,Configuração básica
 tab.text,Texto
-tab.extra,Configuração adicional
-tab.translation,Tradução
-tab.other,Outros
-tab.quick,Configuração rápida
-tab.debug,Depuração
-ocr.engine,Motor de OCR
 ocr.show_result,Exibir resultado do OCR
 ocr.save_file,Gravar resultado em arquivo
 ocr.copy_clipboard,Copiar para a área de transferência
@@ -28,7 +22,6 @@ tr.manage_keys,Gerenciar chaves
 tr.sheet,Planilha
 tr.client_id,Identificador de cliente
 tr.clear_tokens,Apagar todos os tokens
-tr.browser_state,Estado do navegador
 tr.check_state,Verificar estado
 tr.eu_key,Chave
 tr.endpoint_free,Endpoint gratuito
@@ -37,7 +30,6 @@ tr.llm_key,Chave
 tr.llm_model,Modelo
 tr.custom_hint,Configure os presets nas opções avançadas
 dict.use,Usar dicionário
-dict.file,Arquivo
 dict.by_word,Por palavra
 dict.passes,Passadas adicionais
 img.filter_rgb,RGB exato
@@ -46,7 +38,6 @@ img.filter_threshold,Limiar
 img.erode,Erosão
 img.view_result,Ver resultado da imagem
 img.group,Grupo de cor
-img.zoom,Ampliação
 img.zoom_default,Restaurar padrão
 text.font,Fonte…
 text.size,Tamanho
@@ -75,8 +66,7 @@ advanced.restore,Restaurar padrões
 app.check_update,Verificar a última versão ao iniciar
 app.basic_default,Começar na Configuração rápida
 apply,Aplicar
-donate,Doar
-memory.title,Memória em uso
+memory.title,Memória e CPU em uso
 tts.enable,Leitura em voz alta
 tts.wait,Aguardar fim da leitura
 hotkeys.title,Atalhos
@@ -148,7 +138,6 @@ adv.db_ignore_case,Ignorar maiúsculas
 adv.tr_title,Tradução
 adv.bridge,Tradução ponte
 adv.fallback_alt,Tradutor alternativo em caso de erro
-adv.custom_list,Presets de API personalizada
 adv.add,Adicionar
 adv.remove,Remover
 adv.custom_url,URL
@@ -170,23 +159,11 @@ adv.clip_orig,Exibir original
 adv.clip_working,Exibir "traduzindo"
 adv.clip_format,Formato da cópia
 adv.ocr_title,OCR
-adv.cloud_limit,Limite mensal
 adv.dict_title,Dicionário
-about.title,Sobre
-about.version,Versão
-remote.area,Definir área
-remote.snap,Instantâneo
-remote.start,Iniciar
-remote.stop,Parar
-remote.settings,Configurações
-areas.title,Gerenciamento de áreas
-areas.add,Adicionar área
-areas.add_excl,Adicionar exclusão
-areas.clear,Limpar tudo
-areas.apply,Aplicar
 exit.title,Sair do GORT?
 exit.question,Encerrar o programa?
-exit.yes,Sair
+exit.yes,Sair de verdade
 exit.no,Cancelar
+exit.minimize,Minimizar na bandeja
 msg.applied,Configuração aplicada e salva.
-no_area.title,Sem área de OCR
+no_area.title,Não há nenhuma área de OCR.
