@@ -1,161 +1,74 @@
-# AGENTS.md — guia obrigatório para IAs trabalhando neste repo
+# AGENTS.md — guia da IA (leia 1º; contexto novo começa aqui)
 
-> O programa está CONSTRUÍDO e funcionando. A partir daqui é só
-> REFINO (código bonito, textos PT-BR, visual). Nada de reforma,
-> nada de arquitetura nova. A spec antiga (`instrucoes.md`) foi
-> removida de propósito pelo dono — não recrie, não restaure.
->
-> SE VOCÊ ACABOU DE CHEGAR (contexto novo): leia as seções
-> "Estado atual", "Comandos" e "Regras de ferro". O resto é referência.
+> Programa PRONTO e funcionando: só REFINO (visual, PT-BR, textos).
+> Sem reforma/arquitetura nova. `instrucoes.md` removida pelo dono:
+> não recrie. Dono/autor único: **Lamartine Barbosa**.
 
-## Estado atual (04/09/2026 — continuar daqui)
+## Estado (04/09/2026)
 
-- **Build:** 0 erros. **Testes: 207/207 verdes** (201 `Gort.Tests` + 6
-  `Gort.VisualTests`). **Warnings:** zero `CS0618`/`xUnit`; restam só
-  nullable pré-existentes (`CS8602` etc.) — não caçar sem motivo.
-- **Git:** repo `https://github.com/Lamartine-Brasil/GORT`, branch `master`.
-  Commits: `1.0` + `Links para o repositorio + contribuidor unico`.
-  Dono configurou `user.name/email` local. Sem push/commit sem pedido.
-- **Publicado em:** `releases/windows-x64/Gort.exe` (última versão sempre
-  aqui, publicada por cima após limpar a pasta).
-- **Últimos ciclos feitos:** teto de threads ONNX (4) + descarte de quadros
-  parados por hash + `Sleep(1)` no anexo (CPU); `SnapshotArea` limpa no
-  `finally` (bug do instantâneo grudado); saída com 3 botões
-  (`App.ExitApp()` público); contorno unificado em `Profile.OverlayOutline`
-  (default true) com checkbox em Mostrar; `SetLangCombo`; `ApplyHint`
-  inline; CPU no rodapé; 403 tratado como 429; banco avisa se vazio;
-  planilha com troca de código; `gemini-3.5-flash-lite` na lista;
-  varredura de mortos (50 frentes) + testes reescritos p/ estado atual.
-- **Último ciclo (visual EXCELENTE):** crash de recursão nos presets
-  corrigido com trava; anexador mais largo com quebra; serviço LLM
-  renomeado p/ Gemini com placeholder/ajuda/indicador de chave salva;
-  `LlmCustom` só com custom; `Testar chave…`; `OnApply` fora da UI;
-  `LlmDefaultModel` = 3.5-flash-lite.
-- **Último ciclo (comportamento):** saída estreia fora das áreas
-  (`PlaceOutside`, tela cheia → inf-direita); camada usa piso de fonte
-  configurável (`AutoMinPt`, absoluto 6); parar fecha a saída
-  (`HideAll`, pontual preservado); **padrão = camada**; roadmap em
-  `docs/ROADMAP.md` (Fase 1: OCR ignora saída; Fase 2: sobreposição
-  substitutiva como modo novo).
-- **Pausado pelo dono (não mexer sem pedido):** otimizações bloco 2 de
-  `docs/sugestoes-ocr.md` (itens 7–24); migração restante é só refino.
+- **Build 0 erros · 207/207 testes verdes** (201+6) · zero warnings
+  `CS0618`/`xUnit` (só nullable antigos — não caçar).
+- **Git:** `Lamartine-Brasil/GORT`, `master`, commits `1.0` + links.
+  Sem commit/push/PR sem pedido. `user.name/email` local ok.
+- **Versão:** 1.3 (`csproj`; Sobre/splash/rodapé automáticos).
+- **Publicado:** `releases/windows-x64/Gort.exe` (sempre última versão,
+  limpar pasta antes; NUNCA publicar com exe rodando — trava o dll).
+- **Feito recente:** CPU (ONNX≤4 threads, hash-skip, `Sleep(1)`); snapshot
+  limpa no `finally`; saída 3 botões (`ExitApp` público); contorno em
+  `Profile.OverlayOutline=true`; `SetLangCombo`; `ApplyHint` 2,5s; CPU no
+  rodapé; 403→baixa; banco/planilha orientam; Gemini padrão 3.5-flash-lite
+  (`LlmDefaultModel`); `Testar chave…`; `OnApply` fora da UI; remoto com
+  ícones (`IRemoteHost`); janelas independentes (sem `Show(owner)`);
+  `PlaceOutside`; piso `AutoMinPt` (abs 6); `HideAll` ao parar; padrão
+  **camada**; modo novo **Substituição** (`replace`); 403→baixa; saída
+  fora da captura (exclusão); mortos removidos (50 frentes);
+  caça-bugs corrigido; `RemoteWindow` sem botão duplicado.
+- **Pausado (não mexer):** bloco 2 OCR; resto é refino.
 
-## O projeto em 30 segundos
+## Projeto
 
-- **GORT - Game Ocr RealTime**: tradutor de tela em tempo real,
-  **Avalonia UI + .NET 9**, **multiplataforma** (Windows / Linux / macOS),
-  interface em **PT-BR**. Japonês e inglês → PT-BR.
-- `src/Gort/` — aplicativo (~25 pastas: `Lifecycle`, `Loop`, `Ocr`,
-  `Translate`, `UI`, `Overlay`, `Regions`, `Locale`, ...).
-- `src/Gort.Tests/` — 198 testes xUnit. `src/Gort.VisualTests/` — 6 testes
-  de render headless (PNGs em `releases/visual-tests/`, nunca no TEMP).
-- `src/Directory.Build.props` — centraliza `bin/`+`obj/` em
-  `releases/build/` (`ArtifactsPath`). `src/` tem SÓ código-fonte.
-- `releases/` — TODA saída gerada: `windows-x64/` (versão única,
-  completa), `visual-tests/`, `test-results/`, `build/`. Ignorado no git
-  (só o PUBLICAR.md é versionado). Regra do dono: SEMPRE só a última
-  versão — limpar a pasta da plataforma antes de republicar, nunca `v2/`
-  ou `-copia/`. (A variante leve sem .NET foi descartada: 247 MB está bom.)
-- `docs/` — `imagens/` (10 PNGs curatorados do README, versionados) +
-  `sugestoes-ocr.md` (24 ideias numeradas, itens 1–6 feitos).
-- `README.md` (raiz) — página do GitHub em PT-BR (autor único, só links
-  do dono). Criado via pipeline 3 criadores + 3 revisores + 1 aprovador;
-  manter o padrão em refinos futuros.
+- **GORT - Game Ocr RealTime**, Avalonia + .NET 9, Win/Linux/macOS, PT-BR.
+- `src/Gort/` app · `src/Gort.Tests/` · `src/Gort.VisualTests/` (PNGs em
+  `releases/visual-tests/`).
+- `src/Directory.Build.props` → tudo gerado em `releases/build/`.
+  `src/` = SÓ fonte. `releases/` = tudo gerado (só `PUBLICAR.md` no git).
+- `docs/imagens/` = 10 PNGs do README (versionados).
+- `README.md` raiz = página GitHub PT-BR (pipeline 3+3+1).
 
-## Comandos (Windows PowerShell 5.1, `workdir=.../src`)
+## Comandos (`workdir=.../src`, PowerShell 5.1, `; if ($?)`, sem `cd`)
 
 ```powershell
 dotnet build Gort.sln -c Release --nologo -v q
 dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../releases/test-results
 ```
 
-- Encadear com `; if ($?) { ... }` (sem `&&`). Não usar `cd`; usar `workdir`.
-- Operações de arquivo: ferramentas dedicadas (`read`/`edit`/`write`/
-  `glob`/`grep`), nunca `bash` para ler/editar/criar arquivos.
-- Publicar: limpar `../releases/windows-x64` antes; `dotnet publish
-  Gort/Gort.csproj -c Release -r win-x64 --self-contained true
-  -o ../releases/windows-x64`. NÃO publicar se o `Gort.exe` estiver
-  rodando (trava o `.dll` — pedir ao dono fechar com Sair de verdade).
+## Regras de ferro
 
-## Regras de ferro (todas aprendidas na marra)
+1. **Imagens ≤5 por lote** (50+ travou o VC). Ler código antes; só PNGs necessárias.
+2. **Multiplataforma:** nada de Windows fora de `Platform/`. Ícones =
+   vetores Avalonia, nunca fonte externa.
+3. **🔒/RF-xxx**: não recalibrar. Conjuntos = dados (`Catalogs.cs`).
+4. **Laço síncrono 1 thread** (RF-009); mudança com laço vivo via
+   `Controller.ApplyChange` (RF-012); nunca modal do laço (P2).
+5. **PT-BR** sem abreviação/inglês/`ê` corrompido (grep ` ê `). Glossário:
+   Área de OCR, Laço, Sobreposição, Camada, Escuro, Modo pontual.
+6. Mudou → compilou → testou. Revisão: Task com **≥2 validadores**
+   só-leitura + limite de imagens no prompt.
+7. Sem git sem pedido. `.gitignore` protege `Debug/`-fonte e `Assets/`.
+8. **Fim do ciclo: grave o aprendizado aqui.**
 
-1. **IMAGENS: no máximo 5–10 por lote.** Ler 50+ imagens travou o VC
-   (sessão perdida). Renders de teste: ler o CÓDIGO primeiro, abrir só as
-   PNGs necessárias, em lotes de ≤5.
-2. **Multiplataforma sempre.** Nenhuma dependência de Windows fora de
-   `Platform/` (que isola por SO com guardas `IsWindows()` etc.).
-   Ícones: vetores do Avalonia (`Shapes`/`Path`/`Geometry`), nunca fonte
-   de ícones externa. `RemoteWindow` usa `IRemoteHost` (stub no teste
-   headless) — nunca volte a exigir `App` real no construtor.
-   Janelas de tradução são independentes da principal (sem dono): nunca
-   usar `Show(owner)` — minimizar uma não pode minimizar a outra.
-3. **Números com 🔒 e `RF-xxx` vêm da spec original** (hoje vivem em
-   `Core/Params.cs` e nos comentários do código). Não "melhorar" valor
-   calibrado. Conjuntos (idiomas, motores, serviços) são dados
-   (`Config/Catalogs.cs`), nunca código no núcleo.
-4. **Laço de tradução é síncrono numa thread dedicada** (RF-009). Mudança
-   de config com laço vivo: `Controller.ApplyChange(..., P03)` (RF-012).
-   Nunca modal/foco roubado a partir do laço (P2).
-5. **Textos da UI em PT-BR**, seguindo o glossário do produto
-   (Área de OCR, Laço, Sobreposição, Camada, Escuro, Modo pontual...).
-   Sem abreviações (`Cfg`, `Grp`, `Snap`), sem inglês cru, sem `ê`
-   corrompido (era `—` mal decodificado; grep por ` ê ` após mexer em texto).
-6. **Implementou → compilou → testou.** `dotnet test` após cada mudança.
-   Para revisão: criar agentes (Task) sendo **≥2 só-validadores**
-   (só leitura, sem editar), com limite de imagens explícito no prompt.
-7. **Git:** sem commits, amend, push ou PR sem pedido explícito.
-   `.gitignore` protege `src/Gort/Debug/` (fonte!) e `Assets/` — não
-   reintroduzir `debug/` genérico nem `*.png` sem exceção.
-8. **Ao final de cada ciclo, grave o aprendizado aqui.** Se descobrir
-   algo que a próxima IA precisaria saber (pegadinha, caminho, comando,
-   decisão do dono), edite este AGENTS.md antes de encerrar.
+## Pegadinhas
 
-## Pegadinhas conhecidas
-
-- `Bitmap.Save` exige `PngBitmapEncoderOptions.Default`; teste headless usa
-  `.GetAwaiter().GetResult()` com pragma `xUnit1031` justificado (RF-009).
-- Testes nunca assumem `bin/` local: localizar a raiz subindo até achar
-  `src/Gort.sln` (com fallback), pois o build é centralizado em
-  `releases/build/` (`HardeningTests.SrcDir`, `VisualRenderTests.OutDir`).
-- `SkiaText` usa `SKFont` (não `SKPaint.TextSize`); `Wrap` recebe `SKFont`.
-- `NativeMenuItem` usa `MenuItemToggleType.CheckBox`; `IsChecked` é
-  definido por código (menu nativo varia por SO).
-- `DarkWindow` evita eco duplo `OCR: OCR:`; `_status` tem `MinHeight`.
-- Rodapé mostra `Memória: X MB · CPU: Y%` (CPU por delta de
-  `TotalProcessorTime`/núcleos no `_memTimer` de 2 s — sem API de SO).
-- `tmp-remote.png` era artefato manual obsoleto (apagado); `remote.png`
-  agora é gerado pelo teste `Render_AuxWindows`.
-- Diálogo de saída tem 3 botões (sair de verdade = `App.ExitApp()` público,
-  que encerra tudo; fechar a principal com outra janela aberta não sai).
-- Contorno de texto é `Profile.OverlayOutline` (default true); o antigo
-  `AdvancedOptions.OverlayOutline` era morto (escrevia sem leitura).
-- `SnapshotArea` limpa no `finally` do `SnapshotAsync` (sem isso gruda).
-- Combos de idioma com 1 opção ficam desabilitados com tooltip
-  (`SetLangCombo`); fonte da verdade continua nos rádios en/ja.
-- Aplicar confirma inline no rodapé (`ApplyHint`, some em 2,5 s) —
-  nunca modal a partir do Aplicar.
-- Listas com `SelectionChanged` que recarregam `ItemsSource` precisam de
-  trava de reentrância (senão: recursão → estouro de pilha → fecha o app).
-- Serviço LLM se chama `Gemini (modelo de linguagem)` (padrão 3.5-flash-lite).
-- `selection.png` em branco é esperado (overlay transparente sem arrasto).
-- Modelos OCR vêm do NuGet (`models/` copiado no publish) — não versionar.
-- Varredura de código morto concluída (50 frentes): suite de testes reflete
-  o estado atual; não ressuscitar membros removidos sem checar uso real.
-- Caça-bugs (50 frentes) corrigido: pontual via `MakeSink`, overlay com
-  efeitos, guards de geometria/índice, `Dispose` de bitmap/processo/Http,
-  TOML e downloads tmp+rename, travas de concorrência, marshalling Mac,
-  captura Linux/Windows; morto sem teste continua morto (não religar).
-- CPU: ONNX limitado a 4 threads (`OcrThreadCount`); quadros parados pulam
-  OCR via hash FNV + fingerprint (qualquer mudança de config invalida);
-  `ChangeTracker` textual continua decidindo o redesenho.
-- Web gratuito: 403 tratado como 429 (cai p/ baixa); baixa bloqueada =
-  mensagem p/ aguardar ou trocar de serviço.
-- Chaves (GEMINI etc.) vão em `creds-<serviço>.toml` via Aplicar/KeyManager,
-  na pasta de dados (fora do repo); `.gitignore` barra `creds-*.toml`;
-  nunca hardcoded, nunca `.env`. Instrução do LLM é calibrada (não mexer).
-- Dono/autor único: **Lamartine Barbosa** (`csproj Authors` + Sobre +
-  `README.md#Contribuidores`).
-  TODOS os links externos apontam para `https://github.com/Lamartine-Brasil/GORT`
-  (`Catalogs.Links`, `Update.Dist`) — inclusive doações e atualização;
-  ele ajusta os destinos depois. Não reintroduzir `gort.app`.
-- Fonte padrão 14 pt (decisão do dono; era 15).
+- `Bitmap.Save` c/ `PngBitmapEncoderOptions.Default`; `xUnit1031` c/ pragma (RF-009).
+- Raiz dos testes: subir até `src/Gort.sln` (build centralizado).
+- `SKFont`, `Wrap(SKFont)`; `MenuItemToggleType.CheckBox` + `IsChecked` em código.
+- `DarkWindow` sem eco `OCR: OCR:`; `_status` c/ `MinHeight`.
+- Rodapé `Memória: X MB · CPU: Y%` (delta `TotalProcessorTime`, 2 s).
+- Saída 3 botões; `ExitApp()` encerra tudo.
+- `SnapshotArea` limpa no `finally`; combos 1 opção desabilitados (`SetLangCombo`).
+- `ApplyHint` inline 2,5 s, nunca modal.
+- `selection.png` em branco = esperado. Modelos OCR do NuGet (não versionar).
+- Chaves em `creds-*.toml` (pasta de dados, fora do repo, gitignore); nunca hardcode/`.env`. Instrução LLM calibrada.
+- Links todos → `github.com/Lamartine-Brasil/GORT` (menos download .NET no README). Sem `gort.app`.
+- Fonte padrão 14 pt (dono; era 15). Lista `SelectionChanged`+`ItemsSource` = trava reentrância.
+- Serviço LLM = `Gemini (modelo de linguagem)`.

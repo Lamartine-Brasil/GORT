@@ -1,96 +1,106 @@
-# GORT - Game Ocr RealTime
+<p align="center">
+  <img src="src/Gort/Assets/logo-512.png" width="160" alt="GORT">
+</p>
 
-> Tradutor de tela em tempo real: japonês e inglês direto para PT-BR,
-> sobre a imagem original. Sem sair do jogo, do mangá, do navegador
-> ou do aplicativo.
+<h1 align="center">GORT - Game Ocr RealTime</h1>
 
-O **GORT** captura áreas da tela com OCR, traduz o texto reconhecido e exibe
-o resultado em português brasileiro na janela de tradução.
+<p align="center">
+  Jogando algo em japonês ou inglês e não entende nada?
+  <br>
+  O <b>GORT</b> lê o texto da tela e mostra a tradução em português
+  <b>na hora</b>, sem você sair do jogo.
+</p>
 
-Fluxo básico: **Área de OCR → Motor de OCR → Serviço de tradução → Janela de tradução**.
+---
 
-## Recursos principais
+## O que é, em poucas palavras
 
-- **Laço de tradução** (contínuo) e **Modo pontual** (traduzir uma vez, instantâneo).
-- **Áreas de OCR**: várias áreas, áreas de exclusão, área rápida temporária e área que segue o mouse.
-- **Motores de OCR**: moderno embarcado, sistema operacional, local clássico, ambiente interpretado e nuvem (somente modo pontual).
-- **Serviços de tradução**: Google Tradutor (web gratuito), banco de dados local, web sem chave, comerciais por chave (KR/EU), planilha em nuvem, navegador embutido, modelo de linguagem, processo auxiliar local e API personalizada.
-- **Dicionário de correção**, coletânea de tradução e memória de resultados.
-- **Leitura em voz alta** do resultado.
-- **Controle remoto**: barrinha com Áreas, Rápida, Instantâneo, Traduzir/Parar e Ajustes.
-- **Interface em PT-BR**, com aplicação e salvamento pelo botão **Aplicar**.
-
-## Modos de janela
-
-| Modo | Uso |
-|---|---|
-| **Sobreposição** | Tradução desenhada sobre o texto original, no mesmo lugar. |
-| **Camada** | Janela transparente posicionável, com contorno duplo de leitura. |
-| **Escuro** | Janela com fundo escuro e texto rolável, ideal para textos longos. |
-| **Substituição** | Como a sobreposição, mas cobre o original com fundo opaco. |
-
-Opções comuns: sempre no topo, tamanho automático de fonte e contorno.
-
-## Telas
-
-Janela principal (abas Traduzir, Ler e Dicionário e idiomas):
+Você marca **onde** o texto aparece na tela. O GORT fotografa aquele
+pedacinho o tempo todo, reconhece as letras, traduz e mostra o resultado
+em português. Funciona com jogos, programas antigos e qualquer janela que
+mostre texto como imagem.
 
 ![Aba Traduzir](docs/imagens/01-aba-traduzir.png)
+
+## Começando em 3 passos
+
+**1. Marque a área** — clique em **Áreas** e arraste um retângulo sobre a
+caixa de diálogo do jogo.
+
+**2. Aperte Traduzir** — clique em **Traduzir** (ou `Ctrl+Shift+Z`). Pronto,
+a tradução aparece sozinha a cada fala nova.
+
+**3. Ajuste se precisar** — troque o serviço de tradução, a velocidade ou
+a aparência, e clique em **Aplicar**.
+
 ![Aba Ler](docs/imagens/02-aba-ler.png)
-![Aba Dicionário e idiomas](docs/imagens/03-aba-dicionario.png)
 
-Abas Mostrar, Avançado e Sistema:
+## O controle remoto
 
-![Aba Mostrar](docs/imagens/04-aba-mostrar.png)
-![Aba Avançado](docs/imagens/05-aba-avancado.png)
-![Aba Sistema](docs/imagens/06-aba-sistema.png)
+Aquela barrinha pequena que fica por cima de tudo, sempre à mão:
 
-Os três modos de tradução:
+![Controle remoto](docs/imagens/07-controle-remoto.png)
+
+| Botão | Serve para |
+|---|---|
+| **Áreas** | Gerenciar as regiões que serão lidas |
+| **Rápida** | Ler um pedaço novo rapidinho, sem salvar |
+| **Instantâneo** | Traduzir um trecho agora, uma única vez |
+| **Traduzir** | Liga/desliga (fica verde traduzindo) |
+| **Ajustes** | Abre as configurações |
+
+Ela pode ser arrastada, redimensionada pelo canto e escondida pelo `×`
+(o programa continua rodando).
+
+## De olho na tela: 4 jeitos de ver a tradução
+
+| Modo | Como fica |
+|---|---|
+| **Camada** (padrão) | Texto flutuante numa janela transparente, fora da área do jogo |
+| **Sobreposição** | Texto desenhado em cima do original, no mesmo lugar |
+| **Substituição** | Como a sobreposição, mas tampando o original com fundo |
+| **Escuro** | Janelinha escura com o texto, ideal para ler bastante coisa |
 
 ![Modo Escuro](docs/imagens/08-modo-escuro.png)
 ![Modo Camada](docs/imagens/09-modo-camada.png)
 ![Modo Sobreposição](docs/imagens/10-modo-sobreposicao.png)
 
-## Sobre o controle remoto
+## As telas do programa
 
-![Controle remoto](docs/imagens/07-controle-remoto.png)
+Tudo em português, organizado em abas: Traduzir, Ler, Dicionário e
+idiomas, Mostrar, Avançado e Sistema.
 
-O controle remoto é a barrinha que fica sempre à mão enquanto você usa
-outro programa. Cinco botões, cada um com ícone e nome:
+![Aba Dicionário](docs/imagens/03-aba-dicionario.png)
+![Aba Mostrar](docs/imagens/04-aba-mostrar.png)
+![Aba Avançado](docs/imagens/05-aba-avancado.png)
+![Aba Sistema](docs/imagens/06-aba-sistema.png)
 
-| Botão | O que faz |
+## Perguntas de quem está começando
+
+**Precisa de internet?** Para traduzir pelo Google, sim. O dicionário e o
+banco de dados funcionam sem internet.
+
+**Pesa no jogo?** O rodapé mostra memória e CPU ao vivo. O programa evita
+trabalho repetido (se a tela não mudou, ele nem processa de novo) e usa
+no máximo 4 núcleos na leitura do texto.
+
+**Tela cheia funciona?** Use o jogo em modo janela ou janela sem borda.
+Tela cheia exclusiva não dá para capturar.
+
+**Onde ficam meus dados?** Na sua máquina: perfis, dicionários e chaves
+(em arquivos de texto simples, nada vai para a nuvem além da tradução).
+
+**E minha chave do Google (Gemini)?** Fica só no seu computador, num
+arquivo separado que nunca entra no GitHub. Na aba Traduzir tem botão
+**Testar chave…** para conferir na hora.
+
+## Atalhos que valem ouro
+
+| Aperte | Acontece |
 |---|---|
-| **Áreas** | Abre o gerenciamento de áreas de OCR (desenhar, mover, excluir). |
-| **Rápida** | Cria uma área temporária que não é salva (`Ctrl+Shift+X`). |
-| **Instantâneo** | Traduz um trecho agora, uma única vez (`Ctrl+Shift+A`). |
-| **Traduzir** | Inicia o laço; vira **Parar** (verde) enquanto traduz (`Ctrl+Shift+Z`). |
-| **Ajustes** | Abre a janela principal de configurações. |
-
-Detalhes úteis: a barrinha pode ser arrastada por qualquer ponto e
-redimensionada pelo canto (mantém a proporção); o `×` do título só a
-esconde — o programa continua rodando; passar o mouse mostra o que cada
-botão faz mais o atalho.
-
-## Como usar
-
-1. Clique em **Áreas** e arraste na tela o retângulo onde o texto aparece.
-2. Na aba **Traduzir**, escolha o serviço de tradução. Na aba **Ler**, escolha o motor de OCR.
-3. Na aba **Mostrar**, escolha a janela: Sobreposição, Camada ou Escuro.
-4. Clique em **Traduzir** (ou `Ctrl+Shift+Z`) para iniciar o laço.
-5. Para um trecho isolado: **Instantâneo** (`Ctrl+Shift+A`).
-6. Para algo temporário sob o cursor: **Rápida** (`Ctrl+Shift+X`) ou a área que segue o mouse (`Ctrl+Shift+F`).
-7. Mudou alguma opção? Clique em **Aplicar**.
-
-## Atalhos
-
-| Atalho | Ação |
-|---|---|
-| `Ctrl+Shift+Z` | Iniciar / parar tradução |
-| `Ctrl+Shift+C` | Traduzir uma vez |
-| `Ctrl+Shift+A` | Área instantânea |
-| `Ctrl+Shift+X` | Área rápida |
-| `Ctrl+Shift+S` | Abrir editor de dicionário |
-| `Ctrl+Shift+D` | Ocultar / exibir janela |
+| `Ctrl+Shift+Z` | Liga / desliga a tradução |
+| `Ctrl+Shift+A` | Traduz um trecho agora |
+| `Ctrl+Shift+X` | Área rápida temporária |
 | `Ctrl+Shift+F` | Área que segue o mouse |
 
 ## Baixar e instalar (Windows)
@@ -98,74 +108,30 @@ botão faz mais o atalho.
 Na página de releases do GitHub, baixe o `Gort.exe` e execute — a versão
 é completa (com o .NET junto) e não precisa instalar nada.
 
-## Requisitos (para compilar)
+---
 
-- SDK do .NET 9 instalado.
-- Windows x64, Linux x64, macOS x64 ou macOS ARM64 (Apple Silicon).
+<details>
+<summary><b>Para desenvolvedores (compilar do código)</b></summary>
 
-## Instalação por plataforma (para compilar)
-
-Comandos a partir da pasta `src/`. A saída vai para `releases/`, que guarda
-sempre só a última versão publicada.
-
-```powershell
-# Versão COMPLETA (com .NET junto)
-Remove-Item ../releases/windows-x64 -Recurse -Force -ErrorAction SilentlyContinue
-dotnet publish Gort/Gort.csproj -c Release -r win-x64 --self-contained true -o ../releases/windows-x64
-
-# Linux x64 / macOS (completas)
-dotnet publish Gort/Gort.csproj -c Release -r linux-x64 --self-contained true -o ../releases/linux-x64
-dotnet publish Gort/Gort.csproj -c Release -r osx-x64 --self-contained true -o ../releases/osx-x64
-dotnet publish Gort/Gort.csproj -c Release -r osx-arm64 --self-contained true -o ../releases/osx-arm64
-```
-
-Os modelos de OCR (`models/`) vêm do pacote NuGet e são copiados
-automaticamente para a pasta de saída no publish.
-
-## Como executar
-
-1. Publique para a sua plataforma (seção acima).
-2. Abra a pasta correspondente em `releases/` e execute o aplicativo GORT.
-
-## Desenvolvimento
-
-A partir de `src/` (Windows PowerShell 5.1):
+Requisitos: SDK do .NET 9. Comandos a partir de `src/`:
 
 ```powershell
 dotnet build Gort.sln -c Release --nologo -v q
 dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../releases/test-results
 ```
 
-- `bin/` + `obj/` de todos os projetos são centralizados em
-  `releases/build/` (`src/Directory.Build.props`).
-- PNGs dos testes visuais vão para `releases/visual-tests/`.
-- Nada gerado fica dentro de `src/`.
+Publicar (Windows x64, versão completa):
 
-## Estrutura do projeto
+```powershell
+Remove-Item ../releases/windows-x64 -Recurse -Force -ErrorAction SilentlyContinue
+dotnet publish Gort/Gort.csproj -c Release -r win-x64 --self-contained true -o ../releases/windows-x64
+```
 
-| Pasta | Conteúdo |
-|---|---|
-| `src/Gort/` | Aplicativo (.NET 9, Avalonia): `Lifecycle`, `Loop`, `Ocr`, `Translate`, `UI`, `Overlay`, `Regions`, `Locale` e outras |
-| `src/Gort.Tests/` | 198 testes xUnit |
-| `src/Gort.VisualTests/` | Testes de render headless (PNGs em `releases/visual-tests/`) |
-| `releases/` | Toda saída gerada: `windows-x64/` (versão única, completa), `visual-tests/`, `test-results/`, `build/` (não versionada, só o `PUBLICAR.md` é versionado) |
+Estrutura: `src/Gort/` (app), `src/Gort.Tests/` (198 testes),
+`src/Gort.VisualTests/` (6 renders em `releases/visual-tests/`),
+`releases/` (tudo gerado; só `PUBLICAR.md` versionado).
 
-## Privacidade e dados locais
-
-Tudo fica na sua máquina, em arquivos TOML:
-
-- Windows: `%AppData%\GORT` · macOS: `~/Library/Application Support/GORT` · Linux: `~/.config/gort`
-- `profile.toml`, `advanced.toml`, `app.toml`, `shortcuts.toml`, `profiles/`, `dicts/`, `collect/`
-- **Atenção:** credenciais (`creds-{serviço}.toml`) ficam em **texto puro** na sua máquina — não compartilhe esses arquivos.
-- A rede só é usada para traduzir (serviços web), verificar atualização e a lista da comunidade. OCR local, banco de dados e dicionário funcionam offline.
-
-## Perguntas frequentes
-
-**Tela cheia exclusiva funciona?** Não — use o jogo em modo janela ou janela sem borda.
-
-**Funciona offline?** Em parte: OCR local, banco de dados e dicionário, sim. Tradutores web, atualização e comunidade precisam de rede (e avisam com elegância quando ela falta).
-
-**Onde ficam meus dados?** Na pasta de dados acima. Apagar a pasta restaura os padrões.
+</details>
 
 ## Links
 
@@ -181,8 +147,6 @@ Tudo fica na sua máquina, em arquivos TOML:
 ## Autor
 
 **Lamartine Barbosa** — autor e publicador único.
-
-## Contribuidores
 
 | Nome | Papel |
 |---|---|
