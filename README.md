@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/vers%C3%A3o-1.5-7c3aed" alt="Versão 1.5">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-1.6-7c3aed" alt="Versão 1.6">
   <img src="https://img.shields.io/badge/Windows_Linux_macOS-suportados-2563eb" alt="Windows, Linux e macOS">
   <img src="https://img.shields.io/badge/idioma-portugu%C3%AAs-16a34a" alt="Todo em português">
   <img src="https://img.shields.io/badge/.NET-9-512bd4" alt=".NET 9">
@@ -31,7 +31,7 @@ a aparência, e clique em **Aplicar**.
 
 <img src="docs/imagens/01-inicio.png" width="880" alt="Aba Início">
 
-## Destaques da versão 1.5
+## Destaques da versão 1.6
 
 | Recurso | O que faz |
 |---|---|

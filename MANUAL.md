@@ -1,4 +1,4 @@
-# GORT — Manual de funções (versão 1.5)
+# GORT — Manual de funções (versão 1.6)
 
 Manual completo do programa: cada tela, cada botão, cada opção e o que
 cada escolha representa. Serve para gente e para inteligência artificial.

@@ -48,7 +48,7 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
   tradução inglês → português do Brasil (japonês → inglês por serviço);
   Google Tradutor web gratuito como serviço padrão; modelo padrão do
   Gemini `gemini-3.5-flash-lite`; o serviço de linguagem chama-se
-  `Gemini (modelo de linguagem)`; versão 1.5 no `csproj`.
+  `Gemini (modelo de linguagem)`; versão 1.6 no `csproj`.
 - Publicação: somente `releases/windows-x64/Gort.exe`, versão completa
   autocontida; `releases/` guarda sempre só a última versão (limpar a
   pasta antes); nunca publicar com o programa rodando (trava o dll).

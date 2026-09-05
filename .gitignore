@@ -1,6 +1,7 @@
 # GORT — tradutor de tela em tempo real (.NET + Avalonia, multiplataforma)
 # Regra de ouro: aqui só entra o que é GERADO. Código-fonte, Assets,
-# AGENTS.md e releases/PUBLICAR.md são sempre versionados (ver fim).
+# README.md, MANUAL.md, AGENTS.md e releases/PUBLICAR.md são sempre
+# versionados (ver fim).
 
 # ── Build .NET (nunca versionar) ──
 bin/
@@ -91,17 +92,14 @@ allow-multi-instance.marker
 *.log
 
 # ── Capturas de tela e temporários ──
-# ATENÇÃO: logos e ícone em Gort/Assets/ SÃO versionados (exceções abaixo,
-# com a caixa exata + variante minúscula para filesystems case-sensitive).
+# ATENÇÃO: logos e ícone em src/Gort/Assets/ SÃO versionados (exceção
+# abaixo). Todo o resto em .png/.bmp é gerado e fica fora.
 *.png
-!Gort/Assets/**/*.png
-!**/Assets/**/*.png
-!**/assets/**/*.png
-# Exceção: prints curatorados para o README (nomes fixos, só última versão)
+!src/Gort/Assets/**/*.png
+# Exceção: imagens curatoradas para o README (nomes fixos, só última versão)
 !docs/imagens/*.png
 *.bmp
-!Gort/Assets/**/*.bmp
-!**/Assets/**/*.bmp
+!src/Gort/Assets/**/*.bmp
 opencode/
 gort-visual/
 
@@ -109,4 +107,5 @@ gort-visual/
 # src/*.sln, src/Directory.Build.props, src/Gort/** -> código-fonte
 # src/Gort/Debug/*.cs  -> código-fonte do retrato de depuração
 # src/Gort/Assets/*    -> logos e ícone do programa
-# AGENTS.md, releases/PUBLICAR.md -> documentação versionada
+# README.md, MANUAL.md, AGENTS.md, releases/PUBLICAR.md -> documentação versionada
+# docs/imagens/*.png   -> imagens do README (únicos .png versionados fora de Assets)

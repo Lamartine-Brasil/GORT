@@ -7,7 +7,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Authors>Lamartine Barbosa</Authors>
-    <Version>1.5</Version>
+    <Version>1.6</Version>
     <Product>GORT - Game Ocr RealTime</Product>
     <Description>Tradutor de tela em tempo real (inglês/japonês → português do Brasil).</Description>
   </PropertyGroup>
