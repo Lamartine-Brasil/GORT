@@ -6,7 +6,7 @@
 
 ## Estado (04/09/2026)
 
-- **Build 0 erros · 207/207 testes verdes** (201+6) · zero warnings
+- **Build 0 erros · 209/209 testes verdes** (203+6) · zero warnings
   `CS0618`/`xUnit` (só nullable antigos — não caçar).
 - **Git:** `Lamartine-Brasil/GORT`, `master`, commits `1.0` + links.
   Sem commit/push/PR sem pedido. `user.name/email` local ok.
@@ -72,3 +72,7 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
 - Links todos → `github.com/Lamartine-Brasil/GORT` (menos download .NET no README). Sem `gort.app`.
 - Fonte padrão 14 pt (dono; era 15). Lista `SelectionChanged`+`ItemsSource` = trava reentrância.
 - Serviço LLM = `Gemini (modelo de linguagem)`.
+- Par de tradução por serviço (`ServiceSource/Target`) vale sobre o
+  global; padrão continua en→pt-BR (ja→en por serviço).
+- Flags de sobreposição moram no `Profile` (UI em Mostrar); o antigo
+  trio no `AdvancedOptions` era morto. Min/max também no perfil.

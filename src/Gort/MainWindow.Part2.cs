@@ -353,6 +353,12 @@ public partial class MainWindow
         _u.UseBg.IsChecked = p.TextBackground;
         _u.AreaNum.IsChecked = p.AreaNumbering;
         _u.Outline.IsChecked = p.OverlayOutline;
+        _u.OvAutoFont.IsChecked = p.AutoFontSize;
+        _u.OvMerge.IsChecked = p.MergeLinesOverlay;
+        _u.OvKeepDir.IsChecked = p.KeepDirection;
+        _u.OvAutoCol.IsChecked = p.AutoColorMaster;
+        _u.OvAutoFg.IsChecked = p.AutoColorFg;
+        _u.OvAutoBg.IsChecked = p.AutoColorBg;
         RenderPreview();
 
         _u.ActiveWin.IsChecked = p.CaptureActiveWindow;
@@ -504,6 +510,12 @@ public partial class MainWindow
         p.TextBackground = _u.UseBg.IsChecked == true;
         p.AreaNumbering = _u.AreaNum.IsChecked == true;
         p.OverlayOutline = _u.Outline.IsChecked == true;
+        p.AutoFontSize = _u.OvAutoFont.IsChecked == true;
+        p.MergeLinesOverlay = _u.OvMerge.IsChecked == true;
+        p.KeepDirection = _u.OvKeepDir.IsChecked == true;
+        p.AutoColorMaster = _u.OvAutoCol.IsChecked == true;
+        p.AutoColorFg = _u.OvAutoFg.IsChecked == true;
+        p.AutoColorBg = _u.OvAutoBg.IsChecked == true;
 
         p.CaptureActiveWindow = _u.ActiveWin.IsChecked == true;
         p.Zoom = Imaging.Preprocess.ClampZoomSteps(                 // RF-114

@@ -81,6 +81,13 @@ public sealed class ConfigService
             p.LayerAutoFit = TomlFile.GetBool(raw, "layer_autofit", p.LayerAutoFit);
             p.LayerMaxW = TomlFile.GetInt(raw, "layer_max_w", p.LayerMaxW);
             p.LayerMaxH = TomlFile.GetInt(raw, "layer_max_h", p.LayerMaxH);
+            p.OverlayOutline = TomlFile.GetBool(raw, "overlay_outline", p.OverlayOutline);
+            p.AutoFontSize = TomlFile.GetBool(raw, "overlay_autofont", p.AutoFontSize);
+            p.MergeLinesOverlay = TomlFile.GetBool(raw, "overlay_merge", p.MergeLinesOverlay);
+            p.KeepDirection = TomlFile.GetBool(raw, "overlay_keepdir", p.KeepDirection);
+            p.AutoColorMaster = TomlFile.GetBool(raw, "overlay_autocolor", p.AutoColorMaster);
+            p.AutoColorFg = TomlFile.GetBool(raw, "overlay_autofg", p.AutoColorFg);
+            p.AutoColorBg = TomlFile.GetBool(raw, "overlay_autobg", p.AutoColorBg);
             LoadColorGroups(raw, p);
             LoadAreas(raw, p);
         }
@@ -292,6 +299,13 @@ public sealed class ConfigService
             ["layer_autofit"] = Profile.LayerAutoFit,
             ["layer_max_w"] = (long)Profile.LayerMaxW,
             ["layer_max_h"] = (long)Profile.LayerMaxH,
+            ["overlay_outline"] = Profile.OverlayOutline,
+            ["overlay_autofont"] = Profile.AutoFontSize,
+            ["overlay_merge"] = Profile.MergeLinesOverlay,
+            ["overlay_keepdir"] = Profile.KeepDirection,
+            ["overlay_autocolor"] = Profile.AutoColorMaster,
+            ["overlay_autofg"] = Profile.AutoColorFg,
+            ["overlay_autobg"] = Profile.AutoColorBg,
             ["color_groups"] = groups,
             ["areas"] = areas,
             ["exclusions"] = excls,

@@ -74,6 +74,8 @@ public partial class MainWindow : Window
         public byte[] CText = [255, 255, 255], CC1 = [192, 192, 192],
             CC2 = [0, 0, 0], CBg = [170, 0, 0, 0];
         public CheckBox Center = new(), RmSpaces = new(), UseBg = new(), AreaNum = new(), Outline = new();
+        public CheckBox OvAutoFont = new(), OvMerge = new(), OvKeepDir = new();
+        public CheckBox OvAutoCol = new(), OvAutoFg = new(), OvAutoBg = new();
         public Image Preview = new();
         // Aba 2
         public CheckBox ActiveWin = new();

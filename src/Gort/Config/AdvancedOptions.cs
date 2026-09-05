@@ -26,16 +26,9 @@ public sealed class AdvancedOptions
     public string ToggleForcedTransparency { get; set; } = "";
     public Dictionary<string, string> ServiceSwitch { get; set; } = new();
 
-    // Janela de tradução
-    public bool OverlayAutoFont { get; set; } = false;
-    public bool OverlayMerge { get; set; } = false;
-    public bool OverlayKeepDir { get; set; } = false;
+    // Janela de tradução (as opções de sobreposição moram no Profile,
+    // com UI na aba Mostrar — aqui só o que é global de verdade).
     public bool OverlayBgAlpha { get; set; } = false;
-    public bool AutoColorMaster { get; set; } = true;
-    public bool AutoColorFg { get; set; } = true;
-    public bool AutoColorBg { get; set; } = true;
-    public double AutoMinPt { get; set; } = 10;
-    public double AutoMaxPt { get; set; } = 50;
     public int SnapshotStaySec { get; set; } = 5;         // P-131 🔒
     public string DarkFont { get; set; } = "";
     public bool LayerBottom { get; set; } = false;
@@ -82,7 +75,6 @@ public sealed class AdvancedOptions
         if (DisplayMemoryN < 1) DisplayMemoryN = 1; if (DisplayMemoryN > 10) DisplayMemoryN = 10;
         if (DisplayMemorySec < 1) DisplayMemorySec = 1; if (DisplayMemorySec > 200) DisplayMemorySec = 200;
         if (DictExtraPasses < 0) DictExtraPasses = 0; if (DictExtraPasses > 3) DictExtraPasses = 3;
-        if (AutoMinPt > AutoMaxPt) AutoMaxPt = AutoMinPt; // RF-524
         while (OpenProfile.Count < 4) OpenProfile.Add(new());
         if (OpenProfile.Count > 4) OpenProfile.RemoveRange(4, OpenProfile.Count - 4);
     }

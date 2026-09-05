@@ -36,9 +36,8 @@ public sealed class AdvancedPanel : UserControl
     private TextBox TranspKeys = new();
     private readonly Dictionary<string, TextBox> _svcKeys = new();
     // janela
-    private CheckBox OvAutoFont = new(), OvMerge = new(), OvKeepDir = new(),
-        OvBgAlpha = new(), AutoMaster = new(),
-        AutoFg = new(), AutoBg = new(), LayerBottom = new(), LayerRight = new(),
+    private CheckBox OvBgAlpha = new(),
+        LayerBottom = new(), LayerRight = new(),
         TopDuring = new(), IgnoreEmpty = new(), HideTranslates = new(),
         DispMem = new();
     private TextBox AutoMin = new(), AutoMax = new(), SnapStay = new(),
@@ -66,7 +65,7 @@ public sealed class AdvancedPanel : UserControl
 
     private TextBox DarkFontBox = new();
     private bool _llmWired;
-    private bool _appWired, _winWired, _customWired, _collectWired, _trRadioWired;
+    private bool _appWired, _customWired, _collectWired, _trRadioWired;
 
     public AdvancedPanel(ConfigService cfg)
     {
@@ -142,12 +141,7 @@ public sealed class AdvancedPanel : UserControl
         foreach (var o in a.OpenProfile)
             c.OpenProfile.Add(new OpenProfileShortcut { Keys = o.Keys, File = o.File });
         foreach (var kv in a.ServiceSwitch) c.ServiceSwitch[kv.Key] = kv.Value;
-        c.OverlayAutoFont = a.OverlayAutoFont; c.OverlayMerge = a.OverlayMerge;
-        c.OverlayKeepDir = a.OverlayKeepDir;
         c.OverlayBgAlpha = a.OverlayBgAlpha;
-        c.AutoColorMaster = a.AutoColorMaster; c.AutoColorFg = a.AutoColorFg;
-        c.AutoColorBg = a.AutoColorBg;
-        c.AutoMinPt = a.AutoMinPt; c.AutoMaxPt = a.AutoMaxPt;
         c.SnapshotStaySec = a.SnapshotStaySec;
         c.DarkFont = a.DarkFont;
         c.LayerBottom = a.LayerBottom; c.LayerRight = a.LayerRight;
@@ -330,21 +324,9 @@ public sealed class AdvancedPanel : UserControl
 
     private Control TabWindow()
     {
-        OvAutoFont.Content = Strings._("adv.auto_font"); OvAutoFont.IsChecked = _w.OverlayAutoFont;
-        OvMerge.Content = Strings._("adv.merge_blocks"); OvMerge.IsChecked = _w.OverlayMerge;
-        OvKeepDir.Content = Strings._("adv.keep_dir"); OvKeepDir.IsChecked = _w.OverlayKeepDir;
         OvBgAlpha.Content = Strings._("adv.use_bg_alpha"); OvBgAlpha.IsChecked = _w.OverlayBgAlpha;
-        AutoMaster.Content = Strings._("adv.auto_color"); AutoMaster.IsChecked = _w.AutoColorMaster;
-        if (!_winWired)
-        {
-            _winWired = true;
-            AutoMaster.IsCheckedChanged += (_, _) => SyncAutoGroup();
-        }
-        AutoFg.Content = Strings._("adv.auto_fg"); AutoFg.IsChecked = _w.AutoColorFg;
-        AutoBg.Content = Strings._("adv.auto_bg"); AutoBg.IsChecked = _w.AutoColorBg;
-        SyncAutoGroup();   // RF-523
-        AutoMin = NumBox(_w.AutoMinPt.ToString());
-        AutoMax = NumBox(_w.AutoMaxPt.ToString());
+        AutoMin = NumBox(_cfg.Profile.AutoMinPt.ToString());
+        AutoMax = NumBox(_cfg.Profile.AutoMaxPt.ToString());
         SnapStay = NumBox(_w.SnapshotStaySec.ToString());
         var darkFont = new Button { Content = Strings._("adv.dark_font") };
         GortTheme.Secondary(darkFont);
@@ -380,8 +362,7 @@ public sealed class AdvancedPanel : UserControl
         return new ScrollViewer
         {
             Content = Sec(
-                H("Sobreposição"), OvAutoFont, OvMerge, OvKeepDir, OvBgAlpha,
-                AutoMaster, Row(AutoFg, AutoBg),
+                H("Sobreposição"), OvBgAlpha,
                 Row(new TextBlock { Text = Strings._("adv.min_size") }, AutoMin,
                     new TextBlock { Text = Strings._("adv.max_size") }, AutoMax),
                 Row(new TextBlock { Text = Strings._("adv.snapshot_stay") }, SnapStay),
@@ -392,13 +373,6 @@ public sealed class AdvancedPanel : UserControl
                 Row(new TextBlock { Text = Strings._("adv.disp_n") }, DispN,
                     new TextBlock { Text = Strings._("adv.disp_s") }, DispS)),
         };
-    }
-
-    private void SyncAutoGroup()   // RF-523
-    {
-        bool on = AutoMaster.IsChecked == true;
-        AutoFg.IsEnabled = on;
-        AutoBg.IsEnabled = on;
     }
 
     // ---- aba coletânea ----
@@ -676,19 +650,15 @@ public sealed class AdvancedPanel : UserControl
         a.ServiceSwitch.Clear();
         foreach (var (svc, box) in _svcKeys)
             if ((box.Text ?? "") != "") a.ServiceSwitch[svc] = box.Text!;
-        a.OverlayAutoFont = OvAutoFont.IsChecked == true;
-        a.OverlayMerge = OvMerge.IsChecked == true;
-        a.OverlayKeepDir = OvKeepDir.IsChecked == true;
         a.OverlayBgAlpha = OvBgAlpha.IsChecked == true;
-        a.AutoColorMaster = AutoMaster.IsChecked == true;
-        a.AutoColorFg = AutoFg.IsChecked == true;
-        a.AutoColorBg = AutoBg.IsChecked == true;
         if (double.TryParse(AutoMin.Text, out var mn)
             && double.TryParse(AutoMax.Text, out var mx))   // RF-524
         {
             if (mn > mx) mx = mn;
             if (mx < mn) mn = mx;
-            a.AutoMinPt = mn; a.AutoMaxPt = mx;
+            // Tamanho mín/máx mora no perfil (o overlay lê de lá).
+            var p = _cfg.Profile;
+            p.AutoMinPt = mn; p.AutoMaxPt = mx;
         }
         if (int.TryParse(SnapStay.Text, out var ss)) a.SnapshotStaySec = Math.Max(0, ss);
         a.DarkFont = DarkFontBox.Text ?? "";
@@ -728,6 +698,7 @@ public sealed class AdvancedPanel : UserControl
         a.CloudPriority = CloudPriority.IsChecked == true;
         if (int.TryParse(DictPasses.Text, out var dp)) a.DictExtraPasses = Math.Clamp(dp, 0, 3);
         _cfg.SaveAdvanced();
+        _cfg.SaveProfile();   // min/max moram no perfil desde a unificação
         var app = (App)Application.Current!;
         app.CurrentLoop?.ReloadDict();   // RF-531: dicionário sem reiniciar
         if (app.Remote is not null)

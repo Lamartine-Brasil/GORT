@@ -821,15 +821,11 @@ public partial class App : Application, UI.IRemoteHost
             showWorking: () => Config.Advanced.ClipboardShowWorking,
             translate: async text =>
             {
-                string ocrCode = Gort.Config.LanguageTable.Find(Config.Profile.OcrLanguage)
-                    ?.OcrCode ?? "eng";
-                string srcKey = Translate.LangCodes.KeyForOcr(ocrCode);
-                if (srcKey == "") srcKey = "en";
+                var (srcCode, dstCode) = Loop.TranslationLoop.ResolvePair(
+                    Config.Profile, Config.Profile.TranslationService);
                 var batch = await Pipe.TranslateBatchAsync(
                     Config.Profile.TranslationService, new List<string> { text },
-                    Translate.LangCodes.CodeFor(Config.Profile.TranslationService, srcKey),
-                    Translate.LangCodes.CodeFor(Config.Profile.TranslationService,
-                        Config.Profile.TargetLanguage),
+                    srcCode, dstCode,
                     Config.Advanced.Bridge,
                     System.Threading.CancellationToken.None);
                 return batch.Error ?? batch.PerText[0] ?? "";

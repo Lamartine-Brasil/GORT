@@ -60,6 +60,17 @@ public partial class MainWindow
         p.Children.Add(Row(_u.Center, _u.RmSpaces));
         p.Children.Add(Row(_u.UseBg, _u.AreaNum));
         p.Children.Add(Row(_u.Outline));
+        // Sobreposição: tamanho/fusão/direção/cores automáticas (antes os
+        // controles escreviam em outro lugar e nada funcionava).
+        _u.OvAutoFont.Content = Strings._("adv.auto_font");
+        _u.OvMerge.Content = Strings._("adv.merge_blocks");
+        _u.OvKeepDir.Content = Strings._("adv.keep_dir");
+        _u.OvAutoCol.Content = Strings._("adv.auto_color");
+        _u.OvAutoFg.Content = Strings._("adv.auto_fg");
+        _u.OvAutoBg.Content = Strings._("adv.auto_bg");
+        p.Children.Add(H("Sobreposição"));
+        p.Children.Add(Row(_u.OvAutoFont, _u.OvMerge, _u.OvKeepDir));
+        p.Children.Add(Row(_u.OvAutoCol, _u.OvAutoFg, _u.OvAutoBg));
         p.Children.Add(new TextBlock { Text = "Pré-visualização:" });
         _u.Preview.Height = 120;
         // Moldura escura: o texto claro aparece como no jogo, não no branco.

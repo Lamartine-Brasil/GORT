@@ -241,6 +241,7 @@ public partial class MainWindow : Window
         applyBtn.IsEnabled = false;
         this.FindControl<TextBlock>("ApplyHint").Text = "Aplicando…";
         var app = (App)Application.Current!;
+        bool wasRunning = app.Controller.State != LoopState.Idle;
         try
         {
             bool ok = await System.Threading.Tasks.Task.Run(() => app.Controller.ApplyChange(() =>
@@ -272,6 +273,14 @@ public partial class MainWindow : Window
             Translate.Services.ReloadDb(_cfg.Profile);   // RF-241: banco no aplicar
             Translate.Services.InvalidateCustom();       // presets podem ter mudado
             app.ReloadHotkeys();                          // RF-443: atalhos no aplicar
+            if (wasRunning)
+            {
+                // Troca de modo (camada/escuro/sobreposição) só vale mostrando
+                // a janela nova e fechando a velha — o laço sozinho não mostra.
+                app.Windows.ShowForMode(_cfg.Profile.WindowMode,
+                    app.Regions.CaptureRects());
+                app.CheckSelfCapture();
+            }
             _u.LlmKeyState.Text = Store.ConfigService.LoadCreds("llm")
                     .Any(k => !string.IsNullOrEmpty(k.Secret))
                 ? "chave salva ✔" : "sem chave — cole, teste e aplique";

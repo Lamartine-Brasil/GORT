@@ -48,6 +48,23 @@ public class TranslationTests
         new(id => id == "fake" ? svc : Services.Get(id), mem);
 
     [Fact]
+    public void ResolvePair_Default_En_PtBr_And_Ja_En_Override()
+    {
+        var p = new Gort.Config.Profile();   // padrão: en→pt-BR
+        var (src, dst) = Gort.Loop.TranslationLoop.ResolvePair(p, "web-free");
+        Assert.Equal("en", src);
+        Assert.Equal("pt", dst);
+        // Par por serviço: japonês→inglês sem mudar o padrão global.
+        p.OcrLanguage = "ja";
+        p.ServiceSource["web-free"] = "ja";
+        p.ServiceTarget["web-free"] = "en";
+        var (src2, dst2) = Gort.Loop.TranslationLoop.ResolvePair(p, "web-free");
+        Assert.Equal("ja", src2);
+        Assert.Equal("en", dst2);
+        Assert.Equal("pt-BR", p.TargetLanguage);   // global intacto
+    }
+
+    [Fact]
     public async Task Empty_Returns_Empty_Without_Call()
     {
         var svc = new FakeService();

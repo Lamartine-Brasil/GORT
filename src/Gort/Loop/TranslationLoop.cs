@@ -211,10 +211,7 @@ public sealed class TranslationLoop : ILoopBody
             // Passos 12–13: traduz com verificação de parada a cada 50 ms.
             var sources = new List<string>();
             foreach (var (_, t) in flatBlocks) sources.Add(t);
-            string srcCode = LangCodes.CodeFor(p.TranslationService,
-                LangCodes.KeyForOcr(Config.LanguageTable.Find(p.OcrLanguage)?.OcrCode ?? "eng"));
-            if (srcCode == "") srcCode = LangCodes.CodeFor(p.TranslationService, "en");
-            string dstCode = LangCodes.CodeFor(p.TranslationService, p.TargetLanguage);
+            var (srcCode, dstCode) = ResolvePair(p, p.TranslationService);
             using var stopCts = new CancellationTokenSource();
             var task = _pipe.TranslateBatchAsync(p.TranslationService, sources,
                 srcCode, dstCode, _cfg.Advanced.Bridge, stopCts.Token);
@@ -412,6 +409,23 @@ public sealed class TranslationLoop : ILoopBody
         ulong h = 1469598103934665603ul;
         foreach (byte x in b) { h ^= x; h *= 1099511628211ul; }
         return h;
+    }
+
+    /// <summary>
+    /// Par origem/destino do serviço: o par da aba Dicionário vale quando
+    /// preenchido; senão o global (OcrLanguage/TargetLanguage).
+    /// Padrão continua en→pt-BR; ja→en funciona por serviço.
+    /// </summary>
+    internal static (string Src, string Dst) ResolvePair(Config.Profile p, string svcId)
+    {
+        string srcKey = p.ServiceSource.TryGetValue(svcId, out var ssk) && ssk != "" ? ssk
+            : LangCodes.KeyForOcr(Config.LanguageTable.Find(p.OcrLanguage)?.OcrCode ?? "eng");
+        string dstKey = p.ServiceTarget.TryGetValue(svcId, out var stk) && stk != ""
+            ? stk : p.TargetLanguage;
+        string srcCode = LangCodes.CodeFor(svcId, srcKey);
+        if (srcCode == "") srcCode = LangCodes.CodeFor(svcId, "en");
+        string dstCode = LangCodes.CodeFor(svcId, dstKey);
+        return (srcCode, dstCode);
     }
 
     private OcrResult? RunOcr(ProcessedImage proc, Profile p, LoopContext ctx)    {

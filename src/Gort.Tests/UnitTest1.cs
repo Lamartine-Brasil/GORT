@@ -66,6 +66,32 @@ public class Etapa1Tests
     }
 
     [Fact]
+    public void RoundTrip_Preserves_Overlay_Flags()
+    {
+        // Flags da sobreposição antes morriam no save (não tinham chave).
+        var svc = new ConfigService();
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".toml");
+        svc.Profile.OverlayOutline = false;
+        svc.Profile.AutoFontSize = true;
+        svc.Profile.MergeLinesOverlay = true;
+        svc.Profile.KeepDirection = true;
+        svc.Profile.AutoColorMaster = false;
+        svc.Profile.AutoColorFg = false;
+        svc.Profile.AutoColorBg = true;
+        svc.SaveProfileTo(path);
+
+        var svc2 = new ConfigService();
+        svc2.LoadProfile(path, isMain: false);
+        Assert.False(svc2.Profile.OverlayOutline);
+        Assert.True(svc2.Profile.AutoFontSize);
+        Assert.True(svc2.Profile.MergeLinesOverlay);
+        Assert.True(svc2.Profile.KeepDirection);
+        Assert.False(svc2.Profile.AutoColorMaster);
+        Assert.False(svc2.Profile.AutoColorFg);
+        Assert.True(svc2.Profile.AutoColorBg);
+    }
+
+    [Fact]
     public void Partial_File_Opens_With_Defaults()
     {
         // RF: perfil com linhas removidas ainda abre.
