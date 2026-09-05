@@ -16,19 +16,25 @@ public static class TomlFile
 {
     public static (TomlTable Raw, bool Fresh) Load(string path)
     {
+        var (raw, fresh, _) = LoadEx(path);
+        return (raw, fresh);
+    }
+
+    /// <summary>Como Load, mas sinaliza arquivo corrompido (para backup).</summary>
+    public static (TomlTable Raw, bool Fresh, bool Corrupt) LoadEx(string path)
+    {
         try
         {
             if (!File.Exists(path) || new FileInfo(path).Length == 0)
-                return (new TomlTable(), true);
+                return (new TomlTable(), true, false);
             var text = File.ReadAllText(path);
             var table = Tomlyn.TomlSerializer.Deserialize<TomlTable>(text);
-            // Arquivo com "null" desserializa nulo: vira tabela vazia
-            // (padrões), nunca nulo adiante — era CS8619 com NRE real.
-            return (table ?? new TomlTable(), false);
+            if (table is null) return (new TomlTable(), false, true);
+            return (table, false, false);
         }
         catch
         {
-            return (new TomlTable(), true);   // RF-024: corrompido → padrões
+            return (new TomlTable(), true, true);   // RF-024: corrompido → padrões
         }
     }
 
@@ -42,9 +48,10 @@ public static class TomlFile
     {
         if (t.TryGetValue(key, out var v))
         {
-            if (v is long l) return (int)l;
+            if (v is long l) return (int)Math.Clamp(l, int.MinValue, int.MaxValue);
             if (v is int i) return i;
-            if (v is string s && string.IsNullOrWhiteSpace(s)) return 0;  // RF-042 vazio→0
+            if (v is double d) return (int)Math.Clamp(d, int.MinValue, int.MaxValue);
+            if (v is string s && string.IsNullOrWhiteSpace(s)) return 0;  // RF-042 vazio→0 (mantido)
         }
         return dflt;
     }
@@ -72,16 +79,25 @@ public static class TomlFile
     }
 
     /// <summary>Grava fundindo chaves conhecidas sobre as desconhecidas preservadas (RF-038).</summary>
+    private static readonly object _saveGate = new();
+
     public static void Save(string path, TomlTable raw, Dictionary<string, object?> known, int schema)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
-        var merged = new TomlTable();
-        foreach (var kv in raw) merged[kv.Key] = kv.Value;   // preserva novas/desconhecidas
-        foreach (var kv in known) merged[kv.Key] = kv.Value;
-        merged["schema_version"] = (long)schema;
-        // Atômico: escreve em temp + rename — kill no meio não corrompe.
-        string tmp = path + ".tmp";
-        File.WriteAllText(tmp, Tomlyn.TomlSerializer.Serialize(merged));
-        File.Move(tmp, path, overwrite: true);
+        // Serializado por arquivo destino + temporário único: dois saves
+        // concorrentes (atalho, ApplyChange, UI) não se misturam.
+        lock (_saveGate)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
+            var merged = new TomlTable();
+            foreach (var kv in raw) merged[kv.Key] = kv.Value;   // preserva novas/desconhecidas
+            foreach (var kv in known)
+                merged[kv.Key] = kv.Value
+                    ?? throw new InvalidOperationException("Valor nulo ao salvar: " + kv.Key);
+            merged["schema_version"] = (long)schema;
+            // Atômico: escreve em temp + rename — kill no meio não corrompe.
+            string tmp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            File.WriteAllText(tmp, Tomlyn.TomlSerializer.Serialize(merged));
+            File.Move(tmp, path, overwrite: true);
+        }
     }
 }

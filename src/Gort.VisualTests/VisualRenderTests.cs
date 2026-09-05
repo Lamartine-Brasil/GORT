@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Gort.Lifecycle;
 using Gort.Store;
@@ -110,7 +111,7 @@ public class VisualRenderTests
     {
         EnsureEngines();
         var cfg = new ConfigService();
-        string[] tabs = ["translate", "read", "dict", "display", "advanced", "system"];
+        string[] tabs = ["home", "capture", "lang", "show", "system"];
         for (int i = 0; i < tabs.Length; i++)
         {
             int idx = i;
@@ -129,18 +130,31 @@ public class VisualRenderTests
                         Assert.Contains(combos,
                             c => (c.SelectedItem as string ?? "").StartsWith("modern"));
                     }
-                    if (idx == 2)
+                    if (idx == 3)
                     {
-                        // Grade de idiomas por serviço: 3 colunas × 10 linhas
-                        // (sem RowDefinitions tudo caía na linha 0). O conteúdo
-                        // da aba mora no apresentador do TabControl, não sob o
-                        // TabItem — por isso a busca parte da janela.
-                        var grid = w.GetVisualDescendants().OfType<Grid>()
+                        // Campo de fonte é TextBox com o nome da família
+                        // (era ComboBox vazio que exibia branco). Name em
+                        // código não registra namescope: busca na árvore.
+                        var fam = w.GetVisualDescendants().OfType<TextBox>()
+                            .FirstOrDefault(t => t.Name == "FontFam");
+                        Assert.NotNull(fam);
+                        Assert.True(fam.MinWidth >= 160);
+                    }
+                    if (idx == 2)
+                    {                        // Grade de idiomas por serviço: 3 colunas × 10 linhas
+                        // (sem RowDefinitions tudo caía na linha 0). Mora num
+                        // expander colapsado: conteúdo colapsado não entra na
+                        // árvore visual — a busca é na lógica; o cabeçalho do
+                        // expander, sempre visível, vai na visual.
+                        var expanders = w.GetVisualDescendants().OfType<Expander>().ToList();
+                        Assert.Contains(expanders,
+                            x => (x.Header as string) == "Idiomas por serviço");
+                        var grid = w.GetLogicalDescendants().OfType<Grid>()
                             .FirstOrDefault(g => g.ColumnDefinitions.Count == 3
                                 && g.RowDefinitions.Count == 10);
                         Assert.NotNull(grid);
                     }
-                    if (idx == 5)
+                    if (idx == 4)
                     {
                         // Links de ajuda da aba Sistema (idem: busca na janela).
                         var labels = w.GetVisualDescendants().OfType<Button>()
@@ -148,8 +162,68 @@ public class VisualRenderTests
                         Assert.Contains("Manual", labels);
                         Assert.Contains("Erros conhecidos", labels);
                         Assert.Contains("Repositório", labels);
+                        Assert.Contains("Configuração avançada…", labels);
                     }
                 });
+        }
+    }
+
+    /// <summary>
+    /// Expanders abertos: prova que as seções distribuídas do painel
+    /// avançado renderizam no lugar (Conteúdo anexa ao expandir).
+    /// </summary>
+    [Fact]
+    public void Render_ExpandedSections()
+    {
+        var cfg = new ConfigService();
+        var cases = new (int Tab, string Shot, string[] Headers)[]
+        {
+            (1, "expanded-capture", ["Avançado"]),
+            (2, "expanded-lang", ["Idiomas por serviço", "Avançado"]),
+            (3, "expanded-show", ["Avançado"]),
+            (4, "expanded-system", ["Comportamento", "Atalhos avançados"]),
+        };
+        foreach (var (tab, shot, headers) in cases)
+        {
+            HeadlessSetup.Session.Dispatch(() =>
+            {
+                Directory.CreateDirectory(OutDir);
+                var w = new Gort.MainWindow(cfg, new TranslationController(), null);
+                try
+                {
+                    w.FindControl<TabControl>("Tabs")!.SelectedIndex = tab;
+                    w.Show();
+                    AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                    foreach (var h in headers)
+                    {
+                        var x = w.GetVisualDescendants().OfType<Expander>()
+                            .FirstOrDefault(e => (e.Header as string) == h);
+                        Assert.NotNull(x);
+                        x.IsExpanded = true;
+                    }
+                    for (int i = 0; i < 5; i++)
+                        AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                    // Conteúdo anexado ao expandir (prova na árvore visual) + rola
+                    // até o fim para o PNG mostrar o aberto, não o cabeçalho.
+                    foreach (var h in headers)
+                    {
+                        var x = w.GetVisualDescendants().OfType<Expander>()
+                            .FirstOrDefault(e => (e.Header as string) == h);
+                        Assert.NotNull(x);
+                        Assert.True(x.IsExpanded);
+                        Assert.True((x.Content as Control)?.IsVisible ?? false);
+                    }
+                    var sv = w.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+                    if (sv is not null) sv.Offset = new Avalonia.Vector(0, double.MaxValue);
+                    for (int i = 0; i < 5; i++)
+                        AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                    using var bmp = w.CaptureRenderedFrame();
+                    Assert.NotNull(bmp);
+                    AssertPainted(bmp);
+                    bmp.Save(Path.Combine(OutDir, shot + ".png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+                }
+                finally { if (w.IsVisible) w.Close(); }
+            }, default).GetAwaiter().GetResult();
         }
     }
 
@@ -172,7 +246,7 @@ public class VisualRenderTests
             "narrow-system",
             w =>
             {
-                w.FindControl<TabControl>("Tabs")!.SelectedIndex = 5;
+                w.FindControl<TabControl>("Tabs")!.SelectedIndex = 4;
                 w.Width = 880;
                 w.Height = 680;
             });
@@ -208,7 +282,7 @@ public class VisualRenderTests
     {
         var texts = w.GetVisualDescendants().OfType<TextBlock>()
             .Select(t => t.Text).ToList();
-        foreach (var s in new[] { "Áreas", "Rápida", "Instantâneo", toggle, "Ajustes" })
+        foreach (var s in new[] { "Gerenciar áreas", "Área rápida", "Área instantânea", toggle, "Sistema" })
             Assert.Contains(s, texts);
     }
 
@@ -229,9 +303,9 @@ public class VisualRenderTests
             new System.Collections.Generic.List<Gort.Config.ColorGroup>(),
             new System.Collections.Generic.List<int>()), "color-groups");
         // Controle remoto com hospedeiro de teste (RF-517): prova os rótulos
-        // PT-BR (Áreas/Rápida/Instantâneo/Traduzir-Parar/Ajustes) sem o App real.
+        // PT-BR (Gerenciar áreas/Área rápida/Área instantânea/Iniciar tradução-Parar/Sistema) sem o App real.
         Shot(() => new Gort.UI.RemoteWindow(new StubRemoteHost()), "remote",
-            setup: null, shown: w => AssertRemoteLabels(w, "Traduzir"));
+            setup: null, shown: w => AssertRemoteLabels(w, "Iniciar tradução"));
         Shot(() => new Gort.UI.RemoteWindow(new StubRunningHost()), "remote-running",
             setup: null, shown: w => AssertRemoteLabels(w, "Parar"));
         // Conta-gotas com imagem sintética (era a única janela sem render).
@@ -258,6 +332,28 @@ public class VisualRenderTests
                 bmp.Save(Path.Combine(OutDir, "dropper.png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
             }
             finally { if (drop.IsVisible) drop.Close(); }
+        }, default).GetAwaiter().GetResult();
+        // Painel distribuído: 7 seções expostas sem TabControl interno
+        // (a principal espalha em expanders; a janela Avançada usa abas).
+        HeadlessSetup.Session.Dispatch(() =>
+        {
+            var ap = new Gort.UI.AdvancedPanel(cfg, distributed: true);
+            Assert.True(ap.Distributed);
+            Assert.Equal(7, ap.Sections.Count);
+            foreach (var (title, content) in ap.Sections)
+            {
+                Assert.False(string.IsNullOrWhiteSpace(title));
+                Assert.NotNull(content);
+            }
+            // Reload pós-perfil: reconstrói as seções e avisa para redistribuir.
+            bool fired = false;
+            ap.NeedsRebuild += () => fired = true;
+            var before = ap.Sections.Select(s => s.Content).ToList();
+            ap.Reload();
+            Assert.True(fired);
+            Assert.Equal(7, ap.Sections.Count);
+            for (int i = 0; i < 7; i++)
+                Assert.NotSame(before[i], ap.Sections[i].Content);
         }, default).GetAwaiter().GetResult();
     }
 

@@ -31,6 +31,23 @@ public sealed class WebFreeTranslator : ITranslationService
     private readonly object _gate = new();
 
     /// <summary>
+    /// Navegador comum (o endpoint gratuito barra clientes sem cara de
+    /// navegador com 403 mesmo com cota livre — testado na rede do dono).
+    /// </summary>
+    internal const string BrowserUserAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
+    /// <summary>Cabeçalhos de cada chamada (testável sem rede).</summary>
+    internal static void ApplyHeaders(HttpRequestMessage req)
+    {
+        req.Headers.TryAddWithoutValidation("Content-Type",
+            "application/x-www-form-urlencoded; charset=UTF-8");
+        req.Headers.TryAddWithoutValidation("Cache-Control", "no-cache");
+        req.Headers.TryAddWithoutValidation("User-Agent", BrowserUserAgent);
+    }
+
+    /// <summary>
     /// Escolha manual de qualidade (perfil): "auto" (padrão), "high" ou
     /// "low". Injetada pelo registro de serviços a partir do perfil.
     /// </summary>
@@ -74,7 +91,7 @@ public sealed class WebFreeTranslator : ITranslationService
         }
         catch (OperationCanceledException)
         {
-            throw;   // RF-238: cancelamento não é erro
+            return HttpTranslator.CancelOrTimeout(ct);   // RF-238: só o pedido do usuário é silencioso
         }
         catch (Exception ex)
         {
@@ -87,9 +104,7 @@ public sealed class WebFreeTranslator : ITranslationService
     {
         string url = BuildUrl(text, src, dst, client);
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
-        req.Headers.TryAddWithoutValidation("Content-Type",
-            "application/x-www-form-urlencoded; charset=UTF-8");
-        req.Headers.TryAddWithoutValidation("Cache-Control", "no-cache");
+        ApplyHeaders(req);
         using var resp = await Http.SendAsync(req,
             HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         if (resp.StatusCode == HttpStatusCode.TooManyRequests

@@ -83,7 +83,10 @@ public sealed class LinuxWindows : IWindowService
                 if (w < 50 || h < 50) continue;
                 string title = string.Join(" ", parts, 7, parts.Length - 7);
                 if (title.Length == 0) continue;
-                if (!nint.TryParse(parts[0],
+                // wmctrl emite "0x…": HexNumber não aceita o prefixo.
+                string hex = parts[0].StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                    ? parts[0][2..] : parts[0];
+                if (!nint.TryParse(hex,
                         System.Globalization.NumberStyles.HexNumber, null, out nint id))
                     id = (nint)(1000 + list.Count);
                 list.Add(new WindowRef(id, title));

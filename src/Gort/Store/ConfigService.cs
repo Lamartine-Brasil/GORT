@@ -42,7 +42,8 @@ public sealed class ConfigService
 
     public void LoadProfile(string path, bool isMain)
     {
-        var (raw, fresh) = TomlFile.Load(path);
+        var (raw, fresh, corrupt) = TomlFile.LoadEx(path);
+        if (isMain && corrupt) BackupCorrupt(path);   // defeito vira .bak, não perda total
         _rawProfile = raw;        var p = new Profile();
         if (!fresh)
         {
@@ -88,6 +89,29 @@ public sealed class ConfigService
             p.AutoColorMaster = TomlFile.GetBool(raw, "overlay_autocolor", p.AutoColorMaster);
             p.AutoColorFg = TomlFile.GetBool(raw, "overlay_autofg", p.AutoColorFg);
             p.AutoColorBg = TomlFile.GetBool(raw, "overlay_autobg", p.AutoColorBg);
+            p.ClassicDataset = TomlFile.GetString(raw, "classic_dataset", p.ClassicDataset);
+            p.ClassicFast = TomlFile.GetBool(raw, "classic_fast", p.ClassicFast);
+            p.SaveResultFile = TomlFile.GetBool(raw, "save_result", p.SaveResultFile);
+            p.CopyToClipboard = TomlFile.GetBool(raw, "copy_clipboard", p.CopyToClipboard);
+            p.CopyFormat = TomlFile.GetString(raw, "copy_format", p.CopyFormat);
+            p.Erode = TomlFile.GetBool(raw, "erode", p.Erode);
+            p.TextOrder = TomlFile.GetString(raw, "text_order", p.TextOrder);
+            p.TextBackground = TomlFile.GetBool(raw, "text_background", p.TextBackground);
+            p.AreaNumbering = TomlFile.GetBool(raw, "area_number", p.AreaNumbering);
+            p.CaptureActiveWindow = TomlFile.GetBool(raw, "capture_active", p.CaptureActiveWindow);
+            p.Tts = TomlFile.GetBool(raw, "tts", p.Tts);
+            p.TtsWait = TomlFile.GetBool(raw, "tts_wait", p.TtsWait);
+            p.LayerX = TomlFile.GetInt(raw, "layer_x", p.LayerX);
+            p.LayerY = TomlFile.GetInt(raw, "layer_y", p.LayerY);
+            p.LayerW = TomlFile.GetInt(raw, "layer_w", p.LayerW);
+            p.LayerH = TomlFile.GetInt(raw, "layer_h", p.LayerH);
+            p.TextColor = GetBytes(raw, "text_color", p.TextColor, 3);
+            p.Outline1 = GetBytes(raw, "outline1", p.Outline1, 3);
+            p.Outline2 = GetBytes(raw, "outline2", p.Outline2, 3);
+            p.BgColor = GetBytes(raw, "bgcolor", p.BgColor, 4);
+            p.ServiceSource = GetMap(raw, "service_source");
+            p.ServiceTarget = GetMap(raw, "service_target");
+            p.BgTransparency = TomlFile.GetBool(raw, "bg_transparency", p.BgTransparency);
             LoadColorGroups(raw, p);
             LoadAreas(raw, p);
         }
@@ -107,8 +131,45 @@ public sealed class ConfigService
     /// </summary>
     public void LoadProfileIntoMain(string path)
     {
+        // Preserva o raw principal: sem isso as chaves desconhecidas do
+        // importado contaminavam o profile.toml e as dele se perdiam.
+        var keep = _rawProfile;
         LoadProfile(path, isMain: false);
+        _rawProfile = keep;
         SaveProfile();
+    }
+
+    /// <summary>Cópia de segurança do arquivo defeituoso antes de regravar padrões.</summary>
+    private static void BackupCorrupt(string path)
+    {
+        try { File.Copy(path, path + ".bak", overwrite: true); } catch { }
+    }
+
+    /// <summary>Bytes de cor (array TOML de 0–255); fora disso volta o padrão.</summary>
+    private static byte[] GetBytes(TomlTable t, string key, byte[] dflt, int n)
+    {
+        if (t.TryGetValue(key, out var w) && w is TomlArray arr && arr.Count == n)
+        {
+            var b = new byte[n];
+            for (int i = 0; i < n; i++)
+            {
+                long x = arr[i] is long l ? l : arr[i] is int ii ? ii : -1;
+                if (x < 0 || x > 255) return dflt;
+                b[i] = (byte)x;
+            }
+            return b;
+        }
+        return dflt;
+    }
+
+    /// <summary>Mapa string→string (pares por serviço).</summary>
+    private static Dictionary<string, string> GetMap(TomlTable t, string key)
+    {
+        var d = new Dictionary<string, string>();
+        if (t.TryGetValue(key, out var v) && v is TomlTable m)
+            foreach (var kv in m)
+                if (kv.Value is string s) d[kv.Key] = s;
+        return d;
     }
 
     private static void LoadColorGroups(TomlTable raw, Profile p)
@@ -169,14 +230,33 @@ public sealed class ConfigService
         }
     }
 
-    private void LoadAdvanced()
+    private void LoadAdvanced() => LoadAdvancedFrom(Paths.AdvancedFile);
+
+    public void LoadAdvancedFrom(string path)
     {
-        var (raw, fresh) = TomlFile.Load(Paths.AdvancedFile);
+        var (raw, fresh, corrupt) = TomlFile.LoadEx(path);
+        // Backup só do canônico: temp/custom corrompido não encosta nele.
+        if (corrupt && path == Paths.AdvancedFile) BackupCorrupt(path);
         _rawAdvanced = raw;
         var a = new AdvancedOptions();
         if (!fresh)
         {
+            a.LoadedSchema = TomlFile.GetSchema(raw, AdvancedOptions.SchemaVersion);
             a.TrayMode = TomlFile.GetBool(raw, "tray_mode", a.TrayMode);
+            a.RightToLeft = TomlFile.GetBool(raw, "right_to_left", a.RightToLeft);
+            a.RemoteAlwaysOnTop = TomlFile.GetBool(raw, "remote_top", a.RemoteAlwaysOnTop);
+            a.FollowCompat = TomlFile.GetBool(raw, "follow_compat", a.FollowCompat);
+            a.FollowOnly = TomlFile.GetBool(raw, "follow_only", a.FollowOnly);
+            a.AttachedYellowBorder = TomlFile.GetBool(raw, "yellow_border", a.AttachedYellowBorder);
+            a.SelectBg = TomlFile.GetString(raw, "select_bg", a.SelectBg);
+            a.SelectAccent = TomlFile.GetString(raw, "select_accent", a.SelectAccent);
+            LoadOpenProfiles(raw, a);
+            a.ToggleForcedTransparency = TomlFile.GetString(raw, "forced_transparency_keys", a.ToggleForcedTransparency);
+            a.ServiceSwitch = GetMap(raw, "service_switch");
+            a.OverlayBgAlpha = TomlFile.GetBool(raw, "overlay_bg_alpha", a.OverlayBgAlpha);
+            a.DarkFont = TomlFile.GetString(raw, "dark_font", a.DarkFont);
+            a.LayerBottom = TomlFile.GetBool(raw, "layer_bottom", a.LayerBottom);
+            a.LayerRight = TomlFile.GetBool(raw, "layer_right", a.LayerRight);
             a.DisplayMemory = TomlFile.GetBool(raw, "display_memory", a.DisplayMemory);
             a.DisplayMemoryN = TomlFile.GetInt(raw, "display_memory_n", a.DisplayMemoryN);
             a.DisplayMemorySec = TomlFile.GetInt(raw, "display_memory_s", a.DisplayMemorySec);
@@ -188,15 +268,87 @@ public sealed class ConfigService
             a.TopOnlyDuring = TomlFile.GetBool(raw, "top_only_during", a.TopOnlyDuring);
             a.HideAlsoTranslates = TomlFile.GetBool(raw, "hide_also_translates", a.HideAlsoTranslates);
             a.ForcedTransparency = TomlFile.GetBool(raw, "forced_transparency", a.ForcedTransparency);
+            LoadCollect(raw, a);
+            LoadCustomPresets(raw, a);
+            a.CustomSameCodes = TomlFile.GetBool(raw, "custom_same_codes", a.CustomSameCodes);
+            a.CustomSource = TomlFile.GetString(raw, "custom_source", a.CustomSource);
+            a.CustomTarget = TomlFile.GetString(raw, "custom_target", a.CustomTarget);
+            a.CustomUrl = TomlFile.GetString(raw, "custom_url", a.CustomUrl);
+            a.LlmInstruction = TomlFile.GetString(raw, "llm_instruction", a.LlmInstruction);
+            a.LlmCustomModel = TomlFile.GetString(raw, "llm_custom_model", a.LlmCustomModel);
+            a.LlmNoDefault = TomlFile.GetBool(raw, "llm_no_default", a.LlmNoDefault);
+            a.LlmPreset = TomlFile.GetString(raw, "llm_preset", a.LlmPreset);
+            a.LlmTemp = TomlFile.GetInt(raw, "llm_temp", a.LlmTemp);
+            a.LlmReason = TomlFile.GetInt(raw, "llm_reason", a.LlmReason);
+            a.LlmMaxOut = TomlFile.GetInt(raw, "llm_maxout", a.LlmMaxOut);
+            a.ClipboardTranslate = TomlFile.GetBool(raw, "clip_translate", a.ClipboardTranslate);
+            a.ClipboardShowOriginal = TomlFile.GetBool(raw, "clip_original", a.ClipboardShowOriginal);
+            a.ClipboardShowWorking = TomlFile.GetBool(raw, "clip_working", a.ClipboardShowWorking);
+            a.ClipboardCopyFormat = TomlFile.GetString(raw, "clip_format", a.ClipboardCopyFormat);
+            a.CloudPriority = TomlFile.GetBool(raw, "cloud_priority", a.CloudPriority);
         }
         a.Normalize();
         Advanced = a;
-        if (fresh) SaveAdvanced();   // RF-033
+        if (fresh) SaveAdvancedTo(path);   // RF-033
+    }
+
+    private static void LoadOpenProfiles(TomlTable raw, AdvancedOptions a)
+    {
+        if (raw.TryGetValue("open_profiles", out var v) && v is TomlTableArray arr)
+        {
+            a.OpenProfile.Clear();
+            foreach (var t in arr)
+            {
+                if (t is TomlTable m)
+                    a.OpenProfile.Add(new OpenProfileShortcut
+                    {
+                        Keys = TomlFile.GetString(m, "keys", ""),
+                        File = TomlFile.GetString(m, "file", ""),
+                    });
+                if (a.OpenProfile.Count >= 4) break;
+            }
+        }
+    }
+
+    private static void LoadCollect(TomlTable raw, AdvancedOptions a)
+    {
+        if (raw.TryGetValue("collect_active", out var v) && v is TomlArray arr)
+        {
+            a.CollectActive.Clear();
+            foreach (var e in arr)
+                if (e is string s && s.Length > 0) a.CollectActive.Add(s);
+        }
+        a.CollectAsDb = TomlFile.GetBool(raw, "collect_as_db", a.CollectAsDb);
+        a.CollectIgnoreCase = TomlFile.GetBool(raw, "collect_ignore_case", a.CollectIgnoreCase);
+    }
+
+    private static void LoadCustomPresets(TomlTable raw, AdvancedOptions a)
+    {
+        if (raw.TryGetValue("custom_presets", out var v) && v is TomlTableArray arr)
+        {
+            a.CustomPresets.Clear();
+            foreach (var t in arr)
+            {
+                if (t is not TomlTable m) continue;
+                var p = new CustomPreset
+                {
+                    Name = TomlFile.GetString(m, "name", ""),
+                    Url = TomlFile.GetString(m, "url", ""),
+                    ReqTemplate = TomlFile.GetString(m, "req", ""),
+                    ResTemplate = TomlFile.GetString(m, "res", ""),
+                };
+                if (p.Name.Length == 0) continue;
+                if (m.TryGetValue("headers", out var h) && h is TomlArray ha)
+                    foreach (var e in ha)
+                        if (e is string s) p.Headers.Add(s);
+                a.CustomPresets.Add(p);
+            }
+        }
     }
 
     private void LoadApp()
     {
-        var (raw, _) = TomlFile.Load(Paths.AppFile);
+        var (raw, fresh) = TomlFile.Load(Paths.AppFile);
         _rawApp = raw;
         var a = new AppOptions
         {
@@ -205,7 +357,13 @@ public sealed class ConfigService
             BasicTabDefault = TomlFile.GetBool(raw, "basic_default", false),
             TranslationAlwaysOnTop = TomlFile.GetBool(raw, "always_on_top", true),
         };
+        if (a.UiLanguage != "" && a.UiLanguage != "pt-BR")
+        {
+            Notices.Add($"ui_lang desconhecido '{a.UiLanguage}'; padrão pt-BR.");
+            a.UiLanguage = "pt-BR";
+        }
         App = a;
+        if (fresh) SaveApp();
     }
 
     private void LoadShortcuts()
@@ -306,18 +464,93 @@ public sealed class ConfigService
             ["overlay_autocolor"] = Profile.AutoColorMaster,
             ["overlay_autofg"] = Profile.AutoColorFg,
             ["overlay_autobg"] = Profile.AutoColorBg,
+            ["classic_dataset"] = Profile.ClassicDataset,
+            ["classic_fast"] = Profile.ClassicFast,
+            ["save_result"] = Profile.SaveResultFile,
+            ["copy_clipboard"] = Profile.CopyToClipboard,
+            ["copy_format"] = Profile.CopyFormat,
+            ["erode"] = Profile.Erode,
+            ["text_order"] = Profile.TextOrder,
+            ["text_background"] = Profile.TextBackground,
+            ["area_number"] = Profile.AreaNumbering,
+            ["capture_active"] = Profile.CaptureActiveWindow,
+            ["tts"] = Profile.Tts,
+            ["tts_wait"] = Profile.TtsWait,
+            ["layer_x"] = (long)Profile.LayerX,
+            ["layer_y"] = (long)Profile.LayerY,
+            ["layer_w"] = (long)Profile.LayerW,
+            ["layer_h"] = (long)Profile.LayerH,
+            ["text_color"] = ByteArray(Profile.TextColor),
+            ["outline1"] = ByteArray(Profile.Outline1),
+            ["outline2"] = ByteArray(Profile.Outline2),
+            ["bgcolor"] = ByteArray(Profile.BgColor),
+            ["service_source"] = StringMap(Profile.ServiceSource),
+            ["service_target"] = StringMap(Profile.ServiceTarget),
+            ["bg_transparency"] = Profile.BgTransparency,
             ["color_groups"] = groups,
             ["areas"] = areas,
             ["exclusions"] = excls,
         };
-        TomlFile.Save(path, _rawProfile, known, Profile.SchemaVersion);
+        // Preserva schema futuro (nunca rebaixa ao salvar).
+        int schema = Profile.LoadedSchema > Profile.SchemaVersion
+            ? Profile.LoadedSchema : Profile.SchemaVersion;
+        TomlFile.Save(path, _rawProfile, known, schema);
     }
 
-    public void SaveAdvanced()
+    private static TomlArray ByteArray(byte[] b)
     {
-        TomlFile.Save(Paths.AdvancedFile, _rawAdvanced, new()
+        var arr = new TomlArray();
+        foreach (byte x in b) arr.Add((long)x);
+        return arr;
+    }
+
+    private static TomlTable StringMap(Dictionary<string, string> d)
+    {
+        var t = new TomlTable();
+        foreach (var kv in d) t[kv.Key] = kv.Value;
+        return t;
+    }
+
+    public void SaveAdvanced() => SaveAdvancedTo(Paths.AdvancedFile);
+
+    public void SaveAdvancedTo(string path)
+    {
+        var open = new TomlTableArray();
+        foreach (var o in Advanced.OpenProfile)
+            open.Add(new TomlTable { ["keys"] = o.Keys, ["file"] = o.File });
+        var collect = new TomlArray();
+        foreach (var f in Advanced.CollectActive) collect.Add(f);
+        var presets = new TomlTableArray();
+        foreach (var p in Advanced.CustomPresets)
+        {
+            if (p.FromFile) continue;   // arquivo é fonte (só-leitura)
+            var headers = new TomlArray();
+            foreach (var h in p.Headers) headers.Add(h);
+            presets.Add(new TomlTable
+            {
+                ["name"] = p.Name, ["url"] = p.Url, ["headers"] = headers,
+                ["req"] = p.ReqTemplate, ["res"] = p.ResTemplate,
+            });
+        }
+        var switches = new TomlTable();
+        foreach (var kv in Advanced.ServiceSwitch) switches[kv.Key] = kv.Value;
+        TomlFile.Save(path, _rawAdvanced, new()
         {
             ["tray_mode"] = Advanced.TrayMode,
+            ["right_to_left"] = Advanced.RightToLeft,
+            ["remote_top"] = Advanced.RemoteAlwaysOnTop,
+            ["follow_compat"] = Advanced.FollowCompat,
+            ["follow_only"] = Advanced.FollowOnly,
+            ["yellow_border"] = Advanced.AttachedYellowBorder,
+            ["select_bg"] = Advanced.SelectBg,
+            ["select_accent"] = Advanced.SelectAccent,
+            ["open_profiles"] = open,
+            ["forced_transparency_keys"] = Advanced.ToggleForcedTransparency,
+            ["service_switch"] = switches,
+            ["overlay_bg_alpha"] = Advanced.OverlayBgAlpha,
+            ["dark_font"] = Advanced.DarkFont,
+            ["layer_bottom"] = Advanced.LayerBottom,
+            ["layer_right"] = Advanced.LayerRight,
             ["display_memory"] = Advanced.DisplayMemory,
             ["display_memory_n"] = (long)Advanced.DisplayMemoryN,
             ["display_memory_s"] = (long)Advanced.DisplayMemorySec,
@@ -329,7 +562,28 @@ public sealed class ConfigService
             ["top_only_during"] = Advanced.TopOnlyDuring,
             ["hide_also_translates"] = Advanced.HideAlsoTranslates,
             ["forced_transparency"] = Advanced.ForcedTransparency,
-        }, AdvancedOptions.SchemaVersion);
+            ["collect_active"] = collect,
+            ["collect_as_db"] = Advanced.CollectAsDb,
+            ["collect_ignore_case"] = Advanced.CollectIgnoreCase,
+            ["custom_presets"] = presets,
+            ["custom_same_codes"] = Advanced.CustomSameCodes,
+            ["custom_source"] = Advanced.CustomSource,
+            ["custom_target"] = Advanced.CustomTarget,
+            ["custom_url"] = Advanced.CustomUrl,
+            ["llm_instruction"] = Advanced.LlmInstruction,
+            ["llm_custom_model"] = Advanced.LlmCustomModel,
+            ["llm_no_default"] = Advanced.LlmNoDefault,
+            ["llm_preset"] = Advanced.LlmPreset,
+            ["llm_temp"] = (long)Advanced.LlmTemp,
+            ["llm_reason"] = (long)Advanced.LlmReason,
+            ["llm_maxout"] = (long)Advanced.LlmMaxOut,
+            ["clip_translate"] = Advanced.ClipboardTranslate,
+            ["clip_original"] = Advanced.ClipboardShowOriginal,
+            ["clip_working"] = Advanced.ClipboardShowWorking,
+            ["clip_format"] = Advanced.ClipboardCopyFormat,
+            ["cloud_priority"] = Advanced.CloudPriority,
+        }, Advanced.LoadedSchema > AdvancedOptions.SchemaVersion
+            ? Advanced.LoadedSchema : AdvancedOptions.SchemaVersion);
     }
 
     public void SaveApp()

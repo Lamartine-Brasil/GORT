@@ -9,6 +9,7 @@ namespace Gort.Config;
 public sealed class AdvancedOptions
 {
     public const int SchemaVersion = 1;
+    public int LoadedSchema { get; set; } = SchemaVersion;
 
     // Aplicativo
     public bool TrayMode { get; set; } = false;
@@ -77,6 +78,24 @@ public sealed class AdvancedOptions
         if (DictExtraPasses < 0) DictExtraPasses = 0; if (DictExtraPasses > 3) DictExtraPasses = 3;
         while (OpenProfile.Count < 4) OpenProfile.Add(new());
         if (OpenProfile.Count > 4) OpenProfile.RemoveRange(4, OpenProfile.Count - 4);
+        if (SnapshotStaySec < 0) SnapshotStaySec = 0;
+        if (LlmTemp < 0) LlmTemp = 0; if (LlmTemp > 100) LlmTemp = 100;
+        if (LlmReason < 0) LlmReason = 0; if (LlmReason > 3) LlmReason = 3;
+        if (LlmMaxOut < 500) LlmMaxOut = 500; if (LlmMaxOut > 10000) LlmMaxOut = 10000;
+        if (LlmPreset != "eco" && LlmPreset != "custom") LlmPreset = "default";
+        if (ClipboardCopyFormat != "translation-only" && ClipboardCopyFormat != "both")
+            ClipboardCopyFormat = "ocr-only";
+        if (!IsArgbHex(SelectBg)) SelectBg = "#FFFFFFFF";
+        if (!IsArgbHex(SelectAccent)) SelectAccent = "#FF000000";
+    }
+
+    private static bool IsArgbHex(string s)
+    {
+        if (s.Length != 9 || s[0] != '#') return false;
+        foreach (char c in s[1..])
+            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))
+                return false;
+        return true;
     }
 }
 

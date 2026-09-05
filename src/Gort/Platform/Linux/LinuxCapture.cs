@@ -91,15 +91,20 @@ public sealed class LinuxCapture : CliCapture
             if (client.W <= 0 || client.H <= 0) return null;
             var full = CaptureRect(-1, client, needOriginal);
             if (full is null) return null;
-            int x1 = Math.Max(areaScreen.X, client.X);
-            int y1 = Math.Max(areaScreen.Y, client.Y);
-            int x2 = Math.Min(areaScreen.X + areaScreen.W, client.X + client.W);
-            int y2 = Math.Min(areaScreen.Y + areaScreen.H, client.Y + client.H);
+            // Origem do recorte (full pode ser menor que o cliente quando a
+            // janela está parcial fora da tela — espelha o Windows fx/fy).
+            var virt = VirtualScreen;
+            int fx = virt.IsEmpty ? client.X : Math.Max(client.X, virt.X);
+            int fy = virt.IsEmpty ? client.Y : Math.Max(client.Y, virt.Y);
+            int x1 = Math.Max(areaScreen.X, fx);
+            int y1 = Math.Max(areaScreen.Y, fy);
+            int x2 = Math.Min(areaScreen.X + areaScreen.W, fx + full.Width);
+            int y2 = Math.Min(areaScreen.Y + areaScreen.H, fy + full.Height);
             int w = x2 - x1, h = y2 - y1;
             if (w <= 0 || h <= 0) return null;
             var bytes = new byte[w * h * 4];
             for (int y = 0; y < h; y++)
-                Buffer.BlockCopy(full.Bytes, ((y1 - client.Y + y) * full.Width + (x1 - client.X)) * 4,
+                Buffer.BlockCopy(full.Bytes, ((y1 - fy + y) * full.Width + (x1 - fx)) * 4,
                     bytes, y * w * 4, w * 4);
             return new RegionImage
             {

@@ -79,7 +79,7 @@ public sealed class DeepLTranslator : HttpTranslator
                 ? string.Concat(ConcatAll(tr)) : tr.GetString() ?? "";
             return new ServiceResult { Translations = new List<string> { out0 } };
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { return CancelOrTimeout(ct); }
         catch (Exception ex) { return Fail("Falha de processamento: " + ex.Message); }
     }
 

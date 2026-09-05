@@ -158,6 +158,12 @@ public sealed class CommunityWindow : Window
                 System.IO.File.Move(tmp, dest, overwrite: true);
                 app.Config.LoadProfileIntoMain(dest);
                 app.Regions.LoadFromProfile();
+                // Refresca a principal + painel com o perfil baixado.
+                _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    app.MainWin?.LoadUiFromConfig();
+                    app.MainWin?.ReloadAdvancedPanel();
+                });
             }
             if (sel.Db != "")
             {

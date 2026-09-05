@@ -15,10 +15,11 @@ using Gort.Translate;
 namespace Gort.UI;
 
 /// <summary>
-/// Painel de opções avançadas (V.3): as 7 abas como controle embutível.
-/// Usado na aba Avançado da janela principal e na janela Avançada separada.
-/// Edita um clone e grava no Aplicar; restaurar pede confirmação e avisa o
-/// hospedeiro para trocar por um painel novo (NeedsRebuild).
+/// Painel de opções avançadas (V.3): as 7 seções como controle embutível.
+/// Dois modos: em abas (janela Avançada separada) ou distribuído (a janela
+/// principal espalha as seções em expanders). Mesmos controles e mesma
+/// lógica nos dois (Apply/Restore intactos). Edita um clone e grava no
+/// Aplicar; restaurar pede confirmação e avisa o hospedeiro (NeedsRebuild).
 /// </summary>
 public sealed class AdvancedPanel : UserControl
 {
@@ -67,15 +68,52 @@ public sealed class AdvancedPanel : UserControl
     private bool _llmWired;
     private bool _appWired, _customWired, _collectWired, _trRadioWired;
 
-    public AdvancedPanel(ConfigService cfg)
+    public AdvancedPanel(ConfigService cfg) : this(cfg, distributed: false) { }
+
+    /// <summary>
+    /// distributed: em vez do TabControl interno, expõe as 7 seções em
+    /// <see cref="Sections"/> para o hospedeiro distribuir em expanders
+    /// (um controle só tem um pai — não dá para estar nos dois).
+    /// </summary>
+    public AdvancedPanel(ConfigService cfg, bool distributed)
     {
         _cfg = cfg;
+        Distributed = distributed;
         _w = Clone(cfg.Advanced);
         Rebuild();
     }
 
+    public bool Distributed { get; }
+
+    private readonly List<(string Title, Control Content)> _sections = new();
+
+    /// <summary>Seções na ordem das abas (para o modo distribuído).</summary>
+    public IReadOnlyList<(string Title, Control Content)> Sections => _sections;
+
+    /// <summary>
+    /// Recarrega do cfg (pós-perfil): reconstrói as seções e avisa o
+    /// hospedeiro para redistribuir. Edições não aplicadas são descartadas.
+    /// </summary>
+    public void Reload()
+    {
+        Rebuild();
+        NeedsRebuild?.Invoke();
+    }
+
+    /// <summary>
+    /// Controles que moram fora do painel no modo distribuído (mesma chave,
+    /// outro leitor): passadas extras vão para o cartão do dicionário e a
+    /// prioridade da nuvem para a captura. O Apply() continua lendo daqui.
+    /// </summary>
+    public TextBox DictPassesField => DictPasses;
+    public CheckBox CloudPriorityBox => CloudPriority;
+
     /// <summary>Dono-janela para diálogos (o painel pode estar em janela ou aba).</summary>
-    private Window? DialogOwner => TopLevel.GetTopLevel(this) as Window;
+    private Window? DialogOwner =>
+        TopLevel.GetTopLevel(this) as Window
+        ?? (Application.Current?.ApplicationLifetime
+            as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)
+            ?.MainWindow as Window;
 
     private readonly List<(TabItem Tab, TextBlock Label)> _subTabs = new();
 
@@ -105,25 +143,38 @@ public sealed class AdvancedPanel : UserControl
 
         var tabs = new TabControl();
         _subTabs.Clear();
-        foreach (var (key, content) in new (string Key, Control Content)[]
-                 {
-                     ("adv.app_title", TabApp()),
-                     ("adv.shortcuts_title", TabShortcuts()),
-                     ("adv.win_title", TabWindow()),
-                     ("adv.collect_title", TabCollect()),
-                     ("adv.tr_title", TabTranslation()),
-                     ("adv.ocr_title", TabOcr()),
-                     ("adv.dict_title", TabDict()),
-                 })
+        var defs = new (string Key, Func<Control> Make)[]
         {
-            var label = new TextBlock { Text = Strings._(key) };
-            var tab = new TabItem { Header = label, Content = content };
-            _subTabs.Add((tab, label));
-            tabs.Items.Add(tab);
+            ("adv.app_title", TabApp),
+            ("adv.shortcuts_title", TabShortcuts),
+            ("adv.win_title", TabWindow),
+            ("adv.collect_title", TabCollect),
+            ("adv.tr_title", TabTranslation),
+            ("adv.ocr_title", TabOcr),
+            ("adv.dict_title", TabDict),
+        };
+        _sections.Clear();
+        foreach (var (key, make) in defs)
+            _sections.Add((Strings._(key), make()));
+        if (Distributed)
+        {
+            // Hospedeiro distribui Sections em expanders; o conteúdo nunca
+            // é parentado aqui (ver comentário do modo distribuído).
+            Content = new StackPanel();
         }
-        tabs.SelectionChanged += (_, _) => PaintSubTabs(tabs);
-        Content = tabs;
-        PaintSubTabs(tabs);
+        else
+        {
+            foreach (var (title, content) in _sections)
+            {
+                var label = new TextBlock { Text = title };
+                var tab = new TabItem { Header = label, Content = content };
+                _subTabs.Add((tab, label));
+                tabs.Items.Add(tab);
+            }
+            tabs.SelectionChanged += (_, _) => PaintSubTabs(tabs);
+            Content = tabs;
+            PaintSubTabs(tabs);
+        }
         RefreshCollect();
         RefreshCustom();
         RefreshLlm();
@@ -193,6 +244,17 @@ public sealed class AdvancedPanel : UserControl
         return p;
     }
 
+    /// <summary>
+    /// Rebuild recoloca os mesmos controles (campos): solta do pai anterior
+    /// antes de re-adicionar, senão o segundo Rebuild (Restaurar/Reload)
+    /// quebra com "already has a parent". Achado pelo teste de Reload.
+    /// </summary>
+    private static void Detach(params Control[] cs)
+    {
+        foreach (var c in cs)
+            (c.Parent as Panel)?.Children.Remove(c);
+    }
+
     private static TextBlock H(string t) => GortTheme.SectionTitle(t);
 
     private static StackPanel Row(params Control[] cs)
@@ -206,6 +268,7 @@ public sealed class AdvancedPanel : UserControl
 
     private Control TabApp()
     {
+        Detach(Tray, Rtl, RemoteTop, FollowCompat, FollowOnly, YellowBorder, SelBg, SelAccent);
         Tray.Content = Strings._("adv.tray_mode"); Tray.IsChecked = _w.TrayMode;
         Rtl.Content = Strings._("adv.rtl"); Rtl.IsChecked = _w.RightToLeft;
         RemoteTop.Content = Strings._("adv.remote_top"); RemoteTop.IsChecked = _w.RemoteAlwaysOnTop;
@@ -260,6 +323,7 @@ public sealed class AdvancedPanel : UserControl
 
     private Control TabShortcuts()
     {
+        Detach(TranspKeys);
         var p = Sec();
         for (int i = 0; i < 4; i++)   // P-119
         {
@@ -270,7 +334,9 @@ public sealed class AdvancedPanel : UserControl
             var pick = new Button { Content = Strings._("adv.pick_file") };
             pick.Click += async (_, _) =>
             {
-                var sp = TopLevel.GetTopLevel(this)?.StorageProvider;
+                // TopLevel pelo botão (o painel pode estar fora da árvore no
+                // modo distribuído).
+                var sp = TopLevel.GetTopLevel(pick)?.StorageProvider;
                 if (sp is null) return;
                 var fs = await sp.OpenFilePickerAsync(
                     new Avalonia.Platform.Storage.FilePickerOpenOptions());
@@ -311,22 +377,39 @@ public sealed class AdvancedPanel : UserControl
 
     // ---- aba janela ----
 
-    private static TextBox NumBox(string v, int w = 60)
+    private static TextBox NumBox(string v, int w = 60, bool dec = false)
     {
         var t = new TextBox { Text = v, Width = w };
         t.LostFocus += (_, _) =>
         {
-            string d = new string(t.Text?.Where(char.IsDigit).ToArray() ?? []);
-            t.Text = d.Length == 0 ? "0" : d;
+            // Campos decimais (mín/máx da fonte) preservam um separador:
+            // sem isso "10.5" virava "105" ao perder o foco.
+            string s = t.Text ?? "";
+            if (!dec)
+            {
+                string d = new string(s.Where(char.IsDigit).ToArray());
+                t.Text = d.Length == 0 ? "0" : d;
+                return;
+            }
+            var kept = new System.Text.StringBuilder();
+            bool sep = false;
+            foreach (char c in s)
+            {
+                if (char.IsDigit(c)) kept.Append(c);
+                else if (!sep && (c == '.' || c == ',')) { kept.Append('.'); sep = true; }
+            }
+            t.Text = kept.Length == 0 ? "0" : kept.ToString();
         };
         return t;
     }
 
     private Control TabWindow()
     {
+        Detach(OvBgAlpha, LayerBottom, LayerRight, TopDuring, IgnoreEmpty,
+            HideTranslates, DispMem, DarkFontBox);
         OvBgAlpha.Content = Strings._("adv.use_bg_alpha"); OvBgAlpha.IsChecked = _w.OverlayBgAlpha;
-        AutoMin = NumBox(_cfg.Profile.AutoMinPt.ToString());
-        AutoMax = NumBox(_cfg.Profile.AutoMaxPt.ToString());
+        AutoMin = NumBox(_cfg.Profile.AutoMinPt.ToString(), 60, dec: true);
+        AutoMax = NumBox(_cfg.Profile.AutoMaxPt.ToString(), 60, dec: true);
         SnapStay = NumBox(_w.SnapshotStaySec.ToString());
         var darkFont = new Button { Content = Strings._("adv.dark_font") };
         GortTheme.Secondary(darkFont);
@@ -379,6 +462,7 @@ public sealed class AdvancedPanel : UserControl
 
     private Control TabCollect()
     {
+        Detach(CollectDb, CollectIc, CollectInfo);
         var mark = new Button { Content = Strings._("adv.select_all") };
         mark.Click += (_, _) => { foreach (var (_, b) in _collect) b.IsChecked = true; };
         var unmark = new Button { Content = Strings._("adv.unselect_all") };
@@ -437,6 +521,11 @@ public sealed class AdvancedPanel : UserControl
 
     private Control TabTranslation()
     {
+        Detach(Bridge, Fallback, CustomList, CustomName, CustomUrl, CustomHeaders,
+            CustomReq, CustomRes, CustomSame, CustomSrc, CustomDst, BaseUrl,
+            LlmInstr, LlmCustomModel, LlmNoDef, LlmDef, LlmEco, LlmCustom,
+            LlmTemp, LlmReason, LlmMax, LlmTempLbl, LlmReasonLbl, LlmMaxLbl,
+            ClipUse, ClipOrig, ClipWork, ClipFormat);
         Bridge.Content = Strings._("adv.bridge"); Bridge.IsChecked = _w.Bridge;
         Fallback.Content = Strings._("adv.fallback_alt"); Fallback.IsChecked = _w.FallbackTranslator;
         var add = new Button { Content = Strings._("adv.add") };
@@ -597,32 +686,49 @@ public sealed class AdvancedPanel : UserControl
         }
         LlmTemp.IsEnabled = LlmReason.IsEnabled = LlmMax.IsEnabled = custom;
         LlmTempLbl.Text = (LlmTemp.Value / 100).ToString("F2");   // RF-526
-        LlmReasonLbl.Text = ((int)LlmReason.Value) switch
-        {
-            0 => "mínimo", 1 => "baixo", 2 => "médio", _ => "alto",
-        };
+        LlmReasonLbl.Text = ReasonLabel((int)LlmReason.Value);
         LlmMaxLbl.Text = ((int)LlmMax.Value).ToString();
         if (!_llmWired)
         {
             _llmWired = true;
-            LlmTemp.PropertyChanged += (_, _) => LlmTempLbl.Text = (LlmTemp.Value / 100).ToString("F2");
+            LlmTemp.PropertyChanged += (_, _) => SyncLlmLabels();
+            LlmReason.PropertyChanged += (_, _) => SyncLlmLabels();
+            LlmMax.PropertyChanged += (_, _) => SyncLlmLabels();
         }
     }
+
+    /// <summary>Rótulos dos 3 controles acompanham o arrasto (antes só o 1º).</summary>
+    private void SyncLlmLabels()
+    {
+        LlmTempLbl.Text = (LlmTemp.Value / 100).ToString("F2");
+        LlmReasonLbl.Text = ReasonLabel((int)LlmReason.Value);
+        LlmMaxLbl.Text = ((int)LlmMax.Value).ToString();
+    }
+
+    private static string ReasonLabel(int v) => v switch
+    {
+        0 => "mínimo", 1 => "baixo", 2 => "médio", _ => "alto",
+    };
 
     // ---- abas OCR/dicionário ----
 
     private Control TabOcr()
     {
+        Detach(CloudPriority);
         CloudPriority.Content = Strings._("ocr.cloud_priority");
         CloudPriority.IsChecked = _w.CloudPriority;
-        return Sec(CloudPriority);
+        // Distribuído: a caixa mora no cartão da Captura (hospedeiro a
+        // reparenta); aqui fica o lugar vazio, nunca exibido.
+        return Distributed ? Sec() : Sec(CloudPriority);
     }
 
     private Control TabDict()
     {
+        Detach(DictPasses);
         DictPasses.Width = 60;
         DictPasses.Text = _w.DictExtraPasses.ToString();
-        return Sec(Row(new TextBlock { Text = Strings._("dict.passes") }, DictPasses));
+        // Distribuído: o campo mora no cartão do Dicionário (idem acima).
+        return Distributed ? Sec() : Sec(Row(new TextBlock { Text = Strings._("dict.passes") }, DictPasses));
     }
 
     // ---- aplicar/restaurar ----

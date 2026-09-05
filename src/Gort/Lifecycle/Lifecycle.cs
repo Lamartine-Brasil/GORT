@@ -21,7 +21,7 @@ public sealed class SingleInstance : IDisposable
         {
             try
             {
-                _mutex = new Mutex(false, @"Global\GORT_SingleInstance", out _);
+                _mutex = CreateMutex();
                 try { return _mutex.WaitOne(0); }   // livre: nosso; ocupado: alheio
                 catch (System.Threading.AbandonedMutexException) { return true; }  // dono caiu: nosso
             }
@@ -42,6 +42,17 @@ public sealed class SingleInstance : IDisposable
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Global exige privilégio (usuário padrão tomava "já há instância" sem
+    /// haver nenhuma): cai para Local, visível só na sessão.
+    /// </summary>
+    private static Mutex CreateMutex()
+    {
+        try { return new Mutex(false, @"Global\GORT_SingleInstance", out _); }
+        catch (UnauthorizedAccessException)
+        { return new Mutex(false, @"Local\GORT_SingleInstance", out _); }
     }
 
     public void Dispose()

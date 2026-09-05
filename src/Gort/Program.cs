@@ -14,6 +14,8 @@ class Program
     {
         // RF-003: pasta do executável como diretório corrente.
         try { Directory.SetCurrentDirectory(AppContext.BaseDirectory); } catch { }
+        // Update interrompido no meio da troca: restaura o .bak antes de tudo.
+        Update.UpdateHelper.RestoreBackupIfNeeded();
 
         // Auxiliares (fora da instância única): worker de tradução (Etapa 15).
         if (args.Length >= 2 && args[0] == "--translate-worker")

@@ -65,7 +65,7 @@ public sealed class NoKeyTranslator : HttpTranslator
             }
             catch { return Fail("JSON inválido."); }
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { return CancelOrTimeout(ct); }
         catch (Exception ex) { return Fail("Falha de processamento: " + ex.Message); }
         finally
         {

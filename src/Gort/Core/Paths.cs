@@ -15,14 +15,20 @@ public static class Paths
     public static string AdvancedFile => Path.Combine(BaseDir, "advanced.toml");
     public static string AppFile => Path.Combine(BaseDir, "app.toml");
     public static string ShortcutsFile => Path.Combine(BaseDir, "shortcuts.toml");
-    public static string CredFile(string serviceId) => Path.Combine(BaseDir, $"creds-{serviceId}.toml");
+    public static string CredFile(string serviceId)
+    {
+        // Higieniza: id com separador ou ".." vira "custom" (sem traversal).
+        string safe = Path.GetFileName(serviceId);
+        if (string.IsNullOrWhiteSpace(safe) || safe != serviceId) safe = "custom";
+        return Path.Combine(BaseDir, $"creds-{safe}.toml");
+    }
     public static string DictDir => Path.Combine(BaseDir, "dicts");
     public static string CollectDir => Path.Combine(BaseDir, "collect");
     public static string DebugDir => Path.Combine(BaseDir, "debug");
 
     /// <summary>Arquivo marcador que desativa a instância única (RF-002).</summary>
     public static string MultiInstanceMarker =>
-        Path.Combine(AppContext.BaseDirectory, "allow-multi-instance.marker");
+        Path.Combine(BaseDir, "allow-multi-instance.marker");
 
     private static string ResolveBase()
     {

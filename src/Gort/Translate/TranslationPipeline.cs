@@ -180,7 +180,11 @@ public sealed class TranslationPipeline
         foreach (var t in texts) { sb.Append(token); sb.Append(t); sb.Append('\n'); }
         var r = await svc.TranslateAsync(new List<string> { sb.ToString() },
             src, dst, ct).ConfigureAwait(false);
-        if (r.Cancelled || r.Error is not null || r.Translations is null) return r;
+        if (r.Cancelled || r.Error is not null) return r;
+        // Contrato garantido aqui: sem erro ⟹ lista presente (os `!` abaixo
+        // são invariante, não máscara). init-only: normaliza por cópia.
+        if (r.Translations is null)
+            return new ServiceResult { Translations = new List<string>() };
         string raw = r.Translations.Count > 0 ? r.Translations[0] : "";
         // RF-233: divide pelo token; faltando partes → blocos sem tradução.
         var parts = TokenHelper.CleanParts(

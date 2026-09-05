@@ -35,15 +35,14 @@
         </StackPanel>
       </Grid>
     </Border>
-    <!-- Navegação por tarefa, tudo por aba com rolagem (nada escondido):
-         Traduzir → Ler → Dicionário e idiomas → Mostrar → Avançado → Sistema.
-         Uma só verdade por assunto; o ajuste fino mora na Avançado. -->
+    <!-- Navegação por jornada, tudo por aba com rolagem (nada escondido):
+         Início → Captura & Leitura → Tradução & Idiomas → Exibição → Sistema.
+         Uma só verdade por assunto; o ajuste fino mora em expanders. -->
     <TabControl x:Name="Tabs" Margin="12,12,12,0" TabStripPlacement="Top">
-      <TabItem x:Name="TabTranslate" Header="Traduzir" />
-      <TabItem x:Name="TabRead" Header="Ler" />
-      <TabItem x:Name="TabDict" Header="Dicionário e idiomas" />
-      <TabItem x:Name="TabDisplay" Header="Mostrar" />
-      <TabItem x:Name="TabAdvanced" Header="Avançado" />
+      <TabItem x:Name="TabHome" Header="Início" />
+      <TabItem x:Name="TabCapture" Header="Captura &amp; Leitura" />
+      <TabItem x:Name="TabLang" Header="Tradução &amp; Idiomas" />
+      <TabItem x:Name="TabShow" Header="Exibição" />
       <TabItem x:Name="TabSystem" Header="Sistema" />
       <TabItem x:Name="TabDebug" Header="Depuração" IsVisible="False" />
     </TabControl>

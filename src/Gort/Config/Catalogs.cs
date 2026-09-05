@@ -50,8 +50,17 @@ public static class Catalogs
 
     public static bool KnownId(List<CatalogItem> catalog, string id)
     {
-        foreach (var c in catalog) if (c.Id == id) return true;
+        foreach (var c in catalog)
+            if (string.Equals(c.Id, id, System.StringComparison.OrdinalIgnoreCase)) return true;
         return false;
+    }
+
+    /// <summary>Id canônico (caixa da tabela); desconhecido volta como veio.</summary>
+    public static string CanonicalId(List<CatalogItem> catalog, string id)
+    {
+        foreach (var c in catalog)
+            if (string.Equals(c.Id, id, System.StringComparison.OrdinalIgnoreCase)) return c.Id;
+        return id;
     }
 
     // URLs e textos externos são dados, não literais (RF-544, aba Outros).

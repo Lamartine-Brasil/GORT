@@ -1,10 +1,43 @@
 # AGENTS.md — guia da IA (leia 1º; contexto novo começa aqui)
 
-> Programa PRONTO e funcionando: só REFINO (visual, PT-BR, textos).
-> Sem reforma/arquitetura nova. `instrucoes.md` removida pelo dono:
-> não recrie. Dono/autor único: **Lamartine Barbosa**.
+> Programa em REFORMA AUTORIZADA pelo dono (05/09/2026): 6 abas → 5 por
+> jornada. Todo o resto das regras segue valendo.
+> Dono/autor único: **Lamartine Barbosa**.
 
-## Estado (05/09/2026 — revisão profunda)
+## Estado (05/09/2026 — reforma 5 abas, AUTORIZADA)
+
+- **Build 0 erros · 259/259 testes verdes** (252+7).
+  Abas: Início, Captura & Leitura, Tradução & Idiomas, Exibição,
+  Sistema (+Depuração oculta). `AdvancedPanel` em modo distribuído
+  (mesma classe serve abas na `AdvancedWindow`); seções em `Expander`
+  nativo; `CloudPriority` duplicado removido (editor único no painel).
+  Remoto unificado (Gerenciar áreas/Área rápida/Área instantânea/
+  Iniciar tradução/Sistema). `docs/imagens/01-09` + README nos nomes
+  novos. Lógica (laço/OCR/tradução/RF) e chaves TOML intactas.
+  Corrigidos pós-reforma: `AdvancedWindow` ganhou abridor no Sistema;
+  painel ressincroniza pós-perfil via `Reload()` (botão/tray/atalho/
+  comunidade/restaurar); `Detach` no `Rebuild` (Restaurar quebrava com
+  "already has a parent" — latente).
+- **Anteriores (05/09/2026 — revisão profunda):** resto abaixo vale.
+- **Auditoria completa em 6 etapas (6 auditores + 6 validadores).**
+  Aprovados e corrigidos: persistência total (~50 chaves), travas do
+  dicionário, fingerprint de cor/exclusão, oclusores por tela, JsonText
+  sem aspas, timeout × cancelamento, sheetId real, semáforo do browser,
+  teto/epoch da memória, 0x/wmctrl, VirtualScreen viva, FollowOnly,
+  fx/fy CLI, IsAlive anexada, retângulos vazios, hook confirmado,
+  Hide sem vazar, classic/cloud no Apply, fonte legível, grupos salvos,
+  decimais, áreas sem modal, rótulos LLM, mutex Local, .bak restore,
+  logs com teto/poda, dicts por idioma, timers no shutdown, CurrentLoop.
+  Rejeitados com rechecagem: FailingColor (mecanismo parcial, fix via
+  Gray garantido), Notify modal (intencional p/ ação do usuário),
+  larguras (não demonstrado). **Lições: NUNCA editar via bash
+  Get-Content/WriteAllText (PS 5.1 corrompe UTF-8 sem BOM); conferir
+  build por EXIT code, não por grep; sem edit "no-op".** 275/275.
+- **Build ZERO warnings (regra nova, 05/09/2026):** os "nullable
+  antigos" foram zerados de verdade — `Req<T>` fail-fast nos
+  `FindControl`, `?.` defensivo, `?? throw` no save, invariante
+  sem-erro⟹lista no `SendAsync`. Tolerância antiga revogada: warning
+  novo quebra o build moralmente (corrija na hora).
 
 - **Build 0 erros · 258/258 testes verdes** (252+6; era 209).
   Warnings zerados por classe: CS8619 (Toml `?? new`), CS8618
@@ -55,7 +88,7 @@
   `CS0618`/`xUnit` (só nullable antigos — não caçar).
 - **Git:** `Lamartine-Brasil/GORT`, `master`, commits `1.0` + links.
   Sem commit/push/PR sem pedido. `user.name/email` local ok.
-- **Versão:** 1.3 (`csproj`; Sobre/splash/rodapé automáticos).
+- **Versão:** 1.5 (`csproj`; Sobre/splash/rodapé automáticos).
 - **Publicado:** `releases/windows-x64/Gort.exe` (sempre última versão,
   limpar pasta antes; NUNCA publicar com exe rodando — trava o dll).
 - **Feito recente:** CPU (ONNX≤4 threads, hash-skip, `Sleep(1)`); snapshot

@@ -175,7 +175,7 @@ public sealed class LlmTranslator : HttpTranslator
                     sb.Append(t.GetString());
             return new ServiceResult { Translations = new List<string> { sb.ToString().Trim() } };
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { return CancelOrTimeout(ct); }
         catch (Exception ex) { return Fail("Falha de processamento: " + ex.Message); }
     }
 

@@ -86,6 +86,7 @@ public static class AnalysisPortrait
                 w.WriteEndObject();
             }
             File.WriteAllBytes(path, ms.ToArray());
+            DebugLog.PruneDebugDir();
             return path;
         }
         catch { return ""; }

@@ -9,7 +9,7 @@ namespace Gort.UI;
 /// <summary>
 /// Janela de opções avançadas (V.3): hospeda o <see cref="AdvancedPanel"/>
 /// com barra de Aplicar/Restaurar (RF-531). Aberta, bloqueia os atalhos
-/// globais (RF-443). O mesmo painel vive na aba Avançado da principal.
+/// globais (RF-443). O mesmo painel vive distribuído na principal.
 /// </summary>
 public sealed class AdvancedWindow : Window
 {

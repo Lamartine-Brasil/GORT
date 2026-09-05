@@ -21,6 +21,7 @@ public sealed class ResultMemory : ITranslationMemory
     private readonly List<(string Service, string Source, string Translated)> _pending = new();
     private readonly object _gate = new();
     private bool _writing;
+    private int _epoch;   // ClearAll invalida o lote em voo (não ressuscita arquivo)
 
     /// <summary>RF-499: a depuração desabilita a limpeza durante a gravação.</summary>
     public bool IsWriting
@@ -47,9 +48,23 @@ public sealed class ResultMemory : ITranslationMemory
             foreach (var f in Directory.GetFiles(Paths.BaseDir, "memory-*.txt"))
             {
                 string id = Path.GetFileNameWithoutExtension(f)["memory-".Length..];
-                _mem[id] = Parse(File.ReadAllText(f));
+                _mem[id] = Cap(Parse(File.ReadAllText(f)));
             }
         }
+    }
+
+    /// <summary>Teto P-48 também na carga (arquivo gigante não entra na RAM).</summary>
+    internal static Dictionary<string, string> Cap(Dictionary<string, string> d)
+    {
+        if (d.Count <= Params.P48_MemoryMaxEntries) return d;
+        var keep = new Dictionary<string, string>();
+        int skip = d.Count - Params.P48_MemoryMaxEntries;
+        foreach (var kv in d)
+        {
+            if (skip-- > 0) continue;
+            keep[kv.Key] = kv.Value;
+        }
+        return keep;
     }
 
     internal static Dictionary<string, string> Parse(string text)
@@ -106,10 +121,12 @@ public sealed class ResultMemory : ITranslationMemory
     public Task FlushAsync()
     {
         List<(string Service, string Source, string Translated)> batch;
+        int epoch;
         lock (_gate)
         {
             if (_pending.Count == 0) return Task.CompletedTask;
             _writing = true;
+            epoch = _epoch;
             batch = new List<(string, string, string)>(_pending);
             _pending.Clear();
         }
@@ -117,6 +134,12 @@ public sealed class ResultMemory : ITranslationMemory
         {
             try
             {
+                lock (_gate)
+                {
+                    // Limpeza no meio do caminho: descarta o lote em vez de
+                    // ressuscitar o arquivo apagado.
+                    if (epoch != _epoch) return;
+                }
                 var bySvc = new Dictionary<string, List<(string, string)>>();
                 foreach (var (svc, src, tr) in batch)
                 {
@@ -144,6 +167,7 @@ public sealed class ResultMemory : ITranslationMemory
         {
             _mem.Clear();
             _pending.Clear();
+            _epoch++;
         }
         foreach (var f in Directory.GetFiles(Paths.BaseDir, "memory-*.txt"))
             try { File.Delete(f); } catch { }

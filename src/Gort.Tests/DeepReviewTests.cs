@@ -4,10 +4,13 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Gort.Config;
+using Gort.Core;
 using Gort.Imaging;
 using Gort.Loop;
 using Gort.Persistence;
 using Gort.Platform;
+using Gort.Regions;
 using Gort.Store;
 using Gort.Translate;
 using Gort.Update;
@@ -317,6 +320,61 @@ public sealed class DeepReviewTests
         Assert.Contains("q=ol%C3%A1%20%26%20adeus", url);
     }
 
+    [Fact]
+    public void WebFree_Headers_Tem_Cara_De_Navegador()
+    {
+        // O endpoint gratuito barra sem User-Agent com 403 mesmo com cota.
+        using var req = new System.Net.Http.HttpRequestMessage();
+        WebFreeTranslator.ApplyHeaders(req);
+        Assert.True(req.Headers.Contains("User-Agent"));
+        string ua = string.Join(" ", req.Headers.GetValues("User-Agent"));
+        Assert.StartsWith("Mozilla/5.0", ua);
+        Assert.Contains("Chrome/", ua);
+        Assert.True(req.Headers.Contains("Cache-Control"));
+    }
+
+    // ── Auditoria etapa 3 ──
+
+    [Fact]
+    public void CustomApi_ParseStandard_Sem_Aspas_E_Erro_String()
+    {
+        // ToString() em string devolvia JSON com aspas ("olá"→"\"olá\"") e
+        // error:"0" virava "\"0\"" (sucesso virava falha).
+        var ok = CustomApiService.ParseStandard("""{"error":"0","result":"olá"}""");
+        Assert.Null(ok.Error);
+        Assert.NotNull(ok.Translations);
+        Assert.Equal("olá", ok.Translations[0]);
+        var arr = CustomApiService.ParseStandard("""{"error":"0","result":["a","b"]}""");
+        Assert.NotNull(arr.Translations);
+        Assert.Equal("ab", arr.Translations[0]);
+        var fail = CustomApiService.ParseStandard("""{"error":"1","message":"ruim"}""");
+        Assert.Equal("ruim", fail.Error);
+    }
+
+    [Fact]
+    public void CancelOrTimeout_Distingue_Usuario_De_Rede()
+    {
+        using var userCts = new CancellationTokenSource();
+        userCts.Cancel();
+        Assert.Throws<OperationCanceledException>(
+            () => HttpTranslator.CancelOrTimeout(userCts.Token));
+        using var netCts = new CancellationTokenSource();
+        var r = HttpTranslator.CancelOrTimeout(netCts.Token);
+        Assert.NotNull(r.Error);
+        Assert.Contains("Tempo esgotado", r.Error);
+    }
+
+    [Fact]
+    public void ResultMemory_Cap_Limita_Na_Carga()
+    {
+        var big = new Dictionary<string, string>();
+        for (int i = 0; i < Core.Params.P48_MemoryMaxEntries + 10; i++)
+            big["k" + i] = "v";
+        var capped = ResultMemory.Cap(big);
+        Assert.Equal(Core.Params.P48_MemoryMaxEntries, capped.Count);
+        Assert.True(capped.ContainsKey("k" + (Core.Params.P48_MemoryMaxEntries + 9)));
+    }
+
     // ── ConfigService.BuildExportText (só cabeçalho, sem depender de disco) ──
 
     [Fact]
@@ -327,6 +385,61 @@ public sealed class DeepReviewTests
         Assert.StartsWith("# GORT", txt);
         Assert.Contains("# window_mode = " + cfg.Profile.WindowMode, txt);
         Assert.Contains("# translator = " + cfg.Profile.TranslationService, txt);
+    }
+
+    // ── Auditoria: FailingColor, HsvToRgb, Fingerprint ──
+
+    [Fact]
+    public void FailingColor_Threshold_Sempre_Reprovada()
+    {
+        // A cor de preenchimento da exclusão nunca pode passar no filtro,
+        // em nenhum limiar (o truncamento do Gray dava limiar-1).
+        for (int t = 0; t <= 255; t++)
+        {
+            var (r, g, b) = Preprocess.FailingColor(FilterMode.Threshold,
+                new List<(int, int, int, int, int, int, int)>(), t);
+            Assert.False(ColorFilter.Passes(r, g, b, FilterMode.Threshold,
+                new List<(int, int, int, int, int, int, int)>(), t));
+        }
+    }
+
+    [Fact]
+    public void HsvToRgb_Satura_Canais()
+    {
+        // s além de 255 (DeriveOutlines) gerava intermediário negativo e o
+        // cast (byte) envolvia para ~248.
+        // b+m dava -1,76 e o cast (byte) envolvia para 254.
+        Assert.Equal(((byte)10, (byte)0, (byte)0), Preprocess.HsvToRgb(0, 300, 10));
+        var (r, g, b) = Preprocess.HsvToRgb(0, 268, 100);
+        Assert.InRange(r, 0, 255);
+        Assert.InRange(g, 0, 255);
+        Assert.InRange(b, 0, 255);
+    }
+
+    private static RegionManager.CapturePlan PlanoBase()
+    {
+        var plan = new RegionManager.CapturePlan();
+        plan.Rects.Add(new ScreenRect(0, 0, 100, 50));
+        plan.GroupsPerRect.Add(new List<int> { 0 });
+        return plan;
+    }
+
+    [Fact]
+    public void Fingerprint_Muda_Com_Exclusao_E_Cor()
+    {
+        // Editar exclusão ou cor com a tela parada tem que invalidar o
+        // cache do laço (antes só surtia efeito ao mudar a imagem).
+        var adv = new AdvancedOptions();
+        var p1 = Profile.Defaults();
+        int base1 = TranslationLoop.Fingerprint(p1, PlanoBase(), false, adv, false, false);
+        var planEx = PlanoBase();
+        planEx.Exclusions.Add(new ScreenRect(10, 10, 20, 20));
+        Assert.NotEqual(base1, TranslationLoop.Fingerprint(p1, planEx, false, adv, false, false));
+        var p2 = Profile.Defaults();
+        p2.ColorGroups[0].R = (p2.ColorGroups[0].R + 1) % 256;
+        Assert.NotEqual(base1, TranslationLoop.Fingerprint(p2, PlanoBase(), false, adv, false, false));
+        // Idêntico continua igual (sem invalidação espúria).
+        Assert.Equal(base1, TranslationLoop.Fingerprint(Profile.Defaults(), PlanoBase(), false, adv, false, false));
     }
 }
 
@@ -432,5 +545,242 @@ public sealed class SelfCaptureTests
         for (int y = 0; y < 2; y++)
             for (int x = 0; x < 4; x++)
                 Assert.True(IsBlack(img.OrigBytes, x, y, 4));
+    }
+}
+
+/// <summary>
+/// Auditoria etapa 1: chaves que morriam no save agora fazem round-trip;
+/// backup, schema, caixa e limites. Só arquivos temporários.
+/// </summary>
+public sealed class PersistenceAuditTests
+{
+    private static string Temp() =>
+        Path.Combine(Path.GetTempPath(), "gort-audit-" + Guid.NewGuid() + ".toml");
+
+    [Fact]
+    public void ProfileRoundTrip_Chaves_Antes_Mortas()
+    {
+        string path = Temp();
+        try
+        {
+            var svc = new ConfigService();
+            var p = svc.Profile;
+            p.ClassicDataset = "jpn"; p.ClassicFast = true;
+            p.SaveResultFile = true; p.CopyToClipboard = true; p.CopyFormat = "both";
+            p.Erode = true; p.TextOrder = "center"; p.TextBackground = false;
+            p.AreaNumbering = true; p.CaptureActiveWindow = true;
+            p.Tts = true; p.TtsWait = true;
+            p.LayerX = 10; p.LayerY = 20; p.LayerW = 300; p.LayerH = 200;
+            p.TextColor = [1, 2, 3]; p.BgColor = [4, 5, 6, 7];
+            p.ServiceSource["web-free"] = "en"; p.ServiceTarget["web-free"] = "pt-BR";
+            p.BgTransparency = true;
+            svc.SaveProfileTo(path);
+
+            var svc2 = new ConfigService();
+            svc2.LoadProfile(path, isMain: false);
+            var q = svc2.Profile;
+            Assert.Equal("jpn", q.ClassicDataset);
+            Assert.True(q.ClassicFast);
+            Assert.True(q.SaveResultFile);
+            Assert.True(q.CopyToClipboard);
+            Assert.Equal("both", q.CopyFormat);
+            Assert.True(q.Erode);
+            Assert.Equal("center", q.TextOrder);
+            Assert.False(q.TextBackground);
+            Assert.True(q.AreaNumbering);
+            Assert.True(q.CaptureActiveWindow);
+            Assert.True(q.Tts);
+            Assert.True(q.TtsWait);
+            Assert.Equal(10, q.LayerX); Assert.Equal(20, q.LayerY);
+            Assert.Equal(300, q.LayerW); Assert.Equal(200, q.LayerH);
+            Assert.Equal(new byte[] { 1, 2, 3 }, q.TextColor);
+            Assert.Equal(new byte[] { 4, 5, 6, 7 }, q.BgColor);
+            Assert.Equal("en", q.ServiceSource["web-free"]);
+            Assert.Equal("pt-BR", q.ServiceTarget["web-free"]);
+            Assert.True(q.BgTransparency);
+        }
+        finally { try { File.Delete(path); } catch { } }
+    }
+
+    [Fact]
+    public void AdvancedRoundTrip_Campos_Antes_Mortos()
+    {
+        string path = Temp();
+        try
+        {
+            var svc = new ConfigService();
+            var a = svc.Advanced;
+            a.RightToLeft = true; a.RemoteAlwaysOnTop = true;
+            a.FollowCompat = true; a.FollowOnly = false;
+            a.AttachedYellowBorder = true;
+            a.SelectBg = "#FF112233"; a.SelectAccent = "#FF445566";
+            a.OpenProfile[0] = new OpenProfileShortcut { Keys = "Ctrl+1", File = "a.toml" };
+            a.ToggleForcedTransparency = "Ctrl+T";
+            a.ServiceSwitch["db"] = "Ctrl+D";
+            a.OverlayBgAlpha = true; a.DarkFont = "Arial";
+            a.LayerBottom = true; a.LayerRight = true;
+            a.CollectActive.Add("x.txt"); a.CollectAsDb = false; a.CollectIgnoreCase = false;
+            a.CustomPresets.Add(new CustomPreset { Name = "p1", Url = "http://x", ReqTemplate = "{}", ResTemplate = "{}" });
+            a.CustomPresets.Add(new CustomPreset { Name = "arq", Url = "http://f", FromFile = true });
+            a.CustomSameCodes = false; a.CustomSource = "ja"; a.CustomTarget = "en";
+            a.CustomUrl = "http://h:1/t"; a.LlmInstruction = "seja breve";
+            a.LlmCustomModel = "m-x"; a.LlmNoDefault = true; a.LlmPreset = "eco";
+            a.LlmTemp = 42; a.LlmReason = 2; a.LlmMaxOut = 5000;
+            a.ClipboardTranslate = true; a.ClipboardShowOriginal = true;
+            a.ClipboardShowWorking = true; a.ClipboardCopyFormat = "both";
+            a.CloudPriority = true; a.SnapshotStaySec = 7;
+            svc.SaveAdvancedTo(path);
+
+            var svc2 = new ConfigService();
+            svc2.LoadAdvancedFrom(path);
+            var b = svc2.Advanced;
+            Assert.True(b.RightToLeft);
+            Assert.True(b.RemoteAlwaysOnTop);
+            Assert.True(b.FollowCompat);
+            Assert.False(b.FollowOnly);
+            Assert.True(b.AttachedYellowBorder);
+            Assert.Equal("#FF112233", b.SelectBg);
+            Assert.Equal("Ctrl+1", b.OpenProfile[0].Keys);
+            Assert.Equal("a.toml", b.OpenProfile[0].File);
+            Assert.Equal("Ctrl+T", b.ToggleForcedTransparency);
+            Assert.Equal("Ctrl+D", b.ServiceSwitch["db"]);
+            Assert.True(b.OverlayBgAlpha);
+            Assert.Equal("Arial", b.DarkFont);
+            Assert.True(b.LayerBottom);
+            Assert.Contains("x.txt", b.CollectActive);
+            Assert.False(b.CollectAsDb);
+            Assert.Single(b.CustomPresets);   // o de arquivo não persiste (fonte é o disco)
+            Assert.Equal("p1", b.CustomPresets[0].Name);
+            Assert.Equal("{}", b.CustomPresets[0].ReqTemplate);
+            Assert.False(b.CustomSameCodes);
+            Assert.Equal("ja", b.CustomSource);
+            Assert.Equal("http://h:1/t", b.CustomUrl);
+            Assert.Equal("seja breve", b.LlmInstruction);
+            Assert.Equal("eco", b.LlmPreset);
+            Assert.Equal(42, b.LlmTemp);
+            Assert.Equal(2, b.LlmReason);
+            Assert.Equal(5000, b.LlmMaxOut);
+            Assert.True(b.ClipboardTranslate);
+            Assert.Equal("both", b.ClipboardCopyFormat);
+            Assert.True(b.CloudPriority);
+            Assert.Equal(7, b.SnapshotStaySec);
+        }
+        finally { try { File.Delete(path); } catch { } }
+    }
+
+    [Fact]
+    public void Corrompido_Sinaliza_E_Perfil_Futuro_Preserva_Schema()
+    {
+        string bad = Temp(), bak = bad + ".bak";
+        string v99 = Temp(), v99b = Temp();
+        try
+        {
+            File.WriteAllText(bad, "{{{inválido");
+            var (raw, fresh, corrupt) = TomlFile.LoadEx(bad);
+            Assert.True(corrupt);
+            Assert.NotNull(raw);
+
+            File.WriteAllText(v99, "schema_version = 99\nspeed = 2\n");
+            var svc = new ConfigService();
+            svc.LoadProfile(v99, isMain: false);
+            Assert.Equal(99, svc.Profile.LoadedSchema);
+            Assert.Equal(2, svc.Profile.Speed);
+            svc.SaveProfileTo(v99b);
+            Assert.Contains("schema_version = 99", File.ReadAllText(v99b));
+        }
+        finally
+        {
+            foreach (var f in new[] { bad, bak, v99, v99b })
+                try { File.Delete(f); } catch { }
+        }
+    }
+
+    [Fact]
+    public void Caixa_Idioma_E_Normalizada()
+    {
+        Assert.Equal("en", LanguageTable.Find("EN")?.Key);
+        Assert.Equal("pt-BR", LanguageTable.Find("pt-br")?.Key);
+        Assert.Equal("layer", Catalogs.CanonicalId(Catalogs.WindowModes, "Layer"));
+        var p = Profile.Defaults();
+        p.WindowMode = "Layer"; p.OcrLanguage = "EN"; p.TargetLanguage = "pt-br";
+        p.Normalize(out var notices, deriveLangDefaults: false);
+        Assert.Equal("layer", p.WindowMode);
+        Assert.Equal("en", p.OcrLanguage);
+        Assert.Equal("pt-BR", p.TargetLanguage);
+        Assert.DoesNotContain(notices, n => n.Contains("window_mode"));
+    }
+
+    [Fact]
+    public void Normalize_Limita_Avancado_E_Avisa_Cor()
+    {
+        var a = new AdvancedOptions
+        {
+            LlmTemp = 999, LlmReason = 9, LlmMaxOut = 1, SnapshotStaySec = -5,
+            LlmPreset = "x", ClipboardCopyFormat = "x", SelectBg = "zzz",
+        };
+        a.Normalize();
+        Assert.Equal(100, a.LlmTemp);
+        Assert.Equal(3, a.LlmReason);
+        Assert.Equal(500, a.LlmMaxOut);
+        Assert.Equal(0, a.SnapshotStaySec);
+        Assert.Equal("default", a.LlmPreset);
+        Assert.Equal("ocr-only", a.ClipboardCopyFormat);
+        Assert.Equal("#FFFFFFFF", a.SelectBg);
+
+        var p = Profile.Defaults();
+        p.TextColor = [1, 2];
+        p.Normalize(out var notices, deriveLangDefaults: false);
+        Assert.Equal(new byte[] { 255, 255, 255 }, p.TextColor);
+        Assert.Contains(notices, n => n.Contains("text_color"));
+    }
+
+    [Fact]
+    public void GetInt_Overflow_E_Double_Truncam()
+    {
+        var t = new TomlTable { ["big"] = long.MaxValue, ["frac"] = 2.9, ["s"] = "" };
+        Assert.Equal(int.MaxValue, TomlFile.GetInt(t, "big", 0));
+        Assert.Equal(2, TomlFile.GetInt(t, "frac", 0));
+        Assert.Equal(5, TomlFile.GetInt(t, "falta", 5));
+        Assert.Equal(0, TomlFile.GetInt(t, "s", 5));   // RF-042 vazio→0 mantido
+    }
+
+    [Fact]
+    public void CredFile_Higieniza_E_Marker_No_Base()
+    {
+        Assert.EndsWith("creds-commercial-kr.toml", Paths.CredFile("commercial-kr"));
+        Assert.EndsWith("creds-custom.toml", Paths.CredFile("../evil"));
+        Assert.EndsWith("creds-custom.toml", Paths.CredFile(""));
+        Assert.StartsWith(Paths.BaseDir, Paths.MultiInstanceMarker);
+    }
+}
+
+/// <summary>
+/// Auditoria etapa 4: interruptor do segue-mouse e retângulos vazios.
+/// Puros, sem SO.
+/// </summary>
+public sealed class RegionsAuditTests
+{
+    [Fact]
+    public void FollowOnly_Sincroniza_Do_Advanced()
+    {
+        // O interruptor "somente mouse" não tinha efeito (nunca propagado).
+        var cfg = new ConfigService();
+        var mgr = new RegionManager(cfg);
+        cfg.Advanced.FollowOnly = false;
+        mgr.BuildPlan();
+        Assert.False(mgr.FollowOnly);
+        Assert.False(mgr.CanTranslate(out _));
+    }
+
+    [Fact]
+    public void Areas_Vazias_Rejeitadas()
+    {
+        var cfg = new ConfigService();
+        var mgr = new RegionManager(cfg);
+        Assert.Null(mgr.AddArea(new ScreenRect(0, 0, 0, 0), exclusion: false));
+        mgr.SetQuick(new ScreenRect(0, 0, -1, 5));
+        Assert.Null(mgr.QuickArea);
+        mgr.SetSnapshot(new ScreenRect(0, 0, 10, 0));
+        Assert.Null(mgr.SnapshotArea);
     }
 }

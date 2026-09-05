@@ -726,6 +726,7 @@ public sealed class OverlayWindow : Window
                 System.IO.Path.Combine(Core.Paths.DebugDir,
                     $"cycle-{DateTime.Now:yyyyMMdd-HHmmss-fff}-draw.json"),
                 ms.ToArray());
+            Debug.DebugLog.PruneDebugDir();
         }
         catch { }
     }

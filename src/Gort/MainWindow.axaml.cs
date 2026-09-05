@@ -18,6 +18,10 @@ namespace Gort;
 
 public partial class MainWindow : Window
 {
+    /// <summary>Controle do AXAML: falha alto com o nome, nunca NRE mudo.</summary>
+    private T Req<T>(string name) where T : Control =>
+        this.FindControl<T>(name) ?? throw new InvalidOperationException("Controle ausente: " + name);
+
     private readonly ConfigService _cfg;
     private readonly TranslationController _ctl;
     private readonly RegionManager _regions;
@@ -43,7 +47,7 @@ public partial class MainWindow : Window
         Locale.Strings.Load(LocaleFile(), AppLang());
 
         var asm = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
-        var ver = this.FindControl<TextBlock>("VersionText");
+        var ver = Req<TextBlock>("VersionText");
         ver.Text = $"GORT v{asm}";
         ver.PointerPressed += (_, _) =>
         {
@@ -55,17 +59,17 @@ public partial class MainWindow : Window
         LoadUiFromConfig();
         // 6 abas (Traduzir=0 primeiro): abre sempre em Traduzir; a opção
         // "começar no assistente" apenas reinicia o assistente no topo dela.
-        var tabs = this.FindControl<TabControl>("Tabs");
+        var tabs = Req<TabControl>("Tabs");
         tabs.SelectedIndex = 0;   // RF-501
         tabs.SelectionChanged += (_, _) => SyncAdvancedGuard();
         PaintTabHeaders();
         tabs.SelectionChanged += (_, _) => PaintTabHeaders();
         if (_cfg.App.BasicTabDefault) { _u.WizStep = 0; RenderWizard(); }
 
-        this.FindControl<Button>("ApplyBtn").Click += OnApply;
-        this.FindControl<Button>("DonateBtn").Click += (_, _)
+        Req<Button>("ApplyBtn").Click += OnApply;
+        Req<Button>("DonateBtn").Click += (_, _)
             => OpenUrl(Catalogs.Links.Donate);                       // RF-544 (dado, não literal)
-        this.FindControl<Button>("MemoryBtn").Click += OnMemoryDetail;
+        Req<Button>("MemoryBtn").Click += OnMemoryDetail;
 
         // RF-502: arrastar por área vazia do corpo, além da barra de título.
         PointerPressed += (_, e) =>
@@ -90,7 +94,7 @@ public partial class MainWindow : Window
         _applyTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
         _applyTimer.Tick += (_, _) =>
         {
-            this.FindControl<TextBlock>("ApplyHint").Text = "";
+            Req<TextBlock>("ApplyHint").Text = "";
             _applyTimer.Stop();
         };
 
@@ -155,7 +159,7 @@ public partial class MainWindow : Window
         catch { }
     }
 
-    private async void CheckAreasOnScreen()
+    private void CheckAreasOnScreen()
     {
         if (_checkingAreas) return;   // Screens.Changed dispara em rajada
         _checkingAreas = true;
@@ -163,11 +167,12 @@ public partial class MainWindow : Window
         {
         var v = VirtualScreen();
         var bad = _regions.ValidateAgainst(v);
-        if (bad.Count == 0) return;
+        if (bad.Count == 0) { _checkingAreas = false; return; }
         var box = new Window
         {
             Title = "Áreas fora da tela", Width = 440, Height = 200,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Topmost = true,
             Content = new StackPanel
             {
                 Margin = new Thickness(16), Spacing = 12,
@@ -188,9 +193,13 @@ public partial class MainWindow : Window
             box.Close();
             ((App)Application.Current!).OpenAreas();
         };
-        await box.ShowDialog(this);
+        // Sem modal: o evento dispara com o laço vivo e o diálogo roubava o
+        // foco do jogo (P2). A janela fecha ao clicar; a trava sai com ela.
+        box.Closed += (_, _) => _checkingAreas = false;
+        try { box.Show(this); }
+        catch { _checkingAreas = false; }
         }
-        finally { _checkingAreas = false; }
+        catch { _checkingAreas = false; }
     }
 
     private ScreenRect VirtualScreen()
@@ -207,9 +216,9 @@ public partial class MainWindow : Window
 
     private void SyncAdvancedGuard()
     {
-        var tabs = this.FindControl<TabControl>("Tabs");
-        Input.HotkeyGuard.AdvancedOpen =
-            tabs?.SelectedItem == this.FindControl<TabItem>("TabAdvanced");
+        // Sem aba Avançado dedicada: atalhos valem na janela principal como
+        // em qualquer aba comum (RF-443 segue valendo na janela Avançada).
+        Input.HotkeyGuard.AdvancedOpen = false;
     }
 
     // Abas com texto puro e cor forte (sem emoji apagado): ativa preta,
@@ -217,10 +226,10 @@ public partial class MainWindow : Window
     private void PaintTabHeaders()
     {
         var tabs = this.FindControl<TabControl>("Tabs");
-        string[] names = ["TabTranslate", "TabRead", "TabDict", "TabDisplay",
-            "TabAdvanced", "TabSystem", "TabDebug"];
-        string[] labels = ["Traduzir", "Ler", "Dicionário e idiomas", "Mostrar",
-            "Avançado", "Sistema", "Depuração"];
+        string[] names = ["TabHome", "TabCapture", "TabLang", "TabShow",
+            "TabSystem", "TabDebug"];
+        string[] labels = ["Início", "Captura & Leitura", "Tradução & Idiomas", "Exibição",
+            "Sistema", "Depuração"];
         for (int i = 0; i < names.Length; i++)
         {
             var ti = this.FindControl<TabItem>(names[i]);
@@ -282,9 +291,9 @@ public partial class MainWindow : Window
         // configurar chave com tradução rodando).
         if (_applying) return;
         _applying = true;
-        var applyBtn = this.FindControl<Button>("ApplyBtn");
+        var applyBtn = Req<Button>("ApplyBtn");
         applyBtn.IsEnabled = false;
-        this.FindControl<TextBlock>("ApplyHint").Text = "Aplicando…";
+        Req<TextBlock>("ApplyHint").Text = "Aplicando…";
         var app = (App)Application.Current!;
         bool wasRunning = app.Controller.State != LoopState.Idle;
         try
@@ -299,7 +308,7 @@ public partial class MainWindow : Window
                     Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
                     {
                         ApplyFromUi();   // UI → configuração (RF-504)
-                        _u.AdvPanel?.Apply();   // aba Avançado edita um clone
+                        _u.AdvPanel?.Apply();   // painel distribuído edita um clone
                     });
                     _cfg.SaveProfile();
                     _cfg.SaveAdvanced();
@@ -330,7 +339,7 @@ public partial class MainWindow : Window
                     .Any(k => !string.IsNullOrEmpty(k.Secret))
                 ? "chave salva ✔" : "sem chave — cole, teste e aplique";
             // Confirmação inline no rodapé (some sozinha): sem modal chato.
-            this.FindControl<TextBlock>("ApplyHint").Text = "✔ " + Strings._("msg.applied");
+            Req<TextBlock>("ApplyHint").Text = "✔ " + Strings._("msg.applied");
             _applyTimer.Stop();
             _applyTimer.Start();
         }
@@ -394,7 +403,7 @@ public partial class MainWindow : Window
         }
         _lastCpuTime = proc.TotalProcessorTime;
         _lastCpuAt = now;
-        this.FindControl<Button>("MemoryBtn").Content =
+        Req<Button>("MemoryBtn").Content =
             $"Memória: {mb:F0} MB · CPU: {_cpuPct:F0}%";
     }
 

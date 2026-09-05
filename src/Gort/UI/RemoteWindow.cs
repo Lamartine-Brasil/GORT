@@ -9,8 +9,8 @@ namespace Gort.UI;
 
 /// <summary>
 /// Controle remoto (V.2, RF-517..522): barrinha sem bordas com o essencial —
-/// áreas, área rápida, instantâneo, iniciar/parar com cor de estado e
-/// ajustes. Arrastável em qualquer ponto, redimensionável
+/// gerenciar áreas, área rápida, área instantânea, iniciar/parar com cor de
+/// estado e sistema. Arrastável em qualquer ponto, redimensionável
 /// mantendo a proporção (RF-518), controles escalados (RF-519),
 /// sempre-no-topo opcional (RF-520), fechar esconde (RF-521), botões reagem
 /// ao pressionar (RF-522).
@@ -32,7 +32,7 @@ public interface IRemoteHost
 
 public sealed class RemoteWindow : Window
 {
-    private const double BaseW = 408, BaseH = 96;
+    private const double BaseW = 470, BaseH = 96;
     private readonly Button _toggle;
     private readonly IRemoteHost _app;
     private readonly Avalonia.Threading.DispatcherTimer _poll;
@@ -47,7 +47,7 @@ public sealed class RemoteWindow : Window
         WindowDecorations = Avalonia.Controls.WindowDecorations.None;
         ShowInTaskbar = false;
         Topmost = app.RemoteAlwaysOnTop;   // RF-520
-        Closed += (_, _) => _poll.Stop();  // não vazar o temporizador
+        Closed += (_, _) => { try { _poll?.Stop(); } catch { } };  // não vazar o temporizador
 
         // Borda de cima: título à esquerda, fechar à direita (margem original).
         var titleBar = new DockPanel { Height = 28 };
@@ -76,14 +76,14 @@ public sealed class RemoteWindow : Window
         };
         // Ícones vetoriais desenhados à mão (sem fonte de ícones: funciona
         // em Windows, Linux e macOS). Cinza neutro legível em tema claro/escuro.
-        var area = Mk("Áreas", "Gerenciar áreas de OCR", AreasIcon(),
+        var area = Mk("Gerenciar áreas", "Gerenciar áreas de OCR", AreasIcon(),
             () => _app.OpenAreas());
-        var quick = Mk("Rápida", "Área rápida temporária (Ctrl+Shift+X)", QuickIcon(),
+        var quick = Mk("Área rápida", "Área rápida temporária (Ctrl+Shift+X)", QuickIcon(),
             () => _app.HotkeyActions?.Execute(Config.ShortcutActions.Quick));
-        var snap = Mk("Instantâneo", "Traduzir um trecho agora (Ctrl+Shift+A)", CameraIcon(),
+        var snap = Mk("Área instantânea", "Traduzir um trecho agora (Ctrl+Shift+A)", CameraIcon(),
             () => _app.HotkeyActions?.SnapshotFromUi());
         _toggle = MkToggle(() => _app.ToggleLoop());
-        var cfg = Mk("Ajustes", "Abrir configurações", GearIcon(),
+        var cfg = Mk("Sistema", "Abrir configurações", GearIcon(),
             () => _app.ShowMain());
         // Sem botão "_" na barrinha: o "×" do título já esconde (RF-521).
         // Dois botões fazendo a mesma coisa só confundia.
@@ -161,7 +161,7 @@ public sealed class RemoteWindow : Window
         };
         _toggleLabel = new TextBlock
         {
-            Text = "Traduzir", FontSize = 11,
+            Text = "Iniciar tradução", FontSize = 11,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
         };
         var stack = new StackPanel
@@ -287,7 +287,7 @@ public sealed class RemoteWindow : Window
     {
         bool idle = _app.LoopState == Lifecycle.LoopState.Idle;
         if (_toggleSymbol is not null) _toggleSymbol.Text = idle ? "▶" : "■";
-        if (_toggleLabel is not null) _toggleLabel.Text = idle ? "Traduzir" : "Parar";
+        if (_toggleLabel is not null) _toggleLabel.Text = idle ? "Iniciar tradução" : "Parar";
         _toggle.Background = idle
             ? null
             : new SolidColorBrush(Color.FromRgb(46, 160, 67));

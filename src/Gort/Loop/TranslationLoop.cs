@@ -171,6 +171,13 @@ public sealed class TranslationLoop : ILoopBody
                     {
                         treated = r < _lastTreated.Count
                             ? new List<string>(_lastTreated[r]) : new List<string>();
+                        // Geometria junto (igual ao descarte por imagem): sem
+                        // ela o overlay desenhava o traduzido sem posição.
+                        if (_lastKept.TryGetValue(r, out var kprev2))
+                        {
+                            keptRegion = kprev2.Region;
+                            keptBlocks = kprev2.Blocks;
+                        }
                     }
                 else if (ocr.Error is not null)
                 {
@@ -403,6 +410,11 @@ public sealed class TranslationLoop : ILoopBody
         h.Add(p.WindowMode); h.Add(overlay); h.Add(oneLine);
         h.Add(plan.Rects.Count);
         foreach (var rc in plan.Rects) { h.Add(rc.X); h.Add(rc.Y); h.Add(rc.W); h.Add(rc.H); }
+        // Cor editada ou exclusão movida/criada com a tela parada também
+        // invalida (antes só surtia efeito quando a imagem mudava).
+        foreach (var g in p.ColorGroups)
+        { h.Add(g.R); h.Add(g.G); h.Add(g.B); h.Add(g.S1); h.Add(g.S2); h.Add(g.V1); h.Add(g.V2); }
+        foreach (var e in plan.Exclusions) { h.Add(e.X); h.Add(e.Y); h.Add(e.W); h.Add(e.H); }
         foreach (var g in plan.GroupsPerRect) foreach (var i in g) h.Add(i);
         return h.ToHashCode();
     }
@@ -542,6 +554,7 @@ public sealed class TranslationLoop : ILoopBody
             System.IO.Directory.CreateDirectory(Core.Paths.DebugDir);
             System.IO.File.WriteAllBytes(path,
                 Imaging.Bmp.Encode(bgra, proc.Width, proc.Height, 32));
+            Debug.DebugLog.PruneDebugDir();
         }
         catch { }
     }

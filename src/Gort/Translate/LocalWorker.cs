@@ -132,7 +132,7 @@ public sealed class LocalWorker : HttpTranslator, IDisposable
                 return Fail(reply[4..]);
             return Fail("Resposta inesperada do processo auxiliar.");
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { return CancelOrTimeout(ct); }
         catch (Exception ex) { return Fail(ex.Message); }
         finally { _gate.Release(); }
     }

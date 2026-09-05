@@ -40,8 +40,15 @@ public sealed class LayerSink : IDisplaySink
         {
             var w = _win;
             if (!w.IsVisible) return Array.Empty<Platform.ScreenRect>();
+            // Escala da tela que contém a janela (não a primária: DPI misto
+            // errava o oclusor e o OCR relia a própria saída).
             double s = 1.0;
-            try { s = w.Screens.Primary?.Scaling ?? 1.0; } catch { }
+            try
+            {
+                s = w.Screens.ScreenFromWindow(w)?.Scaling
+                    ?? w.Screens.Primary?.Scaling ?? 1.0;
+            }
+            catch { }
             var p = w.Position;
             return new[]
             {

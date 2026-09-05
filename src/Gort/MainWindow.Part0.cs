@@ -34,9 +34,9 @@ public partial class MainWindow : Window
         public StackPanel PClassic = new(), POs = new(), PModern = new(),
             PCloud = new(), PVenv = new();
         public TextBox Dataset = new();
-        public ComboBox OcrLangClassic = new(), OsLang = new(), ModernLang = new(),
+        public ComboBox OcrLangClassic = new(), ModernLang = new(),
             CloudLang = new(), VenvLang = new();
-        public CheckBox Fast = new(), ModernVertical = new(), CloudPriority = new();
+        public CheckBox Fast = new(), ModernVertical = new();
         public RadioButton OcrEn = new(), OcrJa = new();
         public TextBox CloudCred = new();
         public TextBlock CloudUsage = new();
@@ -68,7 +68,7 @@ public partial class MainWindow : Window
             S1 = new(), S2 = new(), V1 = new(), V2 = new();
         public TextBlock GroupCount = new();
         // Aba 1
-        public ComboBox FontFam = new();
+        public TextBox FontFam = new() { Name = "FontFam" };
         public TextBox FontSize = new();
         public Button SwText = new(), SwC1 = new(), SwC2 = new(), SwBg = new();
         public byte[] CText = [255, 255, 255], CC1 = [192, 192, 192],
@@ -97,6 +97,11 @@ public partial class MainWindow : Window
         // Primeiro acesso
         public Button StartBtn = new();
         public TextBlock AreaStatus = new();
+        public TextBlock NowService = new(), GlobalPair = new();
+        // Jornada (5 abas): hospedeiros dos controles avançados distribuídos
+        // (repreenchidos a cada NeedsRebuild) e expanders das seções.
+        public StackPanel DictPassesHost = new(), CloudPriorityHost = new();
+        public Expander XApp = new(), XShortcuts = new(), XShowAdv = new(), XTrAdv = new();
         public UI.AdvancedPanel? AdvPanel;
     }
 
@@ -117,7 +122,7 @@ public partial class MainWindow : Window
         _cfg.App.UiLanguage == "" ? Strings.SystemLanguage() : _cfg.App.UiLanguage;  // RF-484
 
     private void ShowDebugTab() =>
-        this.FindControl<TabItem>("TabDebug").IsVisible = Debug.DebugFlags.Enabled;
+        Req<TabItem>("TabDebug").IsVisible = Debug.DebugFlags.Enabled;
 
     // ================= construção =================
 
@@ -161,33 +166,104 @@ public partial class MainWindow : Window
         return p;
     }
 
-    // Nova UI por tarefa (tudo por aba, com rolagem e nada em janela extra
-    // nem dobrado): Traduzir, Ler, Dicionário e idiomas, Mostrar, Avançado,
-    // Sistema. Uma só verdade por assunto.
+    // Expansível (Avalonia nativo, sem dependência nova): o avançado começa
+    // colapsado; cada jornada afirma os controles no teste visual.
+    private static Expander Xp(string header, Control body)
+    {
+        return new Expander { Header = header, Content = body, IsExpanded = false };
+    }
+
+    private void SelectTab(string name)
+    {
+        var tabs = this.FindControl<TabControl>("Tabs");
+        var item = this.FindControl<TabItem>(name);
+        if (tabs is not null && item is not null) tabs.SelectedItem = item;
+    }
+
+    // Nova UI por jornada (5 abas, nada excluído): Início, Captura & Leitura,
+    // Tradução & Idiomas, Exibição, Sistema. Seções inteiras mudam de aba;
+    // os controles são os mesmos (mesmas instâncias em _u). O painel avançado
+    // vive em modo distribuído: suas seções moram nos expanders (ver
+    // DistributeAdvanced) e a janela Avançada separada usa outro painel.
     private void BuildTabs()
     {
-        this.FindControl<TabItem>("TabTranslate").Content = Sv(Stack(
-            UI.GortTheme.Card(BuildQuickStart()), UI.GortTheme.Card(BuildSpeedSection()),
-            UI.GortTheme.Card(BuildServiceSection())));
-        this.FindControl<TabItem>("TabRead").Content = Sv(Stack(
-            UI.GortTheme.Card(BuildOcrSection()),
+        _u.AdvPanel = new UI.AdvancedPanel(_cfg, distributed: true);
+        _u.AdvPanel.NeedsRebuild += () => DistributeAdvanced();
+        // Expansíveis criados uma vez (só o conteúdo troca ao redistribuir).
+        _u.XApp = Xp("Comportamento", new StackPanel());
+        _u.XShortcuts = Xp("Atalhos avançados", new StackPanel());
+        _u.XShowAdv = Xp("Avançado", new StackPanel());
+        _u.XTrAdv = Xp("Avançado", new StackPanel());
+        var imgAdv = Xp("Avançado", Stack(
             UI.GortTheme.Card(BuildImageFilterSection()),
-            UI.GortTheme.Card(BuildCaptureSourceSection())));
-        this.FindControl<TabItem>("TabDict").Content = Sv(Stack(
-            UI.GortTheme.Card(BuildDictSection()), UI.GortTheme.Card(BuildTranslation())));
-        this.FindControl<TabItem>("TabDisplay").Content = Sv(Stack(
-            UI.GortTheme.Card(BuildWindowModeSection()), UI.GortTheme.Card(BuildText())));
-        _u.AdvPanel = new UI.AdvancedPanel(_cfg);
-        _u.AdvPanel.NeedsRebuild += () =>
-        {
-            _u.AdvPanel = new UI.AdvancedPanel(_cfg);
-            this.FindControl<TabItem>("TabAdvanced").Content = Sv(_u.AdvPanel);
-        };
-        this.FindControl<TabItem>("TabAdvanced").Content = Sv(_u.AdvPanel);
-        this.FindControl<TabItem>("TabSystem").Content = Sv(Stack(
-            BuildSystemSection(), BuildOther()));
-        this.FindControl<TabItem>("TabDebug").Content = Sv(BuildDebug());
+            UI.GortTheme.Card(_u.CloudPriorityHost)));
+        var langMatrix = Xp("Idiomas por serviço", UI.GortTheme.Card(BuildTranslation()));
+        Req<TabItem>("TabHome").Content = Sv(Stack(
+            UI.GortTheme.Card(BuildQuickStart())));
+        Req<TabItem>("TabCapture").Content = Sv(Stack(
+            UI.GortTheme.Card(BuildCaptureSourceSection()),
+            UI.GortTheme.Card(BuildOcrSection()),
+            UI.GortTheme.Card(BuildSpeedSection()),
+            imgAdv));
+        Req<TabItem>("TabLang").Content = Sv(Stack(
+            UI.GortTheme.Card(BuildServiceSection()),
+            UI.GortTheme.Card(BuildDictSection()),
+            langMatrix,
+            _u.XTrAdv));
+        Req<TabItem>("TabShow").Content = Sv(Stack(
+            UI.GortTheme.Card(BuildWindowModeSection()),
+            UI.GortTheme.Card(BuildText()),
+            _u.XShowAdv));
+        Req<TabItem>("TabSystem").Content = Sv(Stack(
+            BuildSystemSection(), BuildOther(),
+            _u.XApp, _u.XShortcuts));
+        Req<TabItem>("TabDebug").Content = Sv(BuildDebug());
         BuildWizard();
+        DistributeAdvanced();
+    }
+
+    /// <summary>
+    /// Pós-perfil: o painel avançado relê do cfg (seções e hospedeiros
+    /// atualizados via NeedsRebuild). Edições não aplicadas se perdem.
+    /// </summary>
+    public void ReloadAdvancedPanel() => _u.AdvPanel?.Reload();
+
+    /// <summary>
+    /// (Re)hospeda as seções do painel distribuído: chamado ao construir e a
+    /// cada NeedsRebuild (o painel reconstrói as seções no lugar). Ordem das
+    /// seções: aplicativo, atalhos, janela, coletânea, tradução. OCR e
+    /// dicionário contribuem só com 1 controle cada (hospedeiros abaixo).
+    /// </summary>
+    private void DistributeAdvanced()
+    {
+        var panel = _u.AdvPanel;
+        if (panel is null) return;
+        var secs = panel.Sections;
+        if (secs.Count < 7) return;
+        // Troca só o conteúdo (o expansível é o mesmo desde BuildTabs).
+        _u.XApp.Content = secs[0].Content;
+        _u.XShortcuts.Content = secs[1].Content;
+        _u.XShowAdv.Content = secs[2].Content;
+        _u.XTrAdv.Content = Stack(secs[3].Content, secs[4].Content);
+        HomeCloudPriority();
+        HomeDictPasses();
+    }
+
+    private void HomeCloudPriority()
+    {
+        _u.CloudPriorityHost.Children.Clear();
+        var panel = _u.AdvPanel;
+        if (panel is null) return;
+        _u.CloudPriorityHost.Children.Add(panel.CloudPriorityBox);
+    }
+
+    private void HomeDictPasses()
+    {
+        _u.DictPassesHost.Children.Clear();
+        var panel = _u.AdvPanel;
+        if (panel is null) return;
+        _u.DictPassesHost.Children.Add(Row(
+            new TextBlock { Text = Strings._("dict.passes") }, panel.DictPassesField));
     }
 
     // === Seções por função (nova UI agrupada) ===
@@ -227,7 +303,8 @@ public partial class MainWindow : Window
         _u.PClassic.Children.Add(Row(new TextBlock { Text = Strings._("ocr.dataset") }, _u.Dataset));
         _u.PClassic.Children.Add(Row(new TextBlock { Text = "Idioma" }, _u.OcrLangClassic));
         _u.PClassic.Children.Add(_u.Fast);
-        _u.OsLang.ItemsSource = new List<string>();
+        // Motor do SO sem projeção (combo de idioma removido: motor
+        // indisponível, nunca populado); fica o botão de orientação.
         var addLang = new Button { Content = Strings._("ocr.add_language") };
         // ms-settings: só existe no Windows — nas outras plataformas o
         // botão mostra orientação em vez de falhar em silêncio (RF-136).
@@ -237,18 +314,17 @@ public partial class MainWindow : Window
             Avalonia.Controls.ToolTip.SetTip(addLang, "Disponível apenas no Windows");
         }
         else addLang.Click += (_, _) => OpenUrl("ms-settings:regionlanguage");  // RF-136
-        _u.POs.Children.Add(Row(new TextBlock { Text = "Idioma" }, _u.OsLang));
         _u.POs.Children.Add(addLang);
         _u.ModernVertical.Content = "Linhas verticais (reordenar por coluna)";
         _u.PModern.Children.Add(Row(new TextBlock { Text = "Idioma" }, _u.ModernLang));
         _u.PModern.Children.Add(_u.ModernVertical);
         var credBtn = new Button { Content = Strings._("ocr.cloud_cred") };
         credBtn.Click += (_, _) => PickFile(_u.CloudCred, "JSON (*.json)|*.json");
-        _u.CloudPriority.Content = Strings._("ocr.cloud_priority");
+        // Prioridade da nuvem: editor único no expander da Captura (painel);
+        // o duplicado daqui foi removido (duas caixas, uma chave).
         _u.PCloud.Children.Add(Row(new TextBlock { Text = "Idioma" }, _u.CloudLang));
         _u.PCloud.Children.Add(Row(_u.CloudCred, credBtn));
         _u.PCloud.Children.Add(_u.CloudUsage);
-        _u.PCloud.Children.Add(_u.CloudPriority);
         var venvBtn = new Button { Content = Strings._("ocr.install") };
         venvBtn.Click += (_, _) => new UI.VenvInstallWindow().Show(this);
         _u.PVenv.Children.Add(Row(new TextBlock { Text = "Idioma" }, _u.VenvLang));
@@ -262,6 +338,9 @@ public partial class MainWindow : Window
     {
         var p = new StackPanel { Margin = new Thickness(12), Spacing = 4 };
         p.Children.Add(H(Strings._("tr.service")));
+        // Par global (origem→destino) trazido para cima: só leitura, o ajuste
+        // fino mora na grade "Idiomas por serviço".
+        p.Children.Add(Row(new TextBlock { Text = "Par global:" }, _u.GlobalPair));
         _u.TrService.ItemsSource = Translate.Services.List()
             .Select(e => e.Id + " — " + e.Display).ToList();
         _u.TrService.SelectionChanged += (_, _) => ShowTrPanel();
@@ -361,6 +440,15 @@ public partial class MainWindow : Window
         _u.DictWord.Content = Strings._("dict.by_word");
         _u.DictFile.Width = 160;
         p.Children.Add(Row(_u.DictUse, _u.DictFile, _u.DictWord));
+        // Passadas extras (vinham do painel avançado; mesma chave, outro leitor).
+        p.Children.Add(_u.DictPassesHost);
+        var editor = new Button { Content = "Abrir editor" };
+        editor.Click += (_, _) => ((App)Avalonia.Application.Current!).OpenDictEditor();
+        UI.GortTheme.Secondary(editor);
+        p.Children.Add(Row(editor));
+        // Voz (vinha do fim da grade de idiomas).
+        p.Children.Add(_u.Tts);
+        p.Children.Add(_u.TtsWait);
         return p;
     }
 
@@ -379,8 +467,15 @@ public partial class MainWindow : Window
         p.Children.Add(Row(_u.FRgb, _u.FHsv, _u.FThr, _u.Threshold, _u.Erode));
         p.Children.Add(Row(new TextBlock { Text = Strings._("img.group") },
             _u.Groups, _u.GroupCount, viewBtn));
-        _u.Groups.SelectionChanged += (_, _) => LoadGroupFields();
-        _u.Groups.SelectionChanged += (_, _) => GroupComboPicked();
+        _u.Groups.SelectionChanged += (_, _) =>
+        {
+            // Salva o grupo anterior antes de mostrar o novo (trocar sem
+            // aplicar descartava as edições).
+            if (!_groupBusy) SaveGroupFieldsAt(_lastGroupIdx);
+            LoadGroupFields();
+            GroupComboPicked();
+            _lastGroupIdx = _u.Groups.SelectedIndex - 2;
+        };
         p.Children.Add(Row(new TextBlock { Text = "R" }, _u.R, new TextBlock { Text = "G" }, _u.G,
             new TextBlock { Text = "B" }, _u.B));
         p.Children.Add(Row(new TextBlock { Text = "S1" }, _u.S1, new TextBlock { Text = "S2" }, _u.S2,
@@ -491,8 +586,9 @@ public partial class MainWindow : Window
             var r = await t.TranslateAsync(
                 new System.Collections.Generic.List<string> { "Olá" },
                 "pt", "pt", System.Threading.CancellationToken.None);
+            var trs = r.Translations ?? new System.Collections.Generic.List<string>();
             Notify(r.Error is not null ? r.Error
-                : r.Translations.Count > 0 ? "Chave válida. Resposta: " + r.Translations[0]
+                : trs.Count > 0 ? "Chave válida. Resposta: " + trs[0]
                 : "Resposta vazia do modelo.");
         }
         catch (System.Exception ex) { Notify("Falha ao testar: " + ex.Message); }

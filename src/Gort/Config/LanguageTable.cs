@@ -34,7 +34,7 @@ public static class LanguageTable
     public static LanguageInfo? Find(string key)
     {
         foreach (var l in All)
-            if (l.Key == key) return l;
+            if (string.Equals(l.Key, key, System.StringComparison.OrdinalIgnoreCase)) return l;
         return null;
     }
 }

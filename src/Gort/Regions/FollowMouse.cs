@@ -78,6 +78,7 @@ public sealed class FollowMouseService
 
     public void SetArea(ScreenRect captureRect)
     {
+        if (captureRect.W <= 0 || captureRect.H <= 0) return;
         Dedicated = new AreaDef { Rect = captureRect };
         Blink?.Invoke();           // RF-461
         _mgr.FollowActive = true;
@@ -92,6 +93,12 @@ public sealed class FollowMouseService
         _timer?.Stop();
         _mgr.FollowArea = null;
         _mgr.NotifyChanged(force: true);
+    }
+
+    /// <summary>Para o temporizador (encerramento): sem novos ticks.</summary>
+    public void Stop()
+    {
+        try { _timer?.Stop(); } catch { }
     }
 
     public void Tick()

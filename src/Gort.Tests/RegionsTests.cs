@@ -214,6 +214,7 @@ public class RegionsTests
     {
         var m = NewMgr();                                 // 3 grupos
         var a = m.AddArea(R(0, 0, 100, 50), false);
+        Assert.NotNull(a);
         a.Groups.Clear(); a.Groups.AddRange(new[] { 0, 1, 2 });
         m.RemoveColorGroup(1);                            // RF-079
         Assert.Equal(new List<int> { 0, 1 }, a.Groups);   // antigo 2 → 1

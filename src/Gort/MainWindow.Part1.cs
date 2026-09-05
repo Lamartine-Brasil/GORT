@@ -22,6 +22,7 @@ public partial class MainWindow
         fontBtn.Click += (_, _) => PickFont();
         p.Children.Add(H(Strings._("tab.text")));
         p.Children.Add(Row(fontBtn, _u.FontFam, new TextBlock { Text = Strings._("text.size") }, _u.FontSize));
+        _u.FontFam.MinWidth = 160;
         _u.FontSize.Width = 60;
         foreach (var (btn, name) in new[] { (_u.SwText, "Texto"), (_u.SwC1, "Contorno 1"),
                      (_u.SwC2, "Contorno 2"), (_u.SwBg, "Fundo") })
@@ -191,12 +192,12 @@ public partial class MainWindow
         catch { }
     }
 
-    // Aba Ler: de onde vem a imagem (fonte + ampliação). Velocidade e modo
-    // de janela moram nas abas Traduzir e Mostrar, cada assunto num lugar só.
+    // Fonte da imagem (jornada Captura): ampliação e janela. Frequência e modo
+    // de janela moram nas próprias seções da jornada, cada assunto num lugar só.
     private Control BuildCaptureSourceSection()
     {
         var p = new StackPanel { Margin = new Thickness(12), Spacing = 4 };
-        p.Children.Add(H("Correção de imagem"));
+        p.Children.Add(H("Fonte de captura"));
         _u.ActiveWin.Content = Strings._("cap.active_window");
         _u.Zoom.Width = 60;
         var zoomDef = new Button { Content = Strings._("img.zoom_default") };
@@ -235,11 +236,11 @@ public partial class MainWindow
         return p;
     }
 
-    // Aba Traduzir: ritmo do laço (P-05..P-09).
+    // Ritmo do laço (P-05..P-09). Título "Frequência": jornada de captura.
     private Control BuildSpeedSection()
     {
         var p = new StackPanel { Margin = new Thickness(12), Spacing = 4 };
-        p.Children.Add(H(Strings._("speed.title")));
+        p.Children.Add(H("Frequência"));
         var speeds = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         string[] names = ["1 (300 ms)", "2 (1 s)", "3 (1,5 s)", "4 (2 s)", "5 (2,5 s)"];
         for (int i = 0; i < 5; i++)
@@ -288,7 +289,12 @@ public partial class MainWindow
             if (sp is null) return;
             var fs = await sp.OpenFilePickerAsync(
                 new Avalonia.Platform.Storage.FilePickerOpenOptions { AllowMultiple = false });
-            if (fs.Count > 0) { _cfg.LoadProfileIntoMain(fs[0].Path.LocalPath); LoadUiFromConfig(); }
+            if (fs.Count > 0)
+            {
+                _cfg.LoadProfileIntoMain(fs[0].Path.LocalPath);
+                LoadUiFromConfig();
+                ReloadAdvancedPanel();   // painel também mostra chaves do perfil
+            }
         };
         var save = new Button { Content = Strings._("profile.save") };
         save.Click += async (_, _) =>
@@ -300,17 +306,26 @@ public partial class MainWindow
             if (f is not null) _cfg.SaveProfileTo(f.Path.LocalPath);
         };
         var defs = new Button { Content = Strings._("profile.defaults") };
-        defs.Click += (_, _) => { _cfg.RestoreDefaults(); LoadUiFromConfig(); };  // RF-022
+        defs.Click += (_, _) =>
+        {
+            _cfg.RestoreDefaults();
+            LoadUiFromConfig();
+            ReloadAdvancedPanel();   // perfil padrão também aparece no painel
+        };  // RF-022
         var comm = new Button { Content = Strings._("community.browse") };
         comm.Click += (_, _) => ((App)Application.Current!).OpenCommunity();
         var exp = new Button { Content = Strings._("community.export") };
         exp.Click += OnExport;
+        // A janela avançada separada não tinha abridor (só existia a classe).
+        var advWin = new Button { Content = Strings._("advanced.open") };
+        advWin.Click += (_, _) => new UI.AdvancedWindow(_cfg).Show(this);
         UI.GortTheme.Secondary(load); UI.GortTheme.Secondary(save);
         UI.GortTheme.Secondary(defs); UI.GortTheme.Secondary(comm); UI.GortTheme.Secondary(exp);
+        UI.GortTheme.Secondary(advWin);
         p.Children.Add(Row(load, save, defs));
-        p.Children.Add(Row(comm, exp));
+        p.Children.Add(Row(comm, exp, advWin));
 
-        // O ajuste fino mora na aba Avançado (nesta janela); sem botão que
+        // O ajuste fino mora nos expanders (nesta janela); sem botão que
         // abra janela separada duplicada.
         _u.CheckUpdate.Content = Strings._("app.check_update");
         _u.BasicDefault.Content = Strings._("app.basic_default");
@@ -382,8 +397,6 @@ public partial class MainWindow
                 Platform.PlatformFactory.Current.Speech.UnavailableReason
                 ?? "Síntese de voz indisponível neste sistema.");
         }
-        p.Children.Add(_u.Tts);
-        p.Children.Add(_u.TtsWait);
         return p;
     }
 

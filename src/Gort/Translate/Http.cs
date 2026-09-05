@@ -69,4 +69,13 @@ public abstract class HttpTranslator : ITranslationService, IDisposable
 
     protected static ServiceResult Fail(string message) =>
         new() { Error = message };
+
+    /// <summary>
+    /// Timeout próprio × cancelamento do usuário (RF-238): tempo esgotado
+    /// vira erro visível; só o pedido do usuário é cancelamento silencioso.
+    /// </summary>
+    internal static ServiceResult CancelOrTimeout(CancellationToken ct) =>
+        ct.IsCancellationRequested
+            ? throw new OperationCanceledException()
+            : Fail("Tempo esgotado. Verifique a rede ou troque de serviço.");
 }

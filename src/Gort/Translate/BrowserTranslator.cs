@@ -24,6 +24,9 @@ public sealed class BrowserTranslator : HttpTranslator, IDisposable
     private readonly Func<ITranslationService?> _fallback;
     private readonly Func<bool> _useFallback;
     private readonly CdpBrowser _browser = new();
+    // Instância única por serviço (Services): chamadas sobrepostas (o pipeline
+    // cancela sem esperar) corriam nesses campos — serializa a tradução.
+    private readonly SemaphoreSlim _gate = new(1, 1);
     private string _previousText = "";
     private string _previousResult = "";
     private bool _firstDone;
@@ -37,6 +40,14 @@ public sealed class BrowserTranslator : HttpTranslator, IDisposable
     }
 
     public override async Task<ServiceResult> TranslateAsync(IReadOnlyList<string> texts,
+        string srcCode, string dstCode, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try { return await TranslateInnerAsync(texts, srcCode, dstCode, ct).ConfigureAwait(false); }
+        finally { _gate.Release(); }
+    }
+
+    private async Task<ServiceResult> TranslateInnerAsync(IReadOnlyList<string> texts,
         string srcCode, string dstCode, CancellationToken ct)
     {
         string text = texts.Count > 0 ? texts[0] : "";
@@ -64,7 +75,7 @@ public sealed class BrowserTranslator : HttpTranslator, IDisposable
             catch { }
             return new ServiceResult { Translations = new List<string> { done } };
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { return CancelOrTimeout(ct); }
         catch (Exception ex)
         {
             if (_useFallback() && _fallback() is { } fb)             // RF-267
@@ -126,5 +137,5 @@ public sealed class BrowserTranslator : HttpTranslator, IDisposable
         catch { }
     }
 
-    public override void Dispose() { _browser.Dispose(); base.Dispose(); }   // RF-016
+    public override void Dispose() { _gate.Dispose(); _browser.Dispose(); base.Dispose(); }   // RF-016
 }

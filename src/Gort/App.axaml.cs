@@ -190,6 +190,14 @@ public partial class App : Application, UI.IRemoteHost
         {
             var log = System.IO.Path.Combine(Core.Paths.BaseDir, "loop-errors.log");
             System.IO.Directory.CreateDirectory(Core.Paths.BaseDir);
+            try
+            {
+                // Sem teto o recorrente cresce sem limite: roda o arquivo.
+                var fi = new System.IO.FileInfo(log);
+                if (fi.Exists && fi.Length > 256 * 1024)
+                    System.IO.File.WriteAllText(log, "[anteriores descartados por tamanho]\n");
+            }
+            catch { }
             System.IO.File.AppendAllText(log,
                 $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}\n");
         }
@@ -390,6 +398,8 @@ public partial class App : Application, UI.IRemoteHost
         if (await TrayApplyAsync(() => Config.LoadProfileIntoMain(fs[0].Path.LocalPath)))
         {
             TraySyncUi();
+            _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(
+                () => MainWin?.ReloadAdvancedPanel());
             MainWin?.Notify("Perfil carregado.");
         }
     }
@@ -400,6 +410,8 @@ public partial class App : Application, UI.IRemoteHost
         if (await TrayApplyAsync(() => Config.RestoreDefaults()))
         {
             TraySyncUi();
+            _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(
+                () => MainWin?.ReloadAdvancedPanel());
             MainWin?.Notify("Padrões restaurados.");
         }
     }
@@ -727,9 +739,12 @@ public partial class App : Application, UI.IRemoteHost
             // Aviso do laço em torrada (some sozinha, sem modal — P2).
             loop.Notice = msg => Avalonia.Threading.Dispatcher.UIThread
                 .InvokeAsync(() => MainWin?.NotifyToast(msg));            // RF-570
-            CurrentLoop = loop;
             // RF-351: sobreposição exige OCR com posição (Etapa 12 verifica o modo).
-            if (!Controller.StartLoop(loop, Loop.LoopMode.Continuous))
+            // Só aponta o atual após o início confirmado (senão o dicionário
+            // recarregava num objeto morto e o laço real ficava velho).
+            if (Controller.StartLoop(loop, Loop.LoopMode.Continuous))
+                CurrentLoop = loop;
+            else
                 MainWin?.Notify("Não foi possível iniciar: o laço anterior não parou.");
         }
         else
@@ -873,6 +888,8 @@ public partial class App : Application, UI.IRemoteHost
         try
         {
             Controller.RequestStop(Core.Params.P03_LoopWaitMs);  // RF-016: parar o laço
+            try { ClipWatcher?.Stop(); } catch { }               // sem novas sondagens
+            try { Follow?.Stop(); } catch { }                    // sem novos ticks
             Hotkeys.Dispose();                                   // RF-016: soltar hook
             Translate.Services.ShutdownAll();                    // Edge, workers
             Ocr.OcrEngines.ShutdownAll();                        // sessões, venv

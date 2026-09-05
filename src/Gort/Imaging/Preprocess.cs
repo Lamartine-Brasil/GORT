@@ -142,8 +142,11 @@ public static class Preprocess
         switch (mode)
         {
             case FilterMode.Threshold:
-                // passa se cinza < limiar → cinza == limiar sempre reprova.
+                // Reprova se cinza >= limiar: sobe até o próprio Gray (o mesmo
+                // do filtro) confirmar, pois o truncamento pode dar limiar-1
+                // e a exclusão ficaria visível ao OCR.
                 int v = Math.Clamp(threshold, 0, 255);
+                while (v < 255 && ColorFilter.Gray((byte)v, (byte)v, (byte)v) < threshold) v++;
                 return ((byte)v, (byte)v, (byte)v);
             case FilterMode.Rgb:
                 // Varre candidatos até achar um que não casa exatamente.
@@ -194,7 +197,10 @@ public static class Preprocess
         else if (h < 240) (r, g, b) = (0, x, c);
         else if (h < 300) (r, g, b) = (x, 0, c);
         else (r, g, b) = (c, 0, x);
-        return ((byte)(r + m), (byte)(g + m), (byte)(b + m));
+        // Canais intermediários podem sair negativos ou >255 (ex.: DeriveOutlines
+        // passa s até ~268): satura antes do cast, pois (byte)negativo envolve.
+        return ((byte)Math.Clamp(r + m, 0, 255),
+            (byte)Math.Clamp(g + m, 0, 255), (byte)Math.Clamp(b + m, 0, 255));
     }
 
     // ---- RF-111/112: erosão 3×3, 1 iteração ----

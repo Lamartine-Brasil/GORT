@@ -105,13 +105,13 @@ public static class AttachedCapture
         {
             var fresh = _buffer.Fresh();
             if (fresh.HasValue) return Crop(index, area, client, fresh.Value, needOriginal);
-            if (stopRequested()) return null;
+            if (stopRequested() || !IsAlive()) return null;   // RF-097: janela morta encerra
             Pump(client);                                      // pede quadro novo
             if (_buffer.Fresh().HasValue) continue;
             var until = DateTime.UtcNow.AddMilliseconds(Params.P20_CaptureRetryMs);  // 🔒 2
             while (DateTime.UtcNow < until)
             {
-                if (stopRequested()) return null;
+                if (stopRequested() || !IsAlive()) return null;
                 // Sleep(1) em vez de Sleep(0): acaba com o busy-spin que
                 // queimava CPU girando. Estoura a espera em até ~1 quantum
                 // do timer — irrelevante aqui (só no caminho de miss, onde

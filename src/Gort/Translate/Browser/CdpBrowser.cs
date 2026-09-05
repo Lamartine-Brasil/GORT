@@ -126,7 +126,12 @@ public sealed class CdpBrowser : IDisposable
             }
             throw new TimeoutException("Tempo esgotado aguardando a página.");
         }
-        finally { await CloseTargetAsync(targetId, ct).ConfigureAwait(false); }
+        finally
+        {
+            // Fechamento com token próprio: com o ct cancelado o alvo vazava.
+            using var cleanup = new CancellationTokenSource(3000);
+            await CloseTargetAsync(targetId, cleanup.Token).ConfigureAwait(false);
+        }
     }
 
     private async Task<string> NewTargetAsync(string url, CancellationToken ct)

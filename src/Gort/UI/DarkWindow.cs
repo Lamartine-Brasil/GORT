@@ -170,17 +170,18 @@ public sealed class TranslationWindows
             }
             // Fase 2: modo novo substitui o original sob a tradução.
             _overlay.Substitute = mode == "replace";
-            _dark?.Close(); _dark = null;
-            _layer?.Close(); _layer = null;
+            // Reutiliza em vez de abandonar: Close() aqui só oculta (OnClosing
+            // cancela) e a referência perdida vazava a janela oculta.
+            _dark?.Hide();
+            _layer?.Hide();
             if (!_overlay.IsVisible) _overlay.Show();
             _overlay.Activate();
             return;
         }
-        _overlay?.Close(); _overlay = null;
+        _overlay?.Hide();
         if (mode == "layer")
         {
-            _dark?.Close();
-            _dark = null;
+            _dark?.Hide();
             var w = Layer();
             if (!w.IsVisible)
             {
@@ -196,8 +197,7 @@ public sealed class TranslationWindows
         }
         else
         {
-            _layer?.Close();
-            _layer = null;
+            _layer?.Hide();
             ShowDark(areas);
         }
     }

@@ -74,6 +74,7 @@ public class Services15Tests
             var r1 = await svc.TranslateAsync(new List<string> { "y" }, "en", "pt",
                 CancellationToken.None);
             Assert.Null(r1.Error);
+            Assert.NotNull(r1.Translations);
             Assert.Equal("OLÁ", r1.Translations[0]);
             Assert.Equal(2, n);   // as 2 chaves foram tentadas, em ordem
         }

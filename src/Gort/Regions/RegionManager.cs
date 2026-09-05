@@ -130,11 +130,11 @@ public sealed class RegionManager
     private List<AreaDef> Target => Managing ? Working : Areas;
     private List<ScreenRect> TargetExcl => Managing ? WorkingExcl : Exclusions;
 
-    public AreaDef AddArea(ScreenRect rect, bool exclusion)
+    public AreaDef? AddArea(ScreenRect rect, bool exclusion)
     {
         // Retângulo vazio nunca entra: captura quebraria à frente.
-        if (rect.W <= 0 || rect.H <= 0) return null!;
-        if (exclusion) { TargetExcl.Add(rect); NotifyChanged(); return null!; }
+        if (rect.W <= 0 || rect.H <= 0) return null;
+        if (exclusion) { TargetExcl.Add(rect); NotifyChanged(); return null; }
         var def = new AreaDef { Rect = rect };
         for (int i = 0; i < _cfg.Profile.ColorGroups.Count; i++) def.Groups.Add(i);
         Target.Add(def);
@@ -190,9 +190,15 @@ public sealed class RegionManager
 
     // ---- rápidas / instantâneo (RF-069..072) ----
 
-    public void SetQuick(ScreenRect rect) { QuickArea = new AreaDef { Rect = rect }; NotifyChanged(); }
+    public void SetQuick(ScreenRect rect)
+    {
+        if (rect.W <= 0 || rect.H <= 0) return;
+        QuickArea = new AreaDef { Rect = rect }; NotifyChanged();
+    }
+
     public void SetSnapshot(ScreenRect rect)
     {
+        if (rect.W <= 0 || rect.H <= 0) return;
         SnapshotArea = rect;
         LastSnapshot = rect;                                  // RF-070 memoriza
         NotifyChanged();
@@ -219,6 +225,9 @@ public sealed class RegionManager
 
     public CapturePlan BuildPlan()
     {
+        // O interruptor "somente mouse" vive no advanced: sincroniza aqui
+        // (tela de config edita lá, o laço lê aqui a cada ciclo).
+        FollowOnly = _cfg.Advanced.FollowOnly;
         var plan = new CapturePlan();
         bool onlyMouse = FollowActive && FollowOnly;
         bool hasSnap = SnapshotArea.HasValue;
@@ -282,6 +291,7 @@ public sealed class RegionManager
     /// <summary>RF-065: exige ao menos uma área incremental.</summary>
     public bool CanTranslate(out string message)
     {
+        FollowOnly = _cfg.Advanced.FollowOnly;
         if (Areas.Count == 0 && QuickArea is null
             && !(FollowActive && FollowOnly && FollowArea.HasValue)
             && !SnapshotArea.HasValue)

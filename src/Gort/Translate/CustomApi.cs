@@ -123,7 +123,7 @@ public static class TemplateEngine
         {
             foreach (var prop in el.EnumerateObject())
             {
-                if (prop.Name == key) return prop.Value.ToString();
+                if (prop.Name == key) return JsonText(prop.Value);
                 var inner = FindRecursive(prop.Value, key);
                 if (inner is not null) return inner;
             }
@@ -139,6 +139,10 @@ public static class TemplateEngine
         return null;
     }
 
+    /// <summary>Texto do elemento: string sem as aspas do JSON.</summary>
+    internal static string JsonText(JsonElement el) =>
+        el.ValueKind == JsonValueKind.String ? el.GetString() ?? "" : el.ToString();
+
     /// <summary>RF-301: `nome: valor`; malformadas registradas e ignoradas.</summary>
     public static Dictionary<string, string> ParseHeaders(IEnumerable<string> lines)
     {
@@ -146,7 +150,8 @@ public static class TemplateEngine
         foreach (var line in lines)
         {
             int c = line.IndexOf(':');
-            if (c <= 0) { System.Diagnostics.Trace.WriteLine("GORT header: " + line); continue; }
+            // Sem o valor no registro (pode conter segredo).
+            if (c <= 0) { System.Diagnostics.Trace.WriteLine("GORT header: linha malformada ignorada"); continue; }
             headers[line[..c].Trim()] = line[(c + 1)..].Trim();
         }
         return headers;
@@ -210,7 +215,8 @@ public sealed class CustomApiService : HttpTranslator
             using var resp2 = await PostJsonAsync(_preset.Url, jsonBody,
                 TemplateEngine.ParseHeaders(_preset.Headers), ct).ConfigureAwait(false);
             string json2 = await resp2.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            if (!resp2.IsSuccessStatusCode) return Fail(json2);
+            if (!resp2.IsSuccessStatusCode)
+                return Fail(json2.Length > 200 ? json2[..200] : json2);
             string? key = TemplateEngine.DiscoverKey(_preset.ResTemplate);
             if (key is null) return Fail("Chave de resultado não encontrada no modelo.");
             try
@@ -223,7 +229,7 @@ public sealed class CustomApiService : HttpTranslator
             }
             catch { return Fail("JSON inválido na resposta."); }
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { return CancelOrTimeout(ct); }
         catch (Exception ex) { return Fail("Falha de processamento: " + ex.Message); }
     }
 
@@ -235,11 +241,11 @@ public sealed class CustomApiService : HttpTranslator
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             string code = root.TryGetProperty("error", out var e)
-                ? e.ToString() : "0";
+                ? TemplateEngine.JsonText(e) : "0";
             if (code != "0")
             {
                 string msg = root.TryGetProperty("message", out var m)
-                    ? m.ToString() : "";
+                    ? TemplateEngine.JsonText(m) : "";
                 return Fail(msg);
             }
             if (!root.TryGetProperty("result", out var r))
@@ -247,10 +253,10 @@ public sealed class CustomApiService : HttpTranslator
             if (r.ValueKind == JsonValueKind.Array)
             {
                 var parts = new List<string>();
-                foreach (var el in r.EnumerateArray()) parts.Add(el.ToString());
+                foreach (var el in r.EnumerateArray()) parts.Add(TemplateEngine.JsonText(el));
                 return new ServiceResult { Translations = new List<string> { string.Concat(parts) } };
             }
-            return new ServiceResult { Translations = new List<string> { r.ToString() } };
+            return new ServiceResult { Translations = new List<string> { TemplateEngine.JsonText(r) } };
         }
         catch { return Fail("JSON inválido na resposta."); }
     }

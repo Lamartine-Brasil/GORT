@@ -51,8 +51,8 @@ public sealed class HotkeyActions
                     _app.Pipe, _app.Windows.MakeSink(), _app.LoopEffects);
                 loop.Notice = msg => Dispatcher.UIThread.InvokeAsync(
                     () => _app.MainWin?.NotifyToast(msg));               // RF-570
-                _app.CurrentLoop = loop;
-                _app.Controller.StartLoop(loop, Loop.LoopMode.Continuous);
+                if (_app.Controller.StartLoop(loop, Loop.LoopMode.Continuous))
+                    _app.CurrentLoop = loop;
             });
         }
         else
@@ -167,6 +167,12 @@ public sealed class HotkeyActions
         }
         _app.Config.LoadProfileIntoMain(file);
         _app.Regions.LoadFromProfile();
+        // Refresca a principal + painel (atalho não passava por LoadUiFromConfig).
+        _ = Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _app.MainWin?.LoadUiFromConfig();
+            _app.MainWin?.ReloadAdvancedPanel();
+        });
         Notify($"Perfil carregado: {file}");
     }
 

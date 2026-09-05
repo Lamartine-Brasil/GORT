@@ -45,6 +45,11 @@ public partial class MainWindow
         _u.StartBtn.Click += (_, _) =>
             ((App)Avalonia.Application.Current!).ToggleLoopPublic();
         p.Children.Add(_u.StartBtn);
+        // Serviço vigente + atalho para a aba de tradução (jornada Início).
+        var change = new Button { Content = "Trocar" };
+        UI.GortTheme.Secondary(change);
+        change.Click += (_, _) => SelectTab("TabLang");
+        p.Children.Add(Row(new TextBlock { Text = "Usando atual:" }, _u.NowService, change));
         p.Children.Add(_u.Wizard);
         return p;
     }
@@ -286,9 +291,7 @@ public partial class MainWindow
         SetLangCombo(_u.OcrLangClassic, ["en", "ja"], p.OcrLanguage,
             "Só há uma opção disponível.");
         _u.Fast.IsChecked = p.ClassicFast;
-        SetLangCombo(_u.OsLang, [],
-            "",
-            "Nenhum idioma de OCR instalado no sistema.");
+        // Sem combo de idioma do SO (motor indisponível, removido da UI).
         SetLangCombo(_u.ModernLang,
             Ocr.OcrEngines.Get("modern")?.SupportedOcrLanguages()
                 .Select(LangCodes.KeyForOcr).Where(k => k != "").ToList() ?? ["en"],
@@ -301,7 +304,6 @@ public partial class MainWindow
         _u.CloudCred.Text = p.CloudCredFile;
         var cloud = Ocr.OcrEngines.Get("cloud") as Ocr.Cloud.CloudEngine;
         _u.CloudUsage.Text = $"{Strings._("ocr.cloud_usage")}: {cloud?.UsageText() ?? "—"}";
-        _u.CloudPriority.IsChecked = a.CloudPriority;
         SetLangCombo(_u.VenvLang, ["en", "ja"], p.OcrLanguage,
             "Só há uma opção disponível.");
 
@@ -392,6 +394,11 @@ public partial class MainWindow
         }
         _u.Tts.IsChecked = p.Tts;
         _u.TtsWait.IsChecked = p.TtsWait;
+        // Linha "Usando atual" (Início) e par global (Tradução): só leitura.
+        string svcId = Translate.Services.ResolveOrFallback(p.TranslationService);
+        var found = Translate.Services.List().FirstOrDefault(e => e.Id == svcId);
+        _u.NowService.Text = found.Id == svcId ? found.Display : svcId;
+        _u.GlobalPair.Text = $"{p.OcrLanguage} → {p.TargetLanguage}";
 
         foreach (var (act, field) in _u.Hotkeys)
         {
@@ -405,6 +412,7 @@ public partial class MainWindow
     }
 
     private bool _groupBusy;
+    private int _lastGroupIdx = -1;
 
     private void RefreshGroups()
     {
@@ -421,6 +429,7 @@ public partial class MainWindow
         _u.Groups.ItemsSource = items;
         _u.Groups.SelectedIndex = _cfg.Profile.ColorGroups.Count > 0 ? 2 : -1;
         _groupBusy = false;
+        _lastGroupIdx = _u.Groups.SelectedIndex - 2;
         LoadGroupFields();
     }
 
@@ -453,14 +462,19 @@ public partial class MainWindow
         // foi tocado (mantém compatibilidade com perfis antigos).
         if (_u.OcrJa.IsChecked == true) p.OcrLanguage = "ja";
         else if (_u.OcrEn.IsChecked == true) p.OcrLanguage = "en";
-        else if (OcrId() == "classic" && ComboValue(_u.OcrLangClassic) is string cl && cl != "")
+        // Motores com combo próprio sobrescrevem o rádio (antes o clássico
+        // era inalcançável e a nuvem nunca era lida).
+        if (OcrId() == "classic" && ComboValue(_u.OcrLangClassic) is string cl && cl != "")
             p.OcrLanguage = cl;
+        if (OcrId() == "cloud" && ComboValue(_u.CloudLang) is string c
+            && (c == "en" || c == "ja"))
+            p.OcrLanguage = c;
         p.ClassicFast = _u.Fast.IsChecked == true;
         if (OcrId() == "modern" && ComboValue(_u.ModernLang) is string ml && ml != "")
             p.OcrLanguage = ml;
         p.ModernVertical = _u.ModernVertical.IsChecked == true;
         p.CloudCredFile = _u.CloudCred.Text ?? "";
-        a.CloudPriority = _u.CloudPriority.IsChecked == true;
+        // a.CloudPriority: editor único no expander (painel aplica).
         if (OcrId() == "venv" && ComboValue(_u.VenvLang) is string vl && vl != "")
             p.OcrLanguage = vl;
         if (p.OcrLanguage == "") p.OcrLanguage = "en";          // padrão: inglês
@@ -559,7 +573,11 @@ public partial class MainWindow
 
     private void SaveGroupFields()
     {
-        int idx = _u.Groups.SelectedIndex - 2;   // desconta adicionar/remover
+        SaveGroupFieldsAt(_u.Groups.SelectedIndex - 2);   // desconta adicionar/remover
+    }
+
+    private void SaveGroupFieldsAt(int idx)
+    {
         var groups = _cfg.Profile.ColorGroups;
         if (idx < 0 || idx >= groups.Count) return;
         var g = groups[idx];

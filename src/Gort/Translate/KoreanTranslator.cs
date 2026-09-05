@@ -70,7 +70,12 @@ public sealed class KoreanTranslator : HttpTranslator
                 if (keys.Count > 1) continue;   // RF-250: tenta a próxima
                 return Fail(lastError ?? "Erro desconhecido.");
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException)
+            {
+                // Pedido do usuário aborta; timeout tenta a próxima (RF-250).
+                if (ct.IsCancellationRequested) throw;
+                lastError = "Tempo esgotado. Verifique a rede ou troque de serviço.";
+            }
             catch (Exception ex) { lastError = "Falha de processamento: " + ex.Message; }
         }
         string note = keys.Count > 1 ? $" (última tentativa: {lastError})" : "";

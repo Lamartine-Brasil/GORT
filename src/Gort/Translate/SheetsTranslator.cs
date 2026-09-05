@@ -124,7 +124,7 @@ public sealed class SheetsTranslator : HttpTranslator
                 texts.Count > 0 ? texts[0] : "", srcCode, dstCode, ct).ConfigureAwait(false);
             return new ServiceResult { Translations = new List<string> { out0 } };
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { return CancelOrTimeout(ct); }
         catch (SheetsException ex) { return Fail(ex.Message); }
         catch (Exception ex) { return Fail("Falha de processamento: " + ex.Message); }
     }
@@ -168,7 +168,7 @@ public sealed class SheetsTranslator : HttpTranslator
             "?fields=sheets.properties", access, ct).ConfigureAwait(false);
         using var doc = JsonDocument.Parse(meta);
         bool has = false;
-        int rows = 0;
+        int rows = 0, tabId = 0;
         if (doc.RootElement.TryGetProperty("sheets", out var sheets))
             foreach (var s in sheets.EnumerateArray())
             {
@@ -176,6 +176,8 @@ public sealed class SheetsTranslator : HttpTranslator
                 if (pr.GetProperty("title").GetString() == TabName)
                 {
                     has = true;
+                    if (pr.TryGetProperty("sheetId", out var sid))
+                        tabId = sid.GetInt32();
                     if (pr.TryGetProperty("gridProperties", out var gp)
                         && gp.TryGetProperty("rowCount", out var rc))
                         rows = rc.GetInt32();
@@ -192,7 +194,7 @@ public sealed class SheetsTranslator : HttpTranslator
         {
             await PostSheetsAsync(sheet + ":batchUpdate",
                 "{\"requests\":[{\"updateSheetProperties\":{\"properties\":" +
-                "{\"sheetId\":0,\"gridProperties\":{\"rowCount\":" + Params.P57_SheetMinRows +
+                "{\"sheetId\":" + tabId + ",\"gridProperties\":{\"rowCount\":" + Params.P57_SheetMinRows +
                 ",\"columnCount\":2}},\"fields\":\"gridProperties.rowCount,gridProperties.columnCount\"}}]}",
                 access, ct).ConfigureAwait(false);
         }
@@ -212,7 +214,7 @@ public sealed class SheetsTranslator : HttpTranslator
             string val = await GetCellAsync(sheet, access,
                 $"{TabName}!B{row}", ct).ConfigureAwait(false);
             if (val.StartsWith("#VALUE", StringComparison.Ordinal))
-                throw new SheetsException("");   // RF: erro de valor, sem mensagem
+                throw new SheetsException("A planilha retornou erro de valor (#VALUE).");
             if (val.Length > 0 && !val.StartsWith("#")) return val;
         }
         throw new SheetsException("A planilha não respondeu a tempo.");

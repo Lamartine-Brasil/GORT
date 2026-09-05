@@ -82,18 +82,24 @@ public static class Updater
             foreach (var (lang, (ver, url)) in vf.Dicts)
             {
                 if (versions.GetValueOrDefault(lang) == ver) continue;
-                string text = await Http.GetStringAsync(
-                    VersionFile.ForceHttps(url), ct).ConfigureAwait(false);
-                string dest = Path.Combine(Paths.DictDir,
-                    lang == "ja" ? "jaDic.txt" : "myDic.txt");
-                // RF-433: UTF-8 sem BOM; tmp+rename contra queda no meio.
-                string tmp = dest + ".tmp";
-                await File.WriteAllTextAsync(tmp, text,
-                    new System.Text.UTF8Encoding(false), ct).ConfigureAwait(false);
-                File.Move(tmp, dest, overwrite: true);
-                versions[lang] = ver;
+                string tmp = "";
+                try
+                {
+                    string text = await Http.GetStringAsync(
+                        VersionFile.ForceHttps(url), ct).ConfigureAwait(false);
+                    string dest = Path.Combine(Paths.DictDir,
+                        lang == "ja" ? "jaDic.txt" : "myDic.txt");
+                    // RF-433: UTF-8 sem BOM; tmp+rename contra queda no meio.
+                    tmp = dest + ".tmp";
+                    await File.WriteAllTextAsync(tmp, text,
+                        new System.Text.UTF8Encoding(false), ct).ConfigureAwait(false);
+                    File.Move(tmp, dest, overwrite: true);
+                    // Salva por idioma: falha adiante não perde os prontos.
+                    versions[lang] = ver;
+                    DataVersions.Save(versions);
+                }
+                finally { if (tmp != "") try { File.Delete(tmp); } catch { } }
             }
-            DataVersions.Save(versions);
         }
         catch { }
     }
@@ -136,6 +142,24 @@ public static class DataVersions
 /// </summary>
 public static class UpdateHelper
 {
+    /// <summary>
+    /// Queda/energia entre os dois Moves deixava a pasta sem executável:
+    /// na inicialização, o .bak volta antes de tudo.
+    /// </summary>
+    public static void RestoreBackupIfNeeded()
+    {
+        try
+        {
+            string dir = AppContext.BaseDirectory;
+            string exeName = Path.GetFileName(Environment.ProcessPath ?? "Gort.exe");
+            string current = Path.Combine(dir, exeName);
+            string backup = Path.Combine(dir, exeName + ".bak");
+            if (!File.Exists(current) && File.Exists(backup))
+                MoveWithRetry(backup, current);
+        }
+        catch { }
+    }
+
     public static async Task<int> RunAsync(string[] args, Action<string> log)
     {
         // args: version exeUrl notesUrl sumUrl
@@ -145,19 +169,16 @@ public static class UpdateHelper
         string exeName = Path.GetFileName(Environment.ProcessPath ?? "Gort.exe");
         string current = Path.Combine(dir, exeName);
         string tmpExe = Path.Combine(dir, exeName + ".new");
-        string tmpCfg = Path.Combine(dir, "config.new");
         string backup = Path.Combine(dir, exeName + ".bak");      // RF-431
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
             log("Baixando " + version);
             await DownloadAsync(http, exeUrl, tmpExe, log);
-            await DownloadAsync(http, VersionFile.ForceHttps(
-                Dist.RemoteConfigUrl), tmpCfg, log);
             string expected = (await http.GetStringAsync(sumUrl)).Trim();
             if (expected == "" || !VersionFile.ShaOk(tmpExe, expected))  // RF-427
             {
-                try { File.Delete(tmpExe); File.Delete(tmpCfg); } catch { }
+                try { File.Delete(tmpExe); } catch { }
                 FailMarker.Write();                               // RF-428
                 log("Soma de verificação divergente. Arquivos apagados.");
                 return 2;
@@ -173,7 +194,6 @@ public static class UpdateHelper
                 try { MoveWithRetry(backup, current); } catch { }
                 throw;
             }
-            try { File.Delete(tmpCfg); } catch { }
             try { File.Delete(backup); } catch { }
             log("Atualizado para " + version + ". Notas: " + notesUrl);
             return 0;

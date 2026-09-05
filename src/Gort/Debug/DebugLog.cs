@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace Gort.Debug;
 
@@ -29,5 +31,30 @@ public static class DebugLog
     public static List<string> Messages()
     {
         lock (_gate) return new List<string>(_messages);
+    }
+
+    private static DateTime _lastPrune = DateTime.MinValue;
+
+    /// <summary>
+    /// Retrato por ciclo acumula 1 arquivo/ciclo: mantém os 50 mais novos
+    /// (cycle-*.json, shot-*.bmp). No máximo 1 varredura a cada 5 min.
+    /// </summary>
+    public static void PruneDebugDir()
+    {
+        try
+        {
+            lock (_gate)
+            {
+                if ((DateTime.UtcNow - _lastPrune).TotalMinutes < 5) return;
+                _lastPrune = DateTime.UtcNow;
+            }
+            var dir = new DirectoryInfo(Core.Paths.DebugDir);
+            if (!dir.Exists) return;
+            var old = dir.GetFiles("cycle-*").Concat(dir.GetFiles("shot-*"))
+                .OrderByDescending(f => f.LastWriteTimeUtc).Skip(50);
+            foreach (var f in old)
+                try { f.Delete(); } catch { }
+        }
+        catch { }
     }
 }

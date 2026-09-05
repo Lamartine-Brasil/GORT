@@ -28,8 +28,13 @@ public sealed class SharpHookHotkey : IDisposable
             var hook = new TaskPoolGlobalHook();
             hook.KeyPressed += (_, e) => Forward(e, true);
             hook.KeyReleased += (_, e) => Forward(e, false);
-            // Roda o loop nativo em background; exceção aqui = sem hook.
+            // Roda o loop nativo em background; confirma que subiu (falha
+            // assíncrona — Wayland/sem permissão — virava "ok" e o aviso de
+            // fallback para o remoto (RF-569) nunca aparecia).
             _ = hook.RunAsync();
+            for (int i = 0; i < 50 && !hook.IsRunning; i++)
+                System.Threading.Thread.Sleep(20);
+            if (!hook.IsRunning) { try { hook.Dispose(); } catch { } return false; }
             _hook = hook;
             return true;
         }

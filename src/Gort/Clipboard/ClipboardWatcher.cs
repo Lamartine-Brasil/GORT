@@ -42,6 +42,13 @@ public sealed class ClipboardWatcher
     /// <summary>RF-472: aplicar limpa o estado.</summary>
     public void Reset() { _working = false; _gen++; }
 
+    /// <summary>Para o temporizador (encerramento): sem novas sondagens.</summary>
+    public void Stop()
+    {
+        try { _timer.Stop(); } catch { }
+        _gen++;
+    }
+
     /// <summary>RF-467: condições para traduzir pela área de transferência.</summary>
     internal bool ShouldTranslate(string? text) =>
         _enabled() && text is not null && text.Length > 0

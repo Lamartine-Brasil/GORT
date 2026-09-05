@@ -152,14 +152,21 @@ public sealed class Profile
         notices = new();
         if (!Catalogs.KnownId(Catalogs.WindowModes, WindowMode))
         { notices.Add($"window_mode desconhecido '{WindowMode}'; padrão layer."); WindowMode = "layer"; }
+        else WindowMode = Catalogs.CanonicalId(Catalogs.WindowModes, WindowMode);
         if (!Catalogs.KnownId(Catalogs.TranslationServices, TranslationService))
         { notices.Add($"translation_service desconhecido '{TranslationService}'; padrão web-free."); TranslationService = "web-free"; }
+        else TranslationService = Catalogs.CanonicalId(Catalogs.TranslationServices, TranslationService);
         if (!Catalogs.KnownId(Catalogs.OcrEngines, OcrEngine))
         { notices.Add($"ocr_engine desconhecido '{OcrEngine}'; padrão modern."); OcrEngine = "modern"; }
-        if (LanguageTable.Find(OcrLanguage) is null)
+        else OcrEngine = Catalogs.CanonicalId(Catalogs.OcrEngines, OcrEngine);
+        var ocrInfo = LanguageTable.Find(OcrLanguage);
+        if (ocrInfo is null)
         { notices.Add($"ocr_language desconhecido; padrão en."); OcrLanguage = "en"; }
-        if (LanguageTable.Find(TargetLanguage) is null)
+        else OcrLanguage = ocrInfo.Key;
+        var tgtInfo = LanguageTable.Find(TargetLanguage);
+        if (tgtInfo is null)
         { notices.Add($"target_language desconhecido; padrão pt-BR."); TargetLanguage = "pt-BR"; }
+        else TargetLanguage = tgtInfo.Key;
 
         if (Speed < 1) Speed = 1; if (Speed > 5) Speed = 5;
         Threshold = Clamp(Threshold, 0, 255);                                    // RF-042
@@ -178,10 +185,14 @@ public sealed class Profile
         if (double.IsNaN(AutoMinPt) || double.IsInfinity(AutoMinPt) || AutoMinPt < 0) AutoMinPt = 10;
         if (double.IsNaN(AutoMaxPt) || double.IsInfinity(AutoMaxPt) || AutoMaxPt < 0) AutoMaxPt = 50;
         if (AutoMinPt > AutoMaxPt) (AutoMinPt, AutoMaxPt) = (AutoMaxPt, AutoMinPt);
-        if (TextColor is null || TextColor.Length != 3) TextColor = [255, 255, 255];
-        if (Outline1 is null || Outline1.Length != 3) Outline1 = [192, 192, 192];
-        if (Outline2 is null || Outline2.Length != 3) Outline2 = [0, 0, 0];
-        if (BgColor is null || BgColor.Length != 4) BgColor = [170, 0, 0, 0];
+        if (TextColor is null || TextColor.Length != 3)
+        { notices.Add("text_color inválida; padrão."); TextColor = [255, 255, 255]; }
+        if (Outline1 is null || Outline1.Length != 3)
+        { notices.Add("outline1 inválida; padrão."); Outline1 = [192, 192, 192]; }
+        if (Outline2 is null || Outline2.Length != 3)
+        { notices.Add("outline2 inválida; padrão."); Outline2 = [0, 0, 0]; }
+        if (BgColor is null || BgColor.Length != 4)
+        { notices.Add("bgcolor inválida; padrão."); BgColor = [170, 0, 0, 0]; }
         foreach (var g in ColorGroups) g.Normalize();
         if (ColorGroups.Count == 0) ColorGroups.Add(new ColorGroup());
         if (LayerMaxW < 0) LayerMaxW = 0;                       // 0 = livre

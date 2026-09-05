@@ -12,7 +12,11 @@ namespace Gort.Platform.Windows;
 /// </summary>
 public sealed class WindowsCapture : IScreenCapture
 {
-    public ScreenRect VirtualScreen { get; } = new(
+    /// <summary>
+    /// Área virtual recalculada a cada chamada (troca de monitor/resolução
+    /// com o app aberto usava geometria obsoleta até reiniciar).
+    /// </summary>
+    public ScreenRect VirtualScreen => new(
         Win32.GetSystemMetrics(Win32.SM_XVIRTUALSCREEN),
         Win32.GetSystemMetrics(Win32.SM_YVIRTUALSCREEN),
         Win32.GetSystemMetrics(Win32.SM_CXVIRTUALSCREEN),

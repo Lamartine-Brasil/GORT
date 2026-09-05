@@ -20,34 +20,34 @@ pedacinho o tempo todo, reconhece as letras, traduz e mostra o resultado
 em português. Funciona com jogos, programas antigos e qualquer janela que
 mostre texto como imagem.
 
-![Aba Traduzir](docs/imagens/01-aba-traduzir.png)
+![Aba Início](docs/imagens/01-aba-inicio.png)
 
 ## Começando em 3 passos
 
-**1. Marque a área** — clique em **Áreas** e arraste um retângulo sobre a
+**1. Marque a área** — clique em **Gerenciar áreas** e arraste um retângulo sobre a
 caixa de diálogo do jogo.
 
-**2. Aperte Traduzir** — clique em **Traduzir** (ou `Ctrl+Shift+Z`). Pronto,
+**2. Aperte Iniciar tradução** — clique em **Iniciar tradução** (ou `Ctrl+Shift+Z`). Pronto,
 a tradução aparece sozinha a cada fala nova.
 
-**3. Ajuste se precisar** — troque o serviço de tradução, a velocidade ou
+**3. Ajuste se precisar** — troque o serviço de tradução, a frequência ou
 a aparência, e clique em **Aplicar**.
 
-![Aba Ler](docs/imagens/02-aba-ler.png)
+![Aba Captura e Leitura](docs/imagens/02-aba-captura.png)
 
 ## O controle remoto
 
 Aquela barrinha pequena que fica por cima de tudo, sempre à mão:
 
-![Controle remoto](docs/imagens/07-controle-remoto.png)
+![Controle remoto](docs/imagens/06-controle-remoto.png)
 
 | Botão | Serve para |
 |---|---|
-| **Áreas** | Gerenciar as regiões que serão lidas |
-| **Rápida** | Ler um pedaço novo rapidinho, sem salvar |
-| **Instantâneo** | Traduzir um trecho agora, uma única vez |
-| **Traduzir** | Liga/desliga (fica verde traduzindo) |
-| **Ajustes** | Abre as configurações |
+| **Gerenciar áreas** | Gerenciar as regiões que serão lidas |
+| **Área rápida** | Ler um pedaço novo rapidinho, sem salvar |
+| **Área instantânea** | Traduzir um trecho agora, uma única vez |
+| **Iniciar tradução** | Liga/desliga (fica verde traduzindo) |
+| **Sistema** | Abre as configurações |
 
 Ela pode ser arrastada, redimensionada pelo canto e escondida pelo `×`
 (o programa continua rodando).
@@ -61,19 +61,18 @@ Ela pode ser arrastada, redimensionada pelo canto e escondida pelo `×`
 | **Substituição** | Como a sobreposição, mas tampando o original com fundo |
 | **Escuro** | Janelinha escura com o texto, ideal para ler bastante coisa |
 
-![Modo Escuro](docs/imagens/08-modo-escuro.png)
-![Modo Camada](docs/imagens/09-modo-camada.png)
-![Modo Sobreposição](docs/imagens/10-modo-sobreposicao.png)
+![Modo Escuro](docs/imagens/07-modo-escuro.png)
+![Modo Camada](docs/imagens/08-modo-camada.png)
+![Modo Sobreposição](docs/imagens/09-modo-sobreposicao.png)
 
 ## As telas do programa
 
-Tudo em português, organizado em abas: Traduzir, Ler, Dicionário e
-idiomas, Mostrar, Avançado e Sistema.
+Tudo em português, organizado em abas: Início, Captura e Leitura,
+Tradução e Idiomas, Exibição e Sistema.
 
-![Aba Dicionário](docs/imagens/03-aba-dicionario.png)
-![Aba Mostrar](docs/imagens/04-aba-mostrar.png)
-![Aba Avançado](docs/imagens/05-aba-avancado.png)
-![Aba Sistema](docs/imagens/06-aba-sistema.png)
+![Aba Tradução e Idiomas](docs/imagens/03-aba-traducao.png)
+![Aba Exibição](docs/imagens/04-aba-exibicao.png)
+![Aba Sistema](docs/imagens/05-aba-sistema.png)
 
 ## Perguntas de quem está começando
 
@@ -91,7 +90,7 @@ Tela cheia exclusiva não dá para capturar.
 (em arquivos de texto simples, nada vai para a nuvem além da tradução).
 
 **E minha chave do Google (Gemini)?** Fica só no seu computador, num
-arquivo separado que nunca entra no GitHub. Na aba Traduzir tem botão
+arquivo separado que nunca entra no GitHub. Na aba Tradução e Idiomas tem botão
 **Testar chave…** para conferir na hora.
 
 ## Atalhos que valem ouro
