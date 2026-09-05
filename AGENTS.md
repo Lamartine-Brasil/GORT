@@ -6,7 +6,13 @@
 
 ## Estado (05/09/2026 — revisão profunda)
 
-- **Build 0 erros · 251/251 testes verdes** (245+6; antes 203+6).
+- **Build 0 erros · 258/258 testes verdes** (252+6; era 209).
+  Warnings zerados por classe: CS8619 (Toml `?? new`), CS8618
+  (`_selBg/_selAccent=""`), CS0618 (Mitchell no lugar de
+  `SKFilterQuality.High`), CS4014 (`_ =` em 2 fire-and-forget),
+  CS0649 (campo morto `_reallyClosing` removido). Restam só
+  CS8602 (deref pós-`InitializeComponent`) + 1 CS8601 teórico
+  (`TomlFile.Save`) — ruído antigo, não caçar.
   Novo `src/Gort.Tests/DeepReviewTests.cs` (+42 casos, puros: TomlFile
   GetDouble/GetSchema/GetInt, VersionFile Parse/IsMinor/ForceHttps,
   PipeFraming Encode/trunca/roundtrip, DisplayMemory pilha/expira,

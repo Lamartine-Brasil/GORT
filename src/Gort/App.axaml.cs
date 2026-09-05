@@ -152,7 +152,7 @@ public partial class App : Application, UI.IRemoteHost
                 Trace.WriteLine("GORT: desenho vetorial indisponível; caindo para texto simples.");
             }
             ValidateLayerRect();         // RF-041
-            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 MainWin = new MainWindow(Config, Controller, Regions);
                 Windows.ScaleOf = ScaleOfRect;   // RF-075: escala por moldura/área

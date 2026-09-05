@@ -111,7 +111,9 @@ public sealed class CloudEngine : IOcrEngine
             SKColorType.Bgra8888, SKAlphaType.Opaque);
         System.Runtime.InteropServices.Marshal.Copy(bgra, 0, src.GetPixels(), bgra.Length);
         using var resized = (w == img.Width && h == img.Height)
-            ? null : src.Resize(new SKImageInfo(w, h), SKFilterQuality.High);
+            // High obsoleto = cúbico Mitchell (mesmos pixels, sem o aviso).
+            ? null : src.Resize(new SKImageInfo(w, h),
+                new SKSamplingOptions(SKCubicResampler.Mitchell));
         using var data = (resized ?? src).Encode(SKEncodedImageFormat.Png, 100);
         if (data is null) throw new InvalidOperationException("Falha ao codificar imagem.");
         return (Convert.ToBase64String(data.ToArray()), scale);

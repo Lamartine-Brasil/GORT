@@ -41,6 +41,24 @@ public sealed class DeepReviewTests
         Assert.Equal(4.2, TomlFile.GetDouble(t, "x", 4.2));
     }
 
+    [Fact]
+    public void Load_Invalido_Volta_Padroes_Usaveis()
+    {
+        // Arquivo inválido ("null" puro): Load não devolve nulo nem quebra —
+        // ou tabela vazia (padrões) ou Fresh (padrões). Era CS8619 com NRE
+        // real no caminho sem Fresh.
+        string path = Path.Combine(Path.GetTempPath(), "gort-null-" + Guid.NewGuid() + ".toml");
+        try
+        {
+            File.WriteAllText(path, "null");
+            var (raw, fresh) = TomlFile.Load(path);
+            Assert.NotNull(raw);
+            Assert.Equal("padrão", TomlFile.GetString(raw, "qualquer", "padrão"));
+            Assert.True(fresh || raw.Count == 0);
+        }
+        finally { try { File.Delete(path); } catch { } }
+    }
+
     // ── TomlFile.GetSchema / GetInt ──
 
     [Theory]

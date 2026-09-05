@@ -69,7 +69,7 @@ public sealed class HotkeyActions
         if (!_app.Regions.CanTranslate(out var msg))
         {
             Notify(msg);
-            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => _app.OpenAreas());
+            _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => _app.OpenAreas());
             return;
         }
         _app.ConcludeAreas();                         // RF-085

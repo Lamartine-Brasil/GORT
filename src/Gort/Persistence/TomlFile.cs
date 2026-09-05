@@ -22,7 +22,9 @@ public static class TomlFile
                 return (new TomlTable(), true);
             var text = File.ReadAllText(path);
             var table = Tomlyn.TomlSerializer.Deserialize<TomlTable>(text);
-            return (table, false);
+            // Arquivo com "null" desserializa nulo: vira tabela vazia
+            // (padrões), nunca nulo adiante — era CS8619 com NRE real.
+            return (table ?? new TomlTable(), false);
         }
         catch
         {

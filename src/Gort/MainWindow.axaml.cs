@@ -423,12 +423,10 @@ public partial class MainWindow : Window
     /// <summary>RF-015: confirmar ao fechar; modo bandeja → ocultar.</summary>
     public bool TrayMode => _cfg.Advanced.TrayMode;
 
-    private bool _reallyClosing;
     private bool _checkingAreas;
 
     protected override async void OnClosing(WindowClosingEventArgs e)
     {
-        if (_reallyClosing) { base.OnClosing(e); return; }
         // Cancela primeiro: o diálogo é assíncrono e a janela não pode
         // fechar antes da escolha (condição de corrida do async void).
         e.Cancel = true;

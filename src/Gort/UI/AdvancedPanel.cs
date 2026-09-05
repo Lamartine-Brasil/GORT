@@ -30,7 +30,7 @@ public sealed class AdvancedPanel : UserControl
     private CheckBox Tray = new(), Rtl = new(), RemoteTop = new(),
         FollowCompat = new(), FollowOnly = new(), YellowBorder = new();
     private Button SelBg = new(), SelAccent = new();
-    private string _selBg, _selAccent;
+    private string _selBg = "", _selAccent = "";   // Rebuild preenche antes de qualquer leitura
     // avançados
     private readonly List<(TextBox Keys, TextBox File)> _openProfile = new();
     private TextBox TranspKeys = new();
