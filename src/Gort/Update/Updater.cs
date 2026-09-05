@@ -163,7 +163,16 @@ public static class UpdateHelper
                 return 2;
             }
             MoveWithRetry(current, backup);                       // RF-430
-            MoveWithRetry(tmpExe, current);
+            try
+            {
+                MoveWithRetry(tmpExe, current);
+            }
+            catch
+            {
+                // Volta o backup: nunca deixar a pasta sem executável.
+                try { MoveWithRetry(backup, current); } catch { }
+                throw;
+            }
             try { File.Delete(tmpCfg); } catch { }
             try { File.Delete(backup); } catch { }
             log("Atualizado para " + version + ". Notas: " + notesUrl);

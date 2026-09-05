@@ -20,12 +20,12 @@ public static class OcrLangMapper
         return newLangs.Count > 0 ? newLangs[0] : "eng";
     }
 
-    /// <summary>RF-151: interseção motor ∩ {eng, jpn}.</summary>
+    /// <summary>RF-151: interseção motor ∩ {eng, jpn}; "auto" passa direto.</summary>
     public static List<string> IntersectScope(IReadOnlyList<string> engineLangs)
     {
         var list = new List<string>();
         foreach (var l in engineLangs)
-            if (l == "eng" || l == "jpn") list.Add(l);
+            if (l == "eng" || l == "jpn" || l == "auto") list.Add(l);
         return list;
     }
 }

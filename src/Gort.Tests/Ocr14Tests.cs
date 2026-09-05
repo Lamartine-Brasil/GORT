@@ -30,7 +30,9 @@ public class Ocr14Tests
         Assert.Equal("jpn", OcrLangMapper.Preserve("jpn", new List<string> { "eng", "jpn" }));
         Assert.Equal("eng", OcrLangMapper.Preserve("jpn", new List<string> { "eng" }));  // RF-149
         Assert.Equal(new List<string> { "eng" },
-            OcrLangMapper.IntersectScope(new List<string> { "eng", "fra" }));            // RF-151
+            OcrLangMapper.IntersectScope(new List<string> { "eng", "fra" }));             // RF-151
+        Assert.Equal(new List<string> { "eng", "auto" },
+            OcrLangMapper.IntersectScope(new List<string> { "eng", "auto" }));            // auto preservado
     }
 
     [Fact]

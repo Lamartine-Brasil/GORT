@@ -30,6 +30,12 @@ public class Services15Tests
     [Fact]
     public async Task Korean_Rotates_Keys()
     {
+        // Rotação de verdade: 2 chaves temporárias (backup/restaura o arquivo
+        // real), 1ª limitada, 2ª ok → traduz na 2ª tentativa.
+        string file = System.IO.Path.Combine(
+            Gort.Core.Paths.BaseDir, "creds-commercial-kr.toml");
+        string? backup = null;
+        bool hadKeys = System.IO.File.Exists(file);
         var fh = new FakeHandler();
         int n = 0;
         fh.Reply = _ =>
@@ -48,10 +54,38 @@ public class Services15Tests
                 };
         };
         var svc = new KoreanTranslator(fh);
-        // Sem chaves cadastradas → pede cadastro (ambiente limpo).
+        // Sem chaves cadastradas → pede cadastro (só quando não há arquivo real).
         var r0 = await svc.TranslateAsync(new List<string> { "x" }, "en", "pt",
             CancellationToken.None);
-        Assert.Contains("chave", r0.Error);
+        if (!hadKeys) Assert.Contains("chave", r0.Error);
+        try
+        {
+            Gort.Core.Paths.EnsureAll();
+            if (System.IO.File.Exists(file))
+                backup = System.IO.File.ReadAllText(file);
+            Store.ConfigService.SaveCreds("commercial-kr",
+                new System.Collections.Generic.List<Config.CredentialRecord>
+                {
+                    new() { Id = "k1", Secret = "s1", Plan = "free" },
+                    new() { Id = "k2", Secret = "s2", Plan = "free" },
+                });
+            n = 0;
+            // Com 2 chaves: 1ª limitada, 2ª traduz (rodízio RF-250).
+            var r1 = await svc.TranslateAsync(new List<string> { "y" }, "en", "pt",
+                CancellationToken.None);
+            Assert.Null(r1.Error);
+            Assert.Equal("OLÁ", r1.Translations[0]);
+            Assert.Equal(2, n);   // as 2 chaves foram tentadas, em ordem
+        }
+        finally
+        {
+            try
+            {
+                if (backup is null) System.IO.File.Delete(file);
+                else System.IO.File.WriteAllText(file, backup);
+            }
+            catch { }
+        }
     }
 
     [Fact]
