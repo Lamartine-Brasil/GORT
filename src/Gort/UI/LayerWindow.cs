@@ -36,6 +36,11 @@ public sealed class LayerWindow : Window
         WindowDecorations = Avalonia.Controls.WindowDecorations.None;
         Background = Brushes.Transparent;
         TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
+        // Pedido do dono (05/09/2026): a camada fica sempre na frente para
+        // leitura — clicar no jogo não a cobre. Exceção autorizada ao
+        // RF-319/320 para a camada (o escuro segue a opção "Sempre no topo").
+        // O OCR segue ignorando: exclusão da captura + oclusores por pixel.
+        Topmost = true;
         MinWidth = Core.Params.P87_LayerMinW;                    // RF-339
         MinHeight = Core.Params.P88_LayerMinH;
         Content = _view;
@@ -99,9 +104,7 @@ public sealed class LayerWindow : Window
     public void ApplyRunning(bool running)
     {
         _running = running;
-        var app = _cfg.App;
-        Topmost = app.TranslationAlwaysOnTop       // RF-319/320
-            && (!_cfg.Advanced.TopOnlyDuring || running);
+        Topmost = true;   // pedido do dono: camada sempre na frente (ver construtor)
         bool transparent = running || _cfg.Advanced.ForcedTransparency;
         Platform.GuiFx.SetClickThrough(this, transparent);  // C7 (por SO)
         Render();

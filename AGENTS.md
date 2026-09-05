@@ -120,9 +120,28 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
 
 ## 5. Concluído (só o relevante)
 
-- **Último estado verificado (05/09/2026):** build 0 erros, 289 testes
-  verdes (277 de unidade + 12 visuais). Publicado
-  `releases/windows-x64/Gort.exe` com autorização do dono.
+- **Último estado verificado (05/09/2026):** build 0 erros, 302 testes
+  verdes (288 de unidade + 14 visuais, com a cadeia do Aplicar coberta).
+  Publicado `releases/windows-x64/Gort.exe` com autorização do dono.
+- **Troca para LLM mostrando erro do Google (diagnóstico):** a fiação
+  da troca confere (perfil fresco por ciclo, impressão digital com
+  serviço, pipeline resolve por chamada, Aplicar salva). O vetor
+  certo: bloqueio do modelo cai na reserva Google (RF-277) e o erro
+  dela vinha sem assinatura — agora diz "bloqueado pelo modelo;
+  reserva … também falhou". Provas: 2 testes do reserva + 1 da
+  impressão digital. Sem chave, o erro é "Informe a chave", nunca
+  Google — Google na tela com LLM escolhido é reserva ou troca não
+  aplicada.
+- **Camada sempre na frente + posição inicial (pedido do dono):**
+  confirmado que a estreia era fora das áreas (canto livre), não
+  dentro em cima. `Topmost` forçado na camada (construtor, `Apply`,
+  `ShowForMode`) — clicar no jogo não cobre mais; exceção autorizada
+  ao RF-319/320 só para a camada (o escuro segue "Sempre no topo").
+  OCR segue ignorando (exclusão + oclusores vivos, intocados). Nova
+  opção `layer_place` (`outside` padrão, `top`, `bottom`) com 3 rádios
+  na Exibição; trocar limpa a geometria salva e reposiciona (aberta
+  na hora, fechada na estreia). Provas: `LayerPlacementTests` (+8) e
+  `Layer_StaysOnTop`. README (imagem e linha da Camada) refeito.
 - **Reforma 5 abas (05/09/2026, autorizada):** `AdvancedPanel` em modo
   distribuído servindo as abas; seções em `Expander` nativo; remoto
   unificado; `docs/imagens/01-09` e README nos nomes novos; lógica

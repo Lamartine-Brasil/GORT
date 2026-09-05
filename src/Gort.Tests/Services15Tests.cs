@@ -300,4 +300,79 @@ public class Services15Tests
         Assert.Contains("gtx", WebFreeTranslator.BuildUrl("x", "en", "pt", "gtx"));
         Assert.Contains("webapp", WebFreeTranslator.BuildUrl("x", "en", "pt", "webapp"));
     }
+
+    private sealed class FakeFallback : ITranslationService
+    {
+        public string Id => "fake";
+        public string Display => "Reserva de teste";
+        public string DefaultToken => "T";
+        public bool SupportsBridge => false;
+        public bool UsesResultMemory => false;
+        public bool UsesCollectanea => false;
+        public ServiceResult Reply = new() { Translations = new List<string> { "OLÁ" } };
+        public Task<ServiceResult> TranslateAsync(IReadOnlyList<string> texts,
+            string src, string dst, CancellationToken ct) => Task.FromResult(Reply);
+    }
+
+    private static LlmTranslator BlockedLlm(FakeHandler fh, ITranslationService? fb) =>
+        new(() => "CHAVE", () => "", () => "", () => "default",
+            () => 50, () => 1, () => 100, () => "", () => false,
+            () => fb, fh);
+
+    private static FakeHandler BlockedHandler()
+    {
+        var fh = new FakeHandler();
+        fh.Reply = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"promptFeedback\":{\"blockReason\":\"SAFETY\"}}"),
+        };
+        return fh;
+    }
+
+    [Fact]
+    public async Task Llm_Blocked_FallbackError_NamesFallback()
+    {
+        // Reserva (Google) com cota esgotada: o erro precisa dizer de onde
+        // veio, senão o usuário jura que continua no serviço antigo.
+        var fb = new FakeFallback
+        {
+            Reply = new ServiceResult
+            {
+                Error = "Cota horária do tradutor gratuito esgotada. Aguarde ou troque de serviço.",
+            },
+        };
+        var r = await BlockedLlm(BlockedHandler(), fb).TranslateAsync(
+            new List<string> { "hi" }, "en", "pt-BR", CancellationToken.None);
+        Assert.NotNull(r.Error);
+        Assert.Contains("bloqueado", r.Error);
+        Assert.Contains("Reserva de teste", r.Error);
+        Assert.Contains("Cota horária", r.Error);
+    }
+
+    [Fact]
+    public async Task Llm_Blocked_FallbackSuccess_PassesThrough()
+    {
+        // Reserva ok: tradução passa limpa, sem carimbo.
+        var r = await BlockedLlm(BlockedHandler(), new FakeFallback()).TranslateAsync(
+            new List<string> { "hi" }, "en", "pt-BR", CancellationToken.None);
+        Assert.Null(r.Error);
+        Assert.Equal("OLÁ", Assert.Single(r.Translations!));
+    }
+
+    [Fact]
+    public void Fingerprint_ChangesWithService()
+    {
+        // A troca de serviço com a tela parada precisa retraduzir: a
+        // impressão digital precisa ser sensível ao serviço.
+        var adv = new Gort.Config.AdvancedOptions();
+        var a = new Gort.Config.Profile { TranslationService = "web-free" };
+        var b = new Gort.Config.Profile { TranslationService = "llm" };
+        var c = new Gort.Config.Profile { TranslationService = "web-free" };
+        Assert.NotEqual(
+            Gort.Loop.TranslationLoop.TranslationFingerprint(a, adv),
+            Gort.Loop.TranslationLoop.TranslationFingerprint(b, adv));
+        Assert.Equal(
+            Gort.Loop.TranslationLoop.TranslationFingerprint(a, adv),
+            Gort.Loop.TranslationLoop.TranslationFingerprint(c, adv));
+    }
 }

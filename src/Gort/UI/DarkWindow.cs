@@ -183,12 +183,13 @@ public sealed class TranslationWindows
         {
             _dark?.Hide();
             var w = Layer();
+            w.Topmost = true;   // pedido do dono: clicar no jogo não cobre a camada
             if (!w.IsVisible)
             {
                 // Só estreia sem geometria salva: depois o usuário é quem manda.
                 if (!_layerPlaced && _cfg.Profile.LayerW <= 0)
                 {
-                    PlaceOutside(w, areas);
+                    PlaceLayer(w, areas);
                     _layerPlaced = true;
                 }
                 ShowExcluded(w);
@@ -224,10 +225,89 @@ public sealed class TranslationWindows
         Platform.GuiFx.SetCaptureExclusion(w, true);
     }
     /// <summary>
-    /// Estreia fora das áreas de captura: tenta canto inferior-direito,
+    /// Estreia da camada na posição inicial escolhida (perfil): fora das
+    /// áreas (padrão), em cima dentro da captura ou embaixo dentro dela.
+    /// Depois da estreia, o usuário é quem manda (geometria persistida).
+    /// </summary>
+    private void PlaceLayer(Avalonia.Controls.Window w,
+        System.Collections.Generic.IReadOnlyList<Platform.ScreenRect>? areas)
+    {
+        try
+        {
+            var scr = w.Screens.ScreenFromWindow(w) ?? w.Screens.Primary;
+            if (scr is null) return;
+            double s = scr.Scaling;
+            var wa = scr.WorkingArea;
+            int ww = (int)(w.Width * s), wh = (int)(w.Height * s);
+            var (x, y) = ComputePlacement(_cfg.Profile.LayerPlace,
+                ww, wh, areas, wa.X, wa.Y, wa.Width, wa.Height);
+            w.Position = new Avalonia.PixelPoint(x, y);
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Reposiciona a camada visível pela opção vigente (troca de opção com
+    /// a janela aberta). Fora disso, a estreia usa a mesma conta.
+    /// </summary>
+    public void RepositionLayer(
+        System.Collections.Generic.IReadOnlyList<Platform.ScreenRect>? areas)
+    {
+        var w = _layer;
+        if (w is null || !w.IsVisible) return;
+        PlaceLayer(w, areas);
+    }
+
+    /// <summary>Esquece a estreia para a próxima exibição reposicionar.</summary>
+    public void ResetLayerPlacement() => _layerPlaced = false;
+
+    /// <summary>
+    /// Núcleo puro do posicionamento inicial (testável), em pixels físicos:
+    /// "top" = em cima dentro da primeira captura; "bottom" = embaixo
+    /// dentro dela; resto = fora das áreas (canto inferior-direito,
     /// inferior-esquerdo, superior-direito, superior-esquerdo — o primeiro
-    /// sem interseção. Se a captura é a tela toda (tudo sobrepõe), fica no
-    /// inferior-direito, padrão previsível que o usuário arrasta.
+    /// sem interseção; se tudo sobrepõe, inferior-direito). Sempre preso à
+    /// área útil do monitor.
+    /// </summary>
+    internal static (int X, int Y) ComputePlacement(string place,
+        int ww, int wh,
+        System.Collections.Generic.IReadOnlyList<Platform.ScreenRect>? areas,
+        int waX, int waY, int waW, int waH)
+    {
+        if ((place == "top" || place == "bottom") && areas is not null && areas.Count > 0)
+        {
+            var a = areas[0];
+            int x = System.Math.Clamp(a.X, waX, System.Math.Max(waX, waX + waW - ww));
+            int y = place == "top"
+                ? System.Math.Clamp(a.Y, waY, System.Math.Max(waY, waY + waH - wh))
+                : System.Math.Clamp(a.Y + a.H - wh, waY, System.Math.Max(waY, waY + waH - wh));
+            return (System.Math.Max(waX, x), System.Math.Max(waY, y));
+        }
+        const int m = 12;
+        var cands = new (int X, int Y)[]
+        {
+            (waX + waW - ww - m, waY + waH - wh - m),
+            (waX + m, waY + waH - wh - m),
+            (waX + waW - ww - m, waY + m),
+            (waX + m, waY + m),
+        };
+        var best = cands[0];
+        double bestOver = double.MaxValue;
+        foreach (var c in cands)
+        {
+            double over = 0;
+            if (areas is not null)
+                foreach (var a in areas)
+                    over += Overlap(c.X, c.Y, ww, wh, a);
+            if (over <= 0) { best = c; break; }
+            if (over < bestOver) { bestOver = over; best = c; }
+        }
+        return (System.Math.Max(waX, best.X), System.Math.Max(waY, best.Y));
+    }
+
+    /// <summary>
+    /// Estreia fora das áreas de captura (escuro): primeiro canto livre,
+    /// senão inferior-direito — padrão previsível que o usuário arrasta.
     /// </summary>
     private static void PlaceOutside(Avalonia.Controls.Window w,
         System.Collections.Generic.IReadOnlyList<Platform.ScreenRect>? areas)
@@ -239,27 +319,9 @@ public sealed class TranslationWindows
             double s = scr.Scaling;
             var wa = scr.WorkingArea;
             int ww = (int)(w.Width * s), wh = (int)(w.Height * s);
-            const int m = 12;
-            var cands = new (int X, int Y)[]
-            {
-                (wa.X + wa.Width - ww - m, wa.Y + wa.Height - wh - m),
-                (wa.X + m, wa.Y + wa.Height - wh - m),
-                (wa.X + wa.Width - ww - m, wa.Y + m),
-                (wa.X + m, wa.Y + m),
-            };
-            var best = cands[0];
-            double bestOver = double.MaxValue;
-            foreach (var c in cands)
-            {
-                double over = 0;
-                if (areas is not null)
-                    foreach (var a in areas)
-                        over += Overlap(c.X, c.Y, ww, wh, a);
-                if (over <= 0) { best = c; break; }
-                if (over < bestOver) { bestOver = over; best = c; }
-            }
-            w.Position = new Avalonia.PixelPoint(
-                System.Math.Max(wa.X, best.X), System.Math.Max(wa.Y, best.Y));
+            var (x, y) = ComputePlacement("outside",
+                ww, wh, areas, wa.X, wa.Y, wa.Width, wa.Height);
+            w.Position = new Avalonia.PixelPoint(x, y);
         }
         catch { }
     }

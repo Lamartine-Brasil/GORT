@@ -85,6 +85,7 @@ public partial class MainWindow : Window
         public CheckBox Top = new(), CheckUpdate = new(), BasicDefault = new();
         public CheckBox LayerFit = new();
         public TextBox LayerMaxW = new(), LayerMaxH = new();
+        public RadioButton LPlaceOutside = new(), LPlaceTop = new(), LPlaceBottom = new();
         // Aba 3
         public Dictionary<string, (ComboBox Src, ComboBox Dst)> LangPairs = new();
         public CheckBox Tts = new(), TtsWait = new();

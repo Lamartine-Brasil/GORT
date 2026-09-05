@@ -79,6 +79,19 @@ public class ApplyChainTests
     }
 
     [Fact]
+    public void PosicaoCamada_ChegaAoPerfil()
+    {
+        Drive(3, w =>
+        {
+            var radio = w.GetVisualDescendants().OfType<RadioButton>()
+                .First(r => (r.Content as string) == "Em cima, dentro da captura");
+            radio.IsChecked = true;
+            w.ApplyFromUi();
+            Assert.Equal("top", ServiceOf(w).Profile.LayerPlace);
+        });
+    }
+
+    [Fact]
     public void Velocidade5_ChegaAoPerfil()
     {
         Drive(1, w =>

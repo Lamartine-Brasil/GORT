@@ -104,6 +104,9 @@ public sealed class Profile
     public bool LayerAutoFit { get; set; } = true;
     public int LayerMaxW { get; set; } = 0;
     public int LayerMaxH { get; set; } = 0;
+    // Camada — posição inicial da estreia: fora das áreas (padrão),
+    // em cima dentro da captura ou embaixo dentro da captura.
+    public string LayerPlace { get; set; } = "outside";
     public bool MergeLinesOverlay { get; set; } = false;
     public bool KeepDirection { get; set; } = false;
     public bool AutoColorMaster { get; set; } = true;
@@ -197,6 +200,8 @@ public sealed class Profile
         if (ColorGroups.Count == 0) ColorGroups.Add(new ColorGroup());
         if (LayerMaxW < 0) LayerMaxW = 0;                       // 0 = livre
         if (LayerMaxH < 0) LayerMaxH = 0;
+        if (LayerPlace != "outside" && LayerPlace != "top" && LayerPlace != "bottom")
+        { notices.Add($"layer_place desconhecido '{LayerPlace}'; padrão outside."); LayerPlace = "outside"; }
         if (WebQuality != "high" && WebQuality != "low") WebQuality = "auto";
         FontSize = ClampD(FontSize, 8, 72);                                      // P-128 piso
         if (CloudMonthlyLimit < 0) CloudMonthlyLimit = 0;

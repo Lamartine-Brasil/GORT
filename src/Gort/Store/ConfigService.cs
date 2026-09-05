@@ -105,6 +105,7 @@ public sealed class ConfigService
             p.LayerY = TomlFile.GetInt(raw, "layer_y", p.LayerY);
             p.LayerW = TomlFile.GetInt(raw, "layer_w", p.LayerW);
             p.LayerH = TomlFile.GetInt(raw, "layer_h", p.LayerH);
+            p.LayerPlace = TomlFile.GetString(raw, "layer_place", p.LayerPlace);
             p.TextColor = GetBytes(raw, "text_color", p.TextColor, 3);
             p.Outline1 = GetBytes(raw, "outline1", p.Outline1, 3);
             p.Outline2 = GetBytes(raw, "outline2", p.Outline2, 3);
@@ -480,6 +481,7 @@ public sealed class ConfigService
             ["layer_y"] = (long)Profile.LayerY,
             ["layer_w"] = (long)Profile.LayerW,
             ["layer_h"] = (long)Profile.LayerH,
+            ["layer_place"] = Profile.LayerPlace,
             ["text_color"] = ByteArray(Profile.TextColor),
             ["outline1"] = ByteArray(Profile.Outline1),
             ["outline2"] = ByteArray(Profile.Outline2),

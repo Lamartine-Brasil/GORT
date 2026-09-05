@@ -48,7 +48,7 @@ a aparência, e clique em **Aplicar**.
 
 | <img src="docs/imagens/07-modo-escuro.png" width="430" alt="Modo Escuro"> | <img src="docs/imagens/08-modo-camada.png" width="430" alt="Modo Camada"> |
 |---|---|
-| **Escuro** — janelinha escura com o texto, ideal para ler bastante coisa | **Camada** (padrão) — texto flutuante com contorno, fora da área do jogo |
+| **Escuro** — janelinha escura com o texto, ideal para ler bastante coisa | **Camada** (padrão) — texto flutuante com contorno; fica sempre na frente e a posição inicial é configurável (fora, em cima ou embaixo da captura) |
 
 | <img src="docs/imagens/09-modo-sobreposicao.png" width="430" alt="Modo Sobreposição"> | <img src="docs/imagens/10-modo-substituicao.png" width="430" alt="Modo Substituição"> |
 |---|---|

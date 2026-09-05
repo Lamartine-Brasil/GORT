@@ -158,8 +158,16 @@ public sealed class LlmTranslator : HttpTranslator
                 && fb.TryGetProperty("blockReason", out _))
             {
                 if (_fallback() is { } fallback)                        // RF-277
-                    return await fallback.TranslateAsync(texts, srcCode, dstCode, ct)
+                {
+                    var fbResult = await fallback.TranslateAsync(texts, srcCode, dstCode, ct)
                         .ConfigureAwait(false);
+                    // A reserva também pode falhar (ex.: cota do Google
+                    // esgotada): o erro precisa dizer de onde veio, senão
+                    // o usuário jura que continua no serviço antigo.
+                    if (fbResult.Error is not null)
+                        return Fail($"Conteúdo bloqueado pelo modelo; reserva {fallback.Display} também falhou: {fbResult.Error}");
+                    return fbResult;
+                }
                 return Fail("Conteúdo bloqueado pelo modelo.");
             }
             if (!resp.IsSuccessStatusCode)

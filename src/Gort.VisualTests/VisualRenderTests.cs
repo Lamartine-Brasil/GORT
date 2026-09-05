@@ -158,6 +158,29 @@ public class VisualRenderTests
         }
     }
 
+    /// <summary>
+    /// Camada sempre na frente (pedido do dono): Topmost ligado ao criar,
+    /// traduzindo ou parada — clicar no jogo não a cobre.
+    /// </summary>
+    [Fact]
+    public void Layer_StaysOnTop()
+    {
+        var cfg = new ConfigService();
+        HeadlessSetup.Session.Dispatch(() =>
+        {
+            var layer = new Gort.UI.LayerWindow(cfg);
+            try
+            {
+                Assert.True(layer.Topmost);
+                layer.ApplyRunning(true);
+                Assert.True(layer.Topmost);
+                layer.ApplyRunning(false);
+                Assert.True(layer.Topmost);
+            }
+            finally { if (layer.IsVisible) layer.Close(); }
+        }, default).GetAwaiter().GetResult();
+    }
+
     [Fact]
     public void Render_MainWindow_AllTabs()
     {

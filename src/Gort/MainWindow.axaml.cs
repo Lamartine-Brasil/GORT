@@ -297,6 +297,8 @@ public partial class MainWindow : Window
         var app = (App)Application.Current!;
         bool wasRunning = app.Controller.State != LoopState.Idle;
         string? modeNotice = null;
+        string oldPlace = _cfg.Profile.LayerPlace;
+        bool placeChanged = false;
         try
         {
             bool ok = await System.Threading.Tasks.Task.Run(() => app.Controller.ApplyChange(() =>
@@ -316,6 +318,15 @@ public partial class MainWindow : Window
                             Ocr.OcrEngines.Get(id) is { } e
                                 ? (e.IsAvailable, e.ProvidesWordBoxes, e.PunctualOnly)
                                 : null);
+                        // Posição inicial da camada trocada: esquece a geometria
+                        // salva para a próxima estreia reposicionar.
+                        if (_cfg.Profile.LayerPlace != oldPlace)
+                        {
+                            placeChanged = true;
+                            _cfg.Profile.LayerX = _cfg.Profile.LayerY
+                                = _cfg.Profile.LayerW = _cfg.Profile.LayerH = -1;
+                            app.Windows.ResetLayerPlacement();
+                        }
                     });
                     _cfg.SaveProfile();
                     _cfg.SaveAdvanced();
@@ -344,6 +355,10 @@ public partial class MainWindow : Window
                 // a janela nova e fechando a velha — o laço sozinho não mostra.
                 app.Windows.ShowForMode(_cfg.Profile.WindowMode,
                     app.Regions.CaptureRects());
+                // Opção de posição trocada com a camada aberta: reposiciona
+                // na hora (com ela fechada, a estreia cuida sozinha).
+                if (placeChanged && _cfg.Profile.WindowMode == "layer")
+                    app.Windows.RepositionLayer(app.Regions.CaptureRects());
                 // O sink do laço nasceu com a janela antiga (oculta): sem
                 // trocar, a tradução seguia desenhando fora da vista.
                 if (app.CurrentLoop is not null)

@@ -275,6 +275,14 @@ public partial class MainWindow
             new TextBlock { Text = "Altura máxima", VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center },
             _u.LayerMaxH,
             UI.GortTheme.Help("(0 = livre)")));
+        // Camada — posição inicial da estreia (depois o usuário arrasta).
+        p.Children.Add(H("Camada — posição inicial"));
+        _u.LPlaceOutside.Content = "Fora das áreas (padrão)";
+        _u.LPlaceTop.Content = "Em cima, dentro da captura";
+        _u.LPlaceBottom.Content = "Embaixo, dentro da captura";
+        _u.LPlaceOutside.GroupName = _u.LPlaceTop.GroupName
+            = _u.LPlaceBottom.GroupName = "layerplace";
+        p.Children.Add(Row(_u.LPlaceOutside, _u.LPlaceTop, _u.LPlaceBottom));
         return p;
     }
 

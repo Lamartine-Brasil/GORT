@@ -374,6 +374,9 @@ public partial class MainWindow
         _u.LayerFit.IsChecked = p.LayerAutoFit;
         _u.LayerMaxW.Text = p.LayerMaxW.ToString();
         _u.LayerMaxH.Text = p.LayerMaxH.ToString();
+        _u.LPlaceOutside.IsChecked = p.LayerPlace != "top" && p.LayerPlace != "bottom";
+        _u.LPlaceTop.IsChecked = p.LayerPlace == "top";
+        _u.LPlaceBottom.IsChecked = p.LayerPlace == "bottom";
         _u.CheckUpdate.IsChecked = _cfg.App.CheckUpdate;
         _u.BasicDefault.IsChecked = _cfg.App.BasicTabDefault;
 
@@ -545,6 +548,8 @@ public partial class MainWindow
         p.LayerAutoFit = _u.LayerFit.IsChecked == true;
         p.LayerMaxW = Num(_u.LayerMaxW, 0, 10000, 0);
         p.LayerMaxH = Num(_u.LayerMaxH, 0, 10000, 0);
+        p.LayerPlace = _u.LPlaceTop.IsChecked == true ? "top"
+            : _u.LPlaceBottom.IsChecked == true ? "bottom" : "outside";
         _cfg.App.CheckUpdate = _u.CheckUpdate.IsChecked == true;
         _cfg.App.BasicTabDefault = _u.BasicDefault.IsChecked == true;
 
