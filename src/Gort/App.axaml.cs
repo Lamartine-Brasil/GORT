@@ -724,11 +724,10 @@ public partial class App : Application, UI.IRemoteHost
             CheckSelfCapture();                                          // RF-343
             var loop = new Loop.TranslationLoop(Config, Regions, Pipe,
                 Windows.MakeSink(), LoopEffects);
+            // Aviso do laço em torrada (some sozinha, sem modal — P2).
             loop.Notice = msg => Avalonia.Threading.Dispatcher.UIThread
-                .InvokeAsync(() => MainWin?.Notify(msg));                // RF-570
+                .InvokeAsync(() => MainWin?.NotifyToast(msg));            // RF-570
             CurrentLoop = loop;
-            loop.Notice = msg => Avalonia.Threading.Dispatcher.UIThread
-                .InvokeAsync(() => MainWin?.Notify(msg));                // RF-570
             // RF-351: sobreposição exige OCR com posição (Etapa 12 verifica o modo).
             if (!Controller.StartLoop(loop, Loop.LoopMode.Continuous))
                 MainWin?.Notify("Não foi possível iniciar: o laço anterior não parou.");

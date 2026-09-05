@@ -50,7 +50,7 @@ public sealed class HotkeyActions
                 var loop = new Loop.TranslationLoop(_app.Config, _app.Regions,
                     _app.Pipe, _app.Windows.MakeSink(), _app.LoopEffects);
                 loop.Notice = msg => Dispatcher.UIThread.InvokeAsync(
-                    () => _app.MainWin?.Notify(msg));                    // RF-570
+                    () => _app.MainWin?.NotifyToast(msg));               // RF-570
                 _app.CurrentLoop = loop;
                 _app.Controller.StartLoop(loop, Loop.LoopMode.Continuous);
             });

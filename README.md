@@ -99,6 +99,7 @@ arquivo separado que nunca entra no GitHub. Na aba Traduzir tem botão
 | Aperte | Acontece |
 |---|---|
 | `Ctrl+Shift+Z` | Liga / desliga a tradução |
+| `Ctrl+Shift+C` | Traduz uma vez |
 | `Ctrl+Shift+A` | Traduz um trecho agora |
 | `Ctrl+Shift+X` | Área rápida temporária |
 | `Ctrl+Shift+F` | Área que segue o mouse |

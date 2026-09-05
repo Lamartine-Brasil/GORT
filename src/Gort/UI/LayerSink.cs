@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Avalonia.Threading;
 using Gort.Loop;
 
@@ -29,4 +31,25 @@ public sealed class LayerSink : IDisplaySink
 
     public void SetRunning(bool running) =>
         Dispatcher.UIThread.InvokeAsync(() => _win.ApplyRunning(running));
+
+    public IReadOnlyList<Platform.ScreenRect> OutputOccluders()
+    {
+        // Mesmo padrão de OwnWindowRects (App): leitura direta com tolerância,
+        // na thread do laço. Só a janela visível oclui.
+        try
+        {
+            var w = _win;
+            if (!w.IsVisible) return Array.Empty<Platform.ScreenRect>();
+            double s = 1.0;
+            try { s = w.Screens.Primary?.Scaling ?? 1.0; } catch { }
+            var p = w.Position;
+            return new[]
+            {
+                new Platform.ScreenRect(p.X, p.Y,
+                    Math.Max(1, (int)(w.Width * s)),
+                    Math.Max(1, (int)(w.Height * s))),
+            };
+        }
+        catch { return Array.Empty<Platform.ScreenRect>(); }
+    }
 }

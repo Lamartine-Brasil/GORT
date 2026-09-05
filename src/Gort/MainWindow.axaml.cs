@@ -110,6 +110,51 @@ public partial class MainWindow : Window
         await box.ShowDialog(this);
     }
 
+    /// <summary>
+    /// Aviso do laço em execução (RF-570, fundo preto): torrada que some
+    /// sozinha, sem modal e sem roubar o foco do jogo (P2 — nunca modal
+    /// do laço). O Notify modal segue para erros de ação do usuário.
+    /// </summary>
+    public void NotifyToast(string text)
+    {
+        try
+        {
+            var toast = new Window
+            {
+                Title = "GORT", Width = 440, SizeToContent = SizeToContent.Height,
+                WindowStartupLocation = WindowStartupLocation.Manual,
+                Background = new SolidColorBrush(Colors.Black),
+                Topmost = true, ShowInTaskbar = false, CanResize = false,
+                Content = new TextBlock
+                {
+                    Text = text, Margin = new Thickness(16, 12, 16, 12),
+                    Foreground = new SolidColorBrush(Colors.White),
+                    TextWrapping = TextWrapping.Wrap,
+                },
+            };
+            try
+            {
+                var scr = Screens.Primary ?? Screens.All.FirstOrDefault();
+                if (scr is not null)
+                {
+                    var wa = scr.WorkingArea;
+                    toast.Position = new PixelPoint(
+                        wa.X + wa.Width - 460, wa.Y + wa.Height - 140);
+                }
+            }
+            catch { }
+            var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
+            t.Tick += (_, _) =>
+            {
+                t.Stop();
+                try { toast.Close(); } catch { }
+            };
+            t.Start();
+            toast.Show();   // sem Activate: o foco continua no jogo
+        }
+        catch { }
+    }
+
     private async void CheckAreasOnScreen()
     {
         if (_checkingAreas) return;   // Screens.Changed dispara em rajada

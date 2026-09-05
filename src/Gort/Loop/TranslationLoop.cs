@@ -130,6 +130,10 @@ public sealed class TranslationLoop : ILoopBody
                     continue;
                 }
                 origKept.Add(needOrig ? img : null);
+                // Fase 1: a saída (escuro/camada) nunca entra no OCR — apaga da
+                // captura os retângulos do sink, mesmo onde a afinidade do
+                // Windows falhar. Sem oclusores, sem custo.
+                BlackoutOutput(img, rect, _sink.OutputOccluders());
                 List<string>? treated = null;
                 Text.RegionText? keptRegion = null;
                 List<Text.Block> keptBlocks = new();
@@ -409,6 +413,42 @@ public sealed class TranslationLoop : ILoopBody
         ulong h = 1469598103934665603ul;
         foreach (byte x in b) { h ^= x; h *= 1099511628211ul; }
         return h;
+    }
+
+    /// <summary>
+    /// Apaga da captura (BGRA) a interseção com os retângulos da janela de
+    /// saída, em pixels físicos da área. Puro e testável: sem oclusores ou
+    /// sem interseção, não toca em nada; fora de 4 canais, não age.
+    /// </summary>
+    internal static void BlackoutOutput(Imaging.RegionImage img, Platform.ScreenRect area,
+        System.Collections.Generic.IReadOnlyList<Platform.ScreenRect> occluders)
+    {
+        if (occluders.Count == 0 || img.Channels != 4) return;
+        BlackoutPlane(img.Bytes, img.Width, img.Height, area, occluders);
+        // O original acompanha quando tem as mesmas dimensões (a análise de
+        // cor só o pede em sobreposição, onde os oclusores são vazios).
+        var ob = img.OrigBytes;
+        if (ob is not null && img.OrigWidth == img.Width && img.OrigHeight == img.Height
+            && ob.Length == img.Width * img.Height * 4)
+            BlackoutPlane(ob, img.Width, img.Height, area, occluders);
+    }
+
+    private static void BlackoutPlane(byte[] bytes, int w, int h, Platform.ScreenRect area,
+        System.Collections.Generic.IReadOnlyList<Platform.ScreenRect> occluders)
+    {
+        foreach (var o in occluders)
+        {
+            int x1 = Math.Max(o.X, area.X), y1 = Math.Max(o.Y, area.Y);
+            int x2 = Math.Min(o.X + o.W, area.X + w);
+            int y2 = Math.Min(o.Y + o.H, area.Y + h);
+            if (x2 <= x1 || y2 <= y1) continue;
+            for (int y = y1 - area.Y; y < y2 - area.Y; y++)
+                for (int x = x1 - area.X; x < x2 - area.X; x++)
+                {
+                    int i = (y * w + x) * 4;
+                    bytes[i] = 0; bytes[i + 1] = 0; bytes[i + 2] = 0;
+                }
+        }
     }
 
     /// <summary>

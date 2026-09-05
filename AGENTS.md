@@ -4,7 +4,46 @@
 > Sem reforma/arquitetura nova. `instrucoes.md` removida pelo dono:
 > não recrie. Dono/autor único: **Lamartine Barbosa**.
 
-## Estado (04/09/2026)
+## Estado (05/09/2026 — revisão profunda)
+
+- **Build 0 erros · 251/251 testes verdes** (245+6; antes 203+6).
+  Novo `src/Gort.Tests/DeepReviewTests.cs` (+42 casos, puros: TomlFile
+  GetDouble/GetSchema/GetInt, VersionFile Parse/IsMinor/ForceHttps,
+  PipeFraming Encode/trunca/roundtrip, DisplayMemory pilha/expira,
+  ChangeTracker P-47 exato, ReuseCache, TokenHelper, WebFree
+  Parse/BuildUrl, BuildExportText cabeçalho). Validado por 2 revisores
+  só-leitura. Nenhum código do app alterado.
+- **Achados visuais (15 PNGs, corrigidos):** overlay.png vazio →
+  teste agora desenha quadro demo + `AssertPainted` (era `ApplyRunning`
+  sem `DrawOverlay`); overlay-source/content minúsculo → `AutoFontSize`
+  no perfil do teste (padrão 14 pt intacto); Motor OCR c/ placeholder
+  no headless → `EnsureEngines()` (`Initialize` é leve, modelo só no
+  `Recognize`); rótulo planilha truncado → grade `Auto/Auto/Auto` c/
+  `RowDefinitions` em `BuildTranslation` (SEM `RowDefinitions` tudo cai
+  na linha 0!); rodapé × links = borda do `ScrollViewer` (rolagem
+  prevista, sem correção); README + linha `Ctrl+Shift+C`.
+  Prova real: `docs/imagens/03` (v1.0.0) já cortava "nuvem".
+- **2 erros do dono (corrigidos):** quadros pretos abriam modal
+  (`Notify`+`ShowDialog` do laço, contra P2) → `NotifyToast` (fundo
+  preto, some em 6 s, sem roubar foco); `loop.Notice` roteado ao
+  toast (App + `HotkeyActions`; duplicata removida); saída relida
+  pelo OCR (afinidade Windows falha em silêncio) →   `BlackoutOutput`
+  no laço apaga da captura os retângulos de escuro/camada via
+  `IDisplaySink.OutputOccluders` (padrão vazio; sobreposição fora
+  por desenho). Prova: `SelfCaptureTests` (+6) + fiação
+  visível/escondida no `VisualRenderTests`. 257/257 verdes.
+- **Visuais fortalecidos (17/17 janelas):** `Shot` ganhou `shown`
+  (pós-`Show`; árvore visual só existe depois) + guarda `IsVisible`
+  no `Close` (sem ele, falha no `setup` era mascarada pelo diálogo
+  de saída no `OnClosing`); asserts: aba selecionada, combo modern,
+  grade 3×10 (trava `RowDefinitions`), links do Sistema, rótulos do
+  remoto (+ variante traduzindo "Parar" verde), áreas populadas,
+  conta-gotas e moldura (`AreaFrameWindow` era a única sem render).
+  Nota: conteúdo da aba mora no apresentador do `TabControl`, não
+  sob o `TabItem`.
+- **`docs/imagens/01-10` regenerados** dos renders atuais (v1.4.0;
+  07/08 idênticos, sem mudança).
+- **Anteriores (04/09/2026):** 209/209 verdes; resto abaixo vale.
 
 - **Build 0 erros · 209/209 testes verdes** (203+6) · zero warnings
   `CS0618`/`xUnit` (só nullable antigos — não caçar).

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Gort.Platform;
 
 namespace Gort.Loop;
 
@@ -34,6 +36,15 @@ public interface IDisplaySink
 
     /// <summary>Sobreposição (Etapa 12): desenho por blocos; padrão inerte.</summary>
     void DrawOverlay(OverlayFrame frame) { }
+
+    /// <summary>
+    /// Retângulos da janela de saída em pixels físicos (Fase 1): o laço apaga
+    /// essas regiões da captura para o OCR nunca ler a própria tradução,
+    /// mesmo onde a afinidade do Windows falhar. Padrão vazio (sobreposição
+    /// coincide com a fonte por desenho e usa a exclusão do SO).
+    /// </summary>
+    IReadOnlyList<ScreenRect> OutputOccluders() =>
+        Array.Empty<ScreenRect>();
 }
 
 /// <summary>Efeitos colaterais do ciclo (Etapas 10/16; nulos até lá).</summary>

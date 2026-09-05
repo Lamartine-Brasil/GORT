@@ -330,6 +330,18 @@ public partial class MainWindow
         });
         string[] svcs = ["web-free", "db", "web-nokey", "commercial-kr", "sheets",
             "embedded-browser", "commercial-eu", "llm", "local-worker", "custom"];
+        // Grade com coluna de rótulo automática: alinha os combos e nunca
+        // corta o rótulo mais largo ("...planilha em nuvem" era cortado com
+        // largura fixa). Cabe no cartão (rótulo ~320 + 160 + 160 + folgas).
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,Auto,Auto"),
+            RowDefinitions = new RowDefinitions(
+                string.Join(",", Enumerable.Repeat("Auto", svcs.Length))),
+            ColumnSpacing = 8,
+            RowSpacing = 4,
+        };
+        int row = 0;
         foreach (var s in svcs)
         {
             var src = new ComboBox { Width = 160 };
@@ -349,12 +361,18 @@ public partial class MainWindow
                 .FirstOrDefault(e => e.Id == s)?.DisplayPtBr
                 ?? Translate.Services.List()
                     .FirstOrDefault(e => e.Id == s).Display ?? s;
-            p.Children.Add(Row(new TextBlock
+            var tb = new TextBlock
             {
-                Text = label, Width = 250,
+                Text = label,
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-            }, src, dst));
+            };
+            Grid.SetColumn(tb, 0); Grid.SetRow(tb, row);
+            Grid.SetColumn(src, 1); Grid.SetRow(src, row);
+            Grid.SetColumn(dst, 2); Grid.SetRow(dst, row);
+            grid.Children.Add(tb); grid.Children.Add(src); grid.Children.Add(dst);
+            row++;
         }
+        p.Children.Add(grid);
         _u.Tts.Content = Strings._("tts.enable");
         _u.TtsWait.Content = Strings._("tts.wait");
         if (!Platform.PlatformFactory.Current.Speech.IsAvailable)
