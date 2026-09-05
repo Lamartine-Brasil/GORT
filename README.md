@@ -110,7 +110,8 @@ ou de janela anexada, e até seguir o mouse.
 
 **Serviços de tradução:** Google Tradutor web gratuito (padrão),
 banco de dados local, tradutor web sem chave, comercial por chave
-(versões Coreia e Europa), planilha em nuvem, navegador embutido,
+(versões Coreia e Europa), planilha em nuvem, navegador embutido
+(só Windows),
 Gemini (modelo de linguagem), processo auxiliar local e API
 personalizada. Cada serviço pode ter seu próprio par de idiomas; o
 padrão é inglês → português, com japonês → inglês por serviço.

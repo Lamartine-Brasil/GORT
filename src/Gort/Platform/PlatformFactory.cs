@@ -93,8 +93,10 @@ internal sealed class MacLayer : IPlatformLayer
             ClickThrough = true,     // NSWindow.ignoresMouseEvents
             CaptureExclusion = false,// sem afinidade — concealer do laço cobre
             Vsync = false,
-            GlobalHotkey = true,     // SharpHook (requer acesso à acessibilidade)
-            ScreenshotWatcher = true,// tecla PrintScreen via hook
+            // A implementação da fábrica é indisponível (o gancho real mora
+            // no serviço de atalhos): relatório honesto, sem prometer.
+            GlobalHotkey = false,
+            ScreenshotWatcher = false,
             ForegroundInfo = wins,
             TrayIcon = true,
             ClipboardWatch = true,

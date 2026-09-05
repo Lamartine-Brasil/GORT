@@ -412,6 +412,12 @@ public partial class MainWindow
     {
         var p = new StackPanel { Margin = new Thickness(12), Spacing = 4 };
         p.Children.Add(H(Strings._("hotkeys.title")));
+        if (OperatingSystem.IsLinux() && !Platform.Linux.LinuxFx.IsX11)
+            p.Children.Add(new TextBlock
+            {
+                Text = "Sem atalhos globais no Wayland; use o controle remoto.",
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            });
         string[] actions =
         [
             Config.ShortcutActions.ToggleLoop, Config.ShortcutActions.Once,

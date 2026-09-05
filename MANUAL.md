@@ -141,7 +141,8 @@ máquina; o 10 aceita itens extras criados por você):
    de segredo sem rótulo, **Autenticar…**, **Apagar todos os
    tokens**, campo de código (**Cole aqui o código do Google…**),
    **Trocar código por token** e mostra se há token.
-6. **Tradutor por navegador embutido**: traduz pelo Edge sem janela.
+6. **Tradutor por navegador embutido** (só no Windows; nos outros
+   sistemas a opção nem aparece): traduz pelo Edge sem janela.
    Mostra o estado (**ocioso**, por exemplo) e tem **Verificar estado**.
 7. **Tradutor comercial por chave (EU)**: serviço pago europeu. Pede
    **Chave** e o tipo de conta: **Endpoint gratuito** ou **Endpoint

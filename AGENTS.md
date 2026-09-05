@@ -122,10 +122,23 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
 ## 5. Concluído (só o relevante)
 
 - **Último estado verificado (05/09/2026):** versão 1.6 no `csproj`
-  (rodapé, capa e selo refeitos), build 0 erros, 305 testes verdes
-  (290 de unidade + 15 visuais). `releases/windows-x64/Gort.exe`
+  (rodapé, capa e selo refeitos), build 0 erros, 306 testes verdes
+  (291 de unidade + 15 visuais). `releases/windows-x64/Gort.exe`
   publicado 1.6 (pasta limpa, zip 1.5 removido, dll 1.6.0.0);
   Manual aponta para `blob/master/MANUAL.md` (app + README).
+- **Correções multiplataforma (pedido do dono):** navegador some no
+  Mac/Linux (lista + criação, catálogo intacto); Verificar estado
+  desabilita sem Edge; relatório do Mac honesto; aviso Wayland nos
+  atalhos; `LinuxFx` devolve falso no desfazer; geometria do Mac por
+  janela. Updater já era por SO (sem mudança). Empacotamento segue
+  só-Windows (cada um compila no seu sistema). Pequenos intactos
+  (risco de quebrar o Windows).
+- **Auditoria multiplataforma (05/09/2026, só leitura):** Windows
+  completo; Linux X11 e macOS parciais (sem anexada/exclusão/clique
+  em Wayland); achados: Edge só-Windows, relatório mente em
+  hotkey/captura no Mac, `LinuxFx` não desfaz clique, `Updater`
+  hardcoded em `.exe`, geometria do Mac ignora janela. Nada corrigido
+  — proposta com o dono antes de mexer.
 - **Sobreposição/Substituição por área (pedido do dono):** em vez de
   uma janela na união das áreas (quebrava com monitores e escalas
   mistos), agora é uma janela por área, ancorada no retângulo com a

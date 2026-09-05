@@ -104,8 +104,13 @@ public static class Services
         if (id == "web-nokey") return new NoKeyTranslator();
         if (id == "sheets") return new SheetsTranslator(
             () => Prof().SheetsSheetId, () => Adv().Bridge);
-        if (id == "embedded-browser") return new BrowserTranslator(
-            () => Get("web-free"), () => Adv().FallbackTranslator);
+        if (id == "embedded-browser")
+        {
+            // Pilota o Edge via CDP: fora do Windows não há o que pilotar.
+            if (!OperatingSystem.IsWindows()) return null;
+            return new BrowserTranslator(
+                () => Get("web-free"), () => Adv().FallbackTranslator);
+        }
         if (id == "commercial-eu") return new DeepLTranslator(
             () => CredSecret("commercial-eu"),
             () => Prof().DeepLEndpoint);
@@ -152,10 +157,12 @@ public static class Services
             ("web-nokey", "Tradutor web sem chave"),
             ("commercial-kr", "Tradutor comercial por chave (KR)"),
             ("sheets", "Tradutor por planilha em nuvem"),
-            ("embedded-browser", "Tradutor por navegador embutido"),
             ("commercial-eu", "Tradutor comercial por chave (EU)"),
             ("llm", "Gemini (modelo de linguagem)"),
         };
+        // Navegador embutido é Edge-via-CDP: a opção nem aparece fora do Windows.
+        if (OperatingSystem.IsWindows())
+            list.Insert(5, ("embedded-browser", "Tradutor por navegador embutido"));
         if (LocalWorker.FindLibrary() is not null)
             list.Add(("local-worker", "Tradutor local por processo auxiliar"));
         list.Add(("custom", "API personalizada"));

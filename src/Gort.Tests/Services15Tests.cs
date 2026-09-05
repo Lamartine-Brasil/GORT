@@ -273,8 +273,11 @@ public class Services15Tests
     {
         var ids = Services.List().Select(e => e.Id).ToList();
         foreach (var id in new[] { "web-free", "db", "web-nokey", "commercial-kr",
-                     "sheets", "embedded-browser", "commercial-eu", "llm", "custom" })
+                     "sheets", "commercial-eu", "llm", "custom" })
             Assert.Contains(id, ids);
+        // Navegador embutido é Edge-via-CDP: só listado no Windows.
+        if (OperatingSystem.IsWindows()) Assert.Contains("embedded-browser", ids);
+        else Assert.DoesNotContain("embedded-browser", ids);
         Assert.Contains(Services.List(), e => e.Id == "custom");   // API própria existe
         Assert.All(Services.List(), e => Assert.False(string.IsNullOrWhiteSpace(e.Display)));
         Assert.Equal("db", Services.ResolveOrFallback("preset-removido"));  // RF-307

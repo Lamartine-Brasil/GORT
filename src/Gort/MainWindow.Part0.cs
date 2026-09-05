@@ -401,6 +401,12 @@ public partial class MainWindow : Window
         var brBtn = new Button { Content = Strings._("tr.check_state") };
         brBtn.Click += (_, _) => new Translate.BrowserTranslator(() => null, () => false)
             .ShowInspector();
+        if (Translate.Browser.CdpBrowser.FindEdge() is null)
+        {
+            brBtn.IsEnabled = false;
+            Avalonia.Controls.ToolTip.SetTip(brBtn,
+                "Microsoft Edge não encontrado neste sistema.");
+        }
         _u.PBrowser.Children.Add(new TextBlock { Text = "Edge sem interface via CDP." });
         _u.PBrowser.Children.Add(Row(_u.BrowserState, brBtn));
         _u.EuKey.Width = 260;

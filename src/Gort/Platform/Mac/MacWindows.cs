@@ -38,6 +38,40 @@ public sealed class MacWindows : IWindowService
     public IReadOnlyList<WindowRef> ListCapturableWindows()
     {
         var list = new List<WindowRef>();
+        foreach (var (w, _) in ListWindows()) list.Add(w);
+        return list;
+    }
+
+    public WindowRef? ForegroundWindow()
+    {
+        var all = ListCapturableWindows();
+        return all.Count > 0 ? all[0] : null;
+    }
+
+    /// <summary>Limites da janela pedida (não da frontal).</summary>
+    public ScreenRect FrameBounds(WindowRef window) => RectOf(window);
+
+    public ScreenRect ClientOrigin(WindowRef window)
+    {
+        var r = RectOf(window);
+        return new ScreenRect(r.X, r.Y, 0, 0);
+    }
+
+    /// <summary>Janela pelo identificador; desconhecido cai na frontal (como antes).</summary>
+    private static ScreenRect RectOf(WindowRef window)
+    {
+        try
+        {
+            foreach (var (w, r) in ListWindows())
+                if (w.Handle == window.Handle) return r;
+        }
+        catch { }
+        return TryGetFrontmostRect(out var f) ? f : new ScreenRect(0, 0, 0, 0);
+    }
+
+    private static List<(WindowRef Ref, ScreenRect Rect)> ListWindows()
+    {
+        var list = new List<(WindowRef, ScreenRect)>();
         try
         {
             nint arr = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);
@@ -55,7 +89,7 @@ public sealed class MacWindows : IWindowService
                     if (!TryDictRect(dict, out var r)) continue;
                     if (r.W < 50 || r.H < 50) continue;   // ícones/sombras
                     string title = name.Length > 0 ? $"{owner} — {name}" : owner;
-                    list.Add(new WindowRef((nint)(1000 + list.Count), title));
+                    list.Add((new WindowRef((nint)(1000 + list.Count), title), r));
                 }
             }
             finally { CFRelease(arr); }
@@ -63,18 +97,6 @@ public sealed class MacWindows : IWindowService
         catch { }
         return list;
     }
-
-    public WindowRef? ForegroundWindow()
-    {
-        var all = ListCapturableWindows();
-        return all.Count > 0 ? all[0] : null;
-    }
-
-    public ScreenRect FrameBounds(WindowRef window) =>
-        TryGetFrontmostRect(out var r) ? r : new ScreenRect(0, 0, 0, 0);
-
-    public ScreenRect ClientOrigin(WindowRef window) =>
-        TryGetFrontmostRect(out var r) ? new ScreenRect(r.X, r.Y, 0, 0) : new ScreenRect(0, 0, 0, 0);
 
     /// <summary>Limites da janela frontal em pixels de tela (origem superior-esquerda).</summary>
     internal static bool TryGetFrontmostRect(out ScreenRect rect)

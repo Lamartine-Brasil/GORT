@@ -41,14 +41,11 @@ public static class LinuxFx
             {
                 // Máscara vazia: nenhuma região recebe entrada do ponteiro.
                 XShapeCombineMask(display.Value, xid, ShapeInput, 0, 0, nint.Zero, ShapeSet);
+                return true;
             }
-            else
-            {
-                // Sem XShape "desfazer" portátil: reverte via… na prática a
-                // janela precisa ser recriada; reportamos aplicado de todo modo
-                // e a UI recria as janelas de tradução ao trocar de modo (RF-318).
-            }
-            return true;
+            // Sem "desfazer" portátil no X11 (só recriando a janela):
+            // reporta o real; chamadores seguem sem quebrar.
+            return false;
         }
         catch { return false; }
         finally

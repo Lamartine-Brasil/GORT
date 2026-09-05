@@ -114,6 +114,20 @@ public class CrossPlatformTests
     }
 
     [Fact]
+    public void Mac_Report_Honest_And_Bogus_Handle_Zero()
+    {
+        // Implementações indisponíveis: relatório não promete gancho nem vigia.
+        var report = new Platform.MacLayer().Report();
+        Assert.False(report.GlobalHotkey);
+        Assert.False(report.ScreenshotWatcher);
+        // Identificador desconhecido: retângulo vazio, nunca exceção.
+        var wins = new Platform.Mac.MacWindows();
+        var bogus = new Platform.WindowRef(nint.Zero, "nada");
+        Assert.Equal(new ScreenRect(0, 0, 0, 0), wins.FrameBounds(bogus));
+        Assert.Equal(new ScreenRect(0, 0, 0, 0), wins.ClientOrigin(bogus));
+    }
+
+    [Fact]
     public void Concealer_Null_Never_Fails()
     {
         using var scope = PlatformFactory.CaptureConcealer.Conceal(
