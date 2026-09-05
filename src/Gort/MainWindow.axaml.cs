@@ -296,6 +296,7 @@ public partial class MainWindow : Window
         Req<TextBlock>("ApplyHint").Text = "Aplicando…";
         var app = (App)Application.Current!;
         bool wasRunning = app.Controller.State != LoopState.Idle;
+        string? modeNotice = null;
         try
         {
             bool ok = await System.Threading.Tasks.Task.Run(() => app.Controller.ApplyChange(() =>
@@ -309,6 +310,12 @@ public partial class MainWindow : Window
                     {
                         ApplyFromUi();   // UI → configuração (RF-504)
                         _u.AdvPanel?.Apply();   // painel distribuído edita um clone
+                        // Modo novo pede pré-requisito: ajusta sozinho o motor
+                        // (só ele, só se incompatível — o resto pessoal fica).
+                        modeNotice = Config.ModeRequirements.EnsureForMode(_cfg.Profile, id =>
+                            Ocr.OcrEngines.Get(id) is { } e
+                                ? (e.IsAvailable, e.ProvidesWordBoxes, e.PunctualOnly)
+                                : null);
                     });
                     _cfg.SaveProfile();
                     _cfg.SaveAdvanced();
@@ -352,6 +359,14 @@ public partial class MainWindow : Window
                 ? "chave salva ✔" : "sem chave — cole, teste e aplique";
             // Confirmação inline no rodapé (some sozinha): sem modal chato.
             Req<TextBlock>("ApplyHint").Text = "✔ " + Strings._("msg.applied");
+            if (modeNotice is not null)
+            {
+                // O modo pedido trocou o motor: recarrega a UI para o combo
+                // mostrar o valor salvo (combo nunca mente) e explica o motivo.
+                LoadUiFromConfig();
+                Req<TextBlock>("ApplyHint").Text =
+                    "✔ " + Strings._("msg.applied") + " " + modeNotice;
+            }
             _applyTimer.Stop();
             _applyTimer.Start();
         }

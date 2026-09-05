@@ -677,14 +677,14 @@ public partial class App : Application, UI.IRemoteHost
         }
     }
 
-    /// <summary>RF-351: sobreposição exige OCR com posição de palavra.</summary>
+    /// <summary>RF-351: sobreposição e substituição exigem OCR com posição de palavra.</summary>
     public bool EnsureOverlayOcr()
     {
         string mode = Config.Profile.WindowMode;
         if (mode != "overlay" && mode != "replace") return true;
         var eng = Ocr.OcrEngines.Get(Config.Profile.OcrEngine);
         if (eng is not null && eng.IsAvailable && eng.ProvidesWordBoxes) return true;
-        MainWin?.Notify("O modo Sobreposição exige um motor de OCR com posição " +
+        MainWin?.Notify("Os modos Sobreposição e Substituição exigem um motor de OCR com posição " +
             "de palavra. Veja a ajuda.");
         return false;
     }
