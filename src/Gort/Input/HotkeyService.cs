@@ -13,6 +13,7 @@ namespace Gort.Input;
 public sealed class HotkeyService : IDisposable
 {
     private readonly HotkeyMatcher _matcher = new();
+    private readonly object _matchGate = new();   // Reload (UI) × Work (worker)
     private readonly BlockingCollection<(int Key, bool Down)> _queue = new();
     private readonly Thread _worker;
     private bool _running = true;
@@ -32,7 +33,9 @@ public sealed class HotkeyService : IDisposable
     /// <summary>Carrega as 7 ações + avançados (RF-444/447) dos arquivos.</summary>
     public void Reload(ShortcutFile shortcuts, AdvancedOptions adv)
     {
-        _matcher.Clear();
+        lock (_matchGate)
+        {
+            _matcher.Clear();
         foreach (var (action, def) in ShortcutActions.Defaults)
         {
             shortcuts.Map.TryGetValue(action, out var s);
@@ -46,10 +49,12 @@ public sealed class HotkeyService : IDisposable
                 KeyCombo.Parse(adv.ToggleForcedTransparency));
         foreach (var kv in adv.ServiceSwitch)
             _matcher.Register("service\t" + kv.Key, KeyCombo.Parse(kv.Value));
+        }
     }
 
     public bool InstallHook()
     {
+        if (HookInstalled) return true;   // já instalado: sem vazar o anterior
         if (OperatingSystem.IsWindows())
         {
             _hook = new Platform.Windows.WinHook();
@@ -67,9 +72,14 @@ public sealed class HotkeyService : IDisposable
 
     private void OnKey(int key, bool down)
     {
-        if (key == Platform.Windows.WinHook.VK_SNAPSHOT && down)
-            ScreenshotKey?.Invoke();                       // C11 (Etapa 12)
-        _queue.Add((key, down));
+        // Callback nativo: nunca lançar (derrubaria o hook).
+        try
+        {
+            if (key == Platform.Windows.WinHook.VK_SNAPSHOT && down)
+                ScreenshotKey?.Invoke();                       // C11 (Etapa 12)
+            if (_running) _queue.Add((key, down));
+        }
+        catch { }
     }
 
     private void Work()
@@ -81,11 +91,15 @@ public sealed class HotkeyService : IDisposable
             {
                 if (HotkeyGuard.Suspended)                  // RF-443
                 {
-                    if (!down) _matcher.KeyUp(key);
+                    if (!down) lock (_matchGate) _matcher.KeyUp(key);
                     continue;
                 }
-                string? action = down ? _matcher.KeyDown(key) : null;
-                if (!down) _matcher.KeyUp(key);
+                string? action;
+                lock (_matchGate)
+                {
+                    action = down ? _matcher.KeyDown(key) : null;
+                    if (!down) _matcher.KeyUp(key);
+                }
                 if (action is not null) ActionFired?.Invoke(action);
             }
             catch { }
@@ -95,8 +109,12 @@ public sealed class HotkeyService : IDisposable
     public void Dispose()
     {
         _running = false;
-        _queue.CompleteAdding();
+        try { _queue.CompleteAdding(); } catch { }
+        try { _worker.Join(1000); } catch { }
+        try { _queue.Dispose(); } catch { }
         _hook?.Dispose();                                  // RF-016
         _sharpHook?.Dispose();
+        _hook = null;
+        _sharpHook = null;
     }
 }

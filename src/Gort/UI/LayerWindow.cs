@@ -269,6 +269,7 @@ public sealed class LayerWindow : Window
         using (var fb = wb.Lock())
             System.Runtime.InteropServices.Marshal.Copy(
                 bmp.Bytes, 0, fb.Address, bmp.Bytes.Length);
+        (_view.Source as System.IDisposable)?.Dispose();
         _view.Source = wb;
     }
 

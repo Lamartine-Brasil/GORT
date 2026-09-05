@@ -163,9 +163,25 @@ public sealed class Profile
 
         if (Speed < 1) Speed = 1; if (Speed > 5) Speed = 5;
         Threshold = Clamp(Threshold, 0, 255);                                    // RF-042
+        if (double.IsNaN(Zoom) || double.IsInfinity(Zoom)) Zoom = Params.P22_ZoomDefault;
         if (Zoom > 10) Zoom = Params.P22_ZoomDefault;                            // RF-042
         if (Zoom < Params.P23_ZoomMin) Zoom = Params.P23_ZoomMin;
         if (Zoom > Params.P24_ZoomMax) Zoom = Params.P24_ZoomMax;
+        if (ColorFilter != "none" && ColorFilter != "rgb" && ColorFilter != "hsv" && ColorFilter != "threshold")
+        { notices.Add($"color_filter desconhecido '{ColorFilter}'; padrão none."); ColorFilter = "none"; }
+        if (TextOrder != "left" && TextOrder != "center")
+        { notices.Add($"text_order desconhecido '{TextOrder}'; padrão left."); TextOrder = "left"; }
+        if (CopyFormat != "ocr-only" && CopyFormat != "translation-only" && CopyFormat != "both")
+        { notices.Add($"copy_format desconhecido '{CopyFormat}'; padrão ocr-only."); CopyFormat = "ocr-only"; }
+        if (DeepLEndpoint != "free" && DeepLEndpoint != "paid")
+        { notices.Add($"deepl_endpoint desconhecido '{DeepLEndpoint}'; padrão free."); DeepLEndpoint = "free"; }
+        if (double.IsNaN(AutoMinPt) || double.IsInfinity(AutoMinPt) || AutoMinPt < 0) AutoMinPt = 10;
+        if (double.IsNaN(AutoMaxPt) || double.IsInfinity(AutoMaxPt) || AutoMaxPt < 0) AutoMaxPt = 50;
+        if (AutoMinPt > AutoMaxPt) (AutoMinPt, AutoMaxPt) = (AutoMaxPt, AutoMinPt);
+        if (TextColor is null || TextColor.Length != 3) TextColor = [255, 255, 255];
+        if (Outline1 is null || Outline1.Length != 3) Outline1 = [192, 192, 192];
+        if (Outline2 is null || Outline2.Length != 3) Outline2 = [0, 0, 0];
+        if (BgColor is null || BgColor.Length != 4) BgColor = [170, 0, 0, 0];
         foreach (var g in ColorGroups) g.Normalize();
         if (ColorGroups.Count == 0) ColorGroups.Add(new ColorGroup());
         if (LayerMaxW < 0) LayerMaxW = 0;                       // 0 = livre
@@ -186,5 +202,6 @@ public sealed class Profile
     }
 
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : v > hi ? hi : v;
-    private static double ClampD(double v, double lo, double hi) => v < lo ? lo : v > hi ? hi : v;
+    private static double ClampD(double v, double lo, double hi) =>
+        double.IsNaN(v) || double.IsInfinity(v) ? lo : v < lo ? lo : v > hi ? hi : v;
 }

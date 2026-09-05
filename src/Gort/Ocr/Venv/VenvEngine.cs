@@ -50,7 +50,10 @@ public sealed class VenvEngine : IOcrEngine, IDisposable
     public void Dispose()   // RF-016: encerra o ambiente
     {
         try { _proc?.Kill(); } catch { }
+        try { _proc?.WaitForExit(2000); } catch { }
+        try { _proc?.Dispose(); } catch { }
         _proc = null;
+        try { _gate.Dispose(); } catch { }
     }
 
     private Process? _proc;
@@ -75,6 +78,8 @@ public sealed class VenvEngine : IOcrEngine, IDisposable
         {
             _failed = true;
             try { _proc?.Kill(); } catch { }
+            try { _proc?.WaitForExit(2000); } catch { }
+            try { _proc?.Dispose(); } catch { }
             _proc = null;
             return OcrResult.Fail(ex.Message);   // RF-145
         }
@@ -89,6 +94,7 @@ public sealed class VenvEngine : IOcrEngine, IDisposable
             SKColorType.Bgra8888, SKAlphaType.Opaque);
         System.Runtime.InteropServices.Marshal.Copy(bgra, 0, bmp.GetPixels(), bgra.Length);
         using var data = bmp.Encode(SKEncodedImageFormat.Png, 100);
+        if (data is null) throw new InvalidOperationException("Falha ao codificar imagem.");
         return Convert.ToBase64String(data.ToArray());
     }
 
@@ -171,14 +177,14 @@ public sealed class VenvEngine : IOcrEngine, IDisposable
         import sys, json, base64, io
         print(json.dumps({"ready": True}), flush=True)
         try:
-            import easyocr
-            _READER = None
-            def reader(lang):
-                global _READER
-                langs = ["ja"] if lang == "jpn" else ["en"]
-                if _READER is None:
-                    _READER = easyocr.Reader(langs)
-                return _READER
+        import easyocr
+        _READERS = {}
+        def reader(lang):
+            langs = ["ja"] if lang == "jpn" else ["en"]
+            key = ",".join(langs)
+            if key not in _READERS:
+                _READERS[key] = easyocr.Reader(langs)
+            return _READERS[key]
         except Exception as ex:
             print(json.dumps({"error": "not-installed: " + str(ex)}), flush=True)
             print(json.dumps({"end": True}), flush=True)

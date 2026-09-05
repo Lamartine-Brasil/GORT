@@ -77,6 +77,9 @@ public static class TomlFile
         foreach (var kv in raw) merged[kv.Key] = kv.Value;   // preserva novas/desconhecidas
         foreach (var kv in known) merged[kv.Key] = kv.Value;
         merged["schema_version"] = (long)schema;
-        File.WriteAllText(path, Tomlyn.TomlSerializer.Serialize(merged));
+        // Atômico: escreve em temp + rename — kill no meio não corrompe.
+        string tmp = path + ".tmp";
+        File.WriteAllText(tmp, Tomlyn.TomlSerializer.Serialize(merged));
+        File.Move(tmp, path, overwrite: true);
     }
 }

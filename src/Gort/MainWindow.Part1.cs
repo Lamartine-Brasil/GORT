@@ -174,6 +174,7 @@ public partial class MainWindow
             using (var fb = wb.Lock())
                 System.Runtime.InteropServices.Marshal.Copy(
                     bmp.Bytes, 0, fb.Address, bmp.Bytes.Length);
+            (_u.Preview.Source as System.IDisposable)?.Dispose();
             _u.Preview.Source = wb;
         }
         catch { }

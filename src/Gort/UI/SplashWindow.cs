@@ -82,6 +82,7 @@ public sealed class SplashWindow : Window
             if (_opacity <= 0) { _fade.Stop(); Close(); }
             else Opacity = _opacity;
         };
+        Closed += (_, _) => _fade.Stop();   // fechou no X: sem ticks órfãos
     }
 
     public void SetStatus(string s)
@@ -91,14 +92,22 @@ public sealed class SplashWindow : Window
                 if (c is TextBlock t && t.Name == "Status") t.Text = s;
     }
 
+    private bool _finishing;
+
     /// <summary>Encerra após P-01 com desvanecimento (chamado ao fim das tarefas).</summary>
     public async void FinishAsync()
     {
-        await Dispatcher.UIThread.InvokeAsync(async () =>
+        if (_finishing) return;
+        _finishing = true;
+        try
         {
-            await System.Threading.Tasks.Task.Delay(
-                TimeSpan.FromSeconds(Params.P01_SplashStaySec));  // P-01 🔒
-            _fade.Start();
-        });
+            await Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                await System.Threading.Tasks.Task.Delay(
+                    TimeSpan.FromSeconds(Params.P01_SplashStaySec));  // P-01 🔒
+                _fade.Start();
+            });
+        }
+        catch { }
     }
 }

@@ -154,17 +154,21 @@ public sealed class SpeechService : IDisposable
 
     public void Dispose()
     {
-        try
+        lock (_gate)
         {
-            if (OperatingSystem.IsWindows())
+            try
             {
-                _synth?.Dispose();
-                _synth = null;
+                if (OperatingSystem.IsWindows())
+                {
+                    _synth?.Dispose();
+                    _synth = null;
+                }
             }
+            catch { _synth = null; }
+            try { _cli?.Kill(); } catch { }
+            try { _cli?.WaitForExit(2000); } catch { }
+            try { _cli?.Dispose(); } catch { }
+            _cli = null;
         }
-        catch { _synth = null; }
-        try { _cli?.Kill(); } catch { }
-        try { _cli?.Dispose(); } catch { }
-        _cli = null;
     }
 }

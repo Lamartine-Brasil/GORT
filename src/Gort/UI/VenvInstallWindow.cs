@@ -72,6 +72,7 @@ public sealed class VenvInstallWindow : Window
             return;
         }
         _installing = true;
+        _installCts = new System.Threading.CancellationTokenSource();
         try
         {
             if (_force.IsChecked == true && Directory.Exists(VenvEngine.EnvDir))
@@ -89,7 +90,10 @@ public sealed class VenvInstallWindow : Window
             { cmd = "cmd.exe"; args = "/c python -m venv . && Scripts\\pip install easyocr"; }
             // RF-132: garante venv antes do pacote quando básico/GPU.
             Log("$ " + args);
-            int code = await RunAsync(cmd, args);
+            int code;
+            try { code = await RunAsync(cmd, args, _installCts.Token); }
+            catch (System.OperationCanceledException) { Log("Instalação cancelada."); return; }
+            catch (System.Exception ex) { Log("Falha: " + ex.Message); return; }
             Log("Saída: " + code);
             if (code == 0)
             {
@@ -99,10 +103,13 @@ public sealed class VenvInstallWindow : Window
             }
             else Log("Falha. Veja o guia de instalação.");
         }
-        finally { _installing = false; }
+        finally { _installing = false; _installCts?.Dispose(); _installCts = null; }
     }
 
-    private Task<int> RunAsync(string cmd, string args)
+    private System.Threading.CancellationTokenSource? _installCts;
+
+    private Task<int> RunAsync(string cmd, string args,
+        System.Threading.CancellationToken ct)
     {
         var tcs = new TaskCompletionSource<int>();
         var p = new Process
@@ -120,15 +127,38 @@ public sealed class VenvInstallWindow : Window
         p.OutputDataReceived += (_, e) => { if (e.Data is not null) Log(e.Data); };  // RF-134
         p.ErrorDataReceived += (_, e) => { if (e.Data is not null) Log(e.Data); };
         p.Exited += (_, _) => tcs.TrySetResult(p.ExitCode);
+        // pip pode demorar: 30 min de teto; fechar a janela cancela e mata.
+        var timeout = new System.Threading.CancellationTokenSource(
+            TimeSpan.FromMinutes(30));
+        var link = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(
+            ct, timeout.Token);
+        link.Token.Register(() =>
+        {
+            try { p.Kill(); } catch { }
+            tcs.TrySetCanceled();
+        });
         p.Start();
         p.BeginOutputReadLine();
         p.BeginErrorReadLine();
-        return tcs.Task;
+        return tcs.Task.ContinueWith(t =>
+        {
+            try { if (!p.HasExited) p.Kill(); } catch { }
+            try { p.WaitForExit(2000); } catch { }
+            try { p.Dispose(); } catch { }
+            try { link.Dispose(); } catch { }
+            try { timeout.Dispose(); } catch { }
+            if (t.IsCanceled) throw new TaskCanceledException();
+            return t.Result;
+        });
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        if (_installing) e.Cancel = true;   // RF-134: bloqueia durante a instalação
+        if (_installing)
+        {
+            // Fechar cancela a instalação em vez de travar para sempre.
+            try { _installCts?.Cancel(); } catch { }
+        }
         base.OnClosing(e);
     }
 }

@@ -85,4 +85,37 @@ public class HardeningTests
         var q = new Ocr.Cloud.CloudQuota();
         Assert.True(q.TryConsume("hard-" + Guid.NewGuid(), 950));
     }
+
+    [Fact]
+    public void Cloud_Usage_Rollover_And_Limit()
+    {
+        // Arquivo antigo (sem "v") com mes passado zera; limite barra.
+        string file = System.IO.Path.Combine(
+            Gort.Core.Paths.BaseDir, "cloud-usage.json");
+        string? backup = null;
+        try
+        {
+            Gort.Core.Paths.EnsureAll();
+            if (System.IO.File.Exists(file))
+                backup = System.IO.File.ReadAllText(file);
+            var old = DateTime.UtcNow.AddMonths(-1);
+            string content = "{\"k\":{\"used\":5,\"year\":"
+                + old.Year + ",\"month\":" + old.Month + "}}";
+            System.IO.File.WriteAllText(file, content);
+            var q = new Ocr.Cloud.CloudQuota();
+            Assert.Equal((0, 950), q.Status("k", 950));
+            Assert.True(q.TryConsume("k", 950));
+            Assert.Equal((1, 950), q.Status("k", 950));
+            Assert.False(q.TryConsume("full", 0));
+        }
+        finally
+        {
+            try
+            {
+                if (backup is null) System.IO.File.Delete(file);
+                else System.IO.File.WriteAllText(file, backup);
+            }
+            catch { }
+        }
+    }
 }

@@ -68,7 +68,7 @@ public sealed class DropperWindow : Window
         Render();
     }
 
-    private int Zoom => _zoomBox.SelectedIndex + 1;
+    private int Zoom => System.Math.Max(1, _zoomBox.SelectedIndex + 1);
 
     private static Bitmap ToBitmap(byte[] bgra, int w, int h)
     {
@@ -81,14 +81,20 @@ public sealed class DropperWindow : Window
 
     private void Render()
     {
-        _view.Source = ToBitmap(_bgra, _w, _h);
+        SetSource(_view, ToBitmap(_bgra, _w, _h));
         _view.Width = _w * Zoom; _view.Height = _h * Zoom;
         var gray = ColorFilter.Binarize(_bgra, _w, _h, _mode, _groups, _threshold);
         var pv = new byte[gray.Length * 4];
         for (int i = 0; i < gray.Length; i++)
         { pv[i * 4] = pv[i * 4 + 1] = pv[i * 4 + 2] = gray[i]; pv[i * 4 + 3] = 255; }
-        _preview.Source = ToBitmap(pv, _w, _h);
+        SetSource(_preview, ToBitmap(pv, _w, _h));
         _preview.Width = _w * Zoom; _preview.Height = _h * Zoom;
+    }
+
+    private static void SetSource(Image view, Bitmap next)
+    {
+        (view.Source as System.IDisposable)?.Dispose();
+        view.Source = next;
     }
 
     private void OnPixel(object? sender, PointerEventArgs e)

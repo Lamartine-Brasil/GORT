@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 namespace Gort.Translate;
 
 /// <summary>Base HTTP dos tradutores (timeout por serviço, cancelamento limpo).</summary>
-public abstract class HttpTranslator : ITranslationService
+public abstract class HttpTranslator : ITranslationService, IDisposable
 {
     public abstract string Id { get; }
     public abstract string Display { get; }
@@ -17,11 +18,19 @@ public abstract class HttpTranslator : ITranslationService
 
     protected readonly HttpClient Http;
     protected readonly int TimeoutMs;
+    private bool _disposed;
 
     protected HttpTranslator(HttpMessageHandler? handler, int timeoutMs)
     {
         Http = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         TimeoutMs = timeoutMs;
+    }
+
+    public virtual void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        try { Http.Dispose(); } catch { }
     }
 
     public abstract Task<ServiceResult> TranslateAsync(IReadOnlyList<string> texts,

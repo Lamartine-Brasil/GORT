@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Gort.Imaging;
 using Gort.Platform.Cli;
 
@@ -15,6 +16,7 @@ public sealed class LinuxCapture : CliCapture
     internal static string? ToolName;
     internal static string? ToolPath;
     internal static bool Probed;
+    private static readonly HashSet<string> BadTools = new();
 
     internal static void Probe()
     {
@@ -22,9 +24,17 @@ public sealed class LinuxCapture : CliCapture
         Probed = true;
         foreach (var name in new[] { "grim", "maim", "import", "scrot" })
         {
+            if (BadTools.Contains(name)) continue;   // falhou antes: pula
             var p = Shell.Which(name);
             if (p is not null) { ToolName = name; ToolPath = p; return; }
         }
+        ToolName = null; ToolPath = null;
+    }
+
+    internal static void ForgetTool(string name)
+    {
+        BadTools.Add(name);
+        Probed = false; ToolName = null; ToolPath = null;   // re-sonda na próxima
     }
 
     public static bool IsSupported
@@ -57,7 +67,11 @@ public sealed class LinuxCapture : CliCapture
                 "scrot" => $"\"{destPng}\"",                         // scrot ARQ
                 _ => $"\"{destPng}\"",
             };
-            if (!Shell.RunToFile(ToolPath, args, 8000)) return null;
+            if (!Shell.RunToFile(ToolPath, args, 8000))
+            {
+                ForgetTool(ToolName);   // quebrou (ex.: grim no X11): tenta a próxima
+                return null;
+            }
             var info = new System.IO.FileInfo(destPng);
             if (!info.Exists || info.Length == 0) return null;
             return destPng;
@@ -65,7 +79,8 @@ public sealed class LinuxCapture : CliCapture
         catch { return null; }
     }
 
-    public bool SupportsClientArea => LinuxWindows.IsSupported;
+    // Área do cliente exige xdotool (geometria); só-wmctrl lista, mas não ancora.
+    public bool SupportsClientArea => LinuxWindows.HasActiveGeometry;
 
     /// <summary>RF-088 fonte 2: geometria via xdotool/wmctrl + recorte.</summary>
     public RegionImage? CaptureClientArea(int index, ScreenRect areaScreen, bool needOriginal)

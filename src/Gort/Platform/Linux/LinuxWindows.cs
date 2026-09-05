@@ -38,6 +38,17 @@ public sealed class LinuxWindows : IWindowService
 
     public bool IsAvailable => IsSupported;
 
+    /// <summary>Geometria da janela ativa exige xdotool (não basta wmctrl).</summary>
+    internal static bool HasActiveGeometry
+    {
+        get
+        {
+            Probe();
+            string? display = Environment.GetEnvironmentVariable("DISPLAY");
+            return display?.Length > 0 && Xdotool is not null;
+        }
+    }
+
     public string? UnavailableReason
     {
         get
@@ -89,19 +100,53 @@ public sealed class LinuxWindows : IWindowService
         {
             Probe();
             if (Xdotool is null) return null;
+            var (idOut, idCode) = Shell.Run(Xdotool, "getactivewindow", 3000);
+            if (idCode != 0
+                || !long.TryParse(idOut.Trim(), out long id) || id <= 0) return null;
             var (output, code) = Shell.Run(Xdotool,
-                "getactivewindow getwindowname", 3000);
+                $"getwindowname {id}", 3000);
             if (code != 0 || output.Trim().Length == 0) return null;
-            return new WindowRef(1, output.Trim());
+            return new WindowRef((nint)id, output.Trim());
         }
         catch { return null; }
     }
 
     public ScreenRect FrameBounds(WindowRef window) =>
-        TryGetActiveRect(out var r) ? r : new ScreenRect(0, 0, 0, 0);
+        TryGetRect(window.Handle, out var r) ? r : new ScreenRect(0, 0, 0, 0);
 
     public ScreenRect ClientOrigin(WindowRef window) =>
-        TryGetActiveRect(out var r) ? new ScreenRect(r.X, r.Y, 0, 0) : new ScreenRect(0, 0, 0, 0);
+        TryGetRect(window.Handle, out var r)
+            ? new ScreenRect(r.X, r.Y, 0, 0) : new ScreenRect(0, 0, 0, 0);
+
+    private static bool TryGetRect(nint xid, out ScreenRect rect)
+    {
+        rect = new ScreenRect(0, 0, 0, 0);
+        try
+        {
+            Probe();
+            if (Xdotool is null || xid == nint.Zero) return false;
+            var (output, code) = Shell.Run(Xdotool,
+                $"getwindowgeometry --shell {xid}", 3000);
+            if (code != 0) return false;
+            int x = 0, y = 0, w = 0, h = 0;
+            foreach (var line in output.Split('\n'))
+            {
+                var kv = line.Split('=', 2);
+                if (kv.Length != 2) continue;
+                switch (kv[0].Trim())
+                {
+                    case "X": int.TryParse(kv[1], out x); break;
+                    case "Y": int.TryParse(kv[1], out y); break;
+                    case "WIDTH": int.TryParse(kv[1], out w); break;
+                    case "HEIGHT": int.TryParse(kv[1], out h); break;
+                }
+            }
+            if (w <= 0 || h <= 0) return false;
+            rect = new ScreenRect(x, y, w, h);
+            return true;
+        }
+        catch { return false; }
+    }
 
     internal static bool TryGetActiveRect(out ScreenRect rect)
     {

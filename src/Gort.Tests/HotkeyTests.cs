@@ -12,6 +12,7 @@ public class HotkeyTests
         Assert.Equal('Z', c.Key);
         Assert.Equal("Ctrl+Shift+Z", c.ToString());
         Assert.True(KeyCombo.Parse("").IsEmpty);
+        Assert.Equal("Ctrl+Shift+Alt", KeyCombo.Parse("Ctrl+Shift+Alt+Win+X").ToString());
         Assert.True(KeyCombo.Parse("Ctrl+Shift+Alt+Win+X").ToString()
             .Split('+').Length <= 3);                        // RF-442
         Assert.True(KeyCombo.Parse("Ctrl+Bogus+Z").Key == 'Z');

@@ -10,7 +10,7 @@
 
 ## Estado atual (04/09/2026 — continuar daqui)
 
-- **Build:** 0 erros. **Testes: 204/204 verdes** (198 `Gort.Tests` + 6
+- **Build:** 0 erros. **Testes: 207/207 verdes** (201 `Gort.Tests` + 6
   `Gort.VisualTests`). **Warnings:** zero `CS0618`/`xUnit`; restam só
   nullable pré-existentes (`CS8602` etc.) — não caçar sem motivo.
 - **Git:** repo `https://github.com/Lamartine-Brasil/GORT`, branch `master`.
@@ -141,6 +141,10 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
 - Modelos OCR vêm do NuGet (`models/` copiado no publish) — não versionar.
 - Varredura de código morto concluída (50 frentes): suite de testes reflete
   o estado atual; não ressuscitar membros removidos sem checar uso real.
+- Caça-bugs (50 frentes) corrigido: pontual via `MakeSink`, overlay com
+  efeitos, guards de geometria/índice, `Dispose` de bitmap/processo/Http,
+  TOML e downloads tmp+rename, travas de concorrência, marshalling Mac,
+  captura Linux/Windows; morto sem teste continua morto (não religar).
 - CPU: ONNX limitado a 4 threads (`OcrThreadCount`); quadros parados pulam
   OCR via hash FNV + fingerprint (qualquer mudança de config invalida);
   `ChangeTracker` textual continua decidindo o redesenho.

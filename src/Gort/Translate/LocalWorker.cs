@@ -142,6 +142,11 @@ public sealed class LocalWorker : HttpTranslator, IDisposable
         if (_handshake == true && _pipe is not null && _pipe.IsConnected) return true;
         _handshake = null;
         try { _child?.Kill(); } catch { }                        // RF-285
+        try { _child?.WaitForExit(2000); } catch { }
+        try { _child?.Dispose(); } catch { }
+        try { _pipe?.Dispose(); } catch { }
+        _child = null;
+        _pipe = null;
         string pipeName = "gort-tr-" + Environment.ProcessId;
         string? lib = FindLibrary();
         _child = new Process
@@ -185,13 +190,16 @@ public sealed class LocalWorker : HttpTranslator, IDisposable
         return await PipeFraming.ReadAsync(_pipe, linked.Token).ConfigureAwait(false);
     }
 
-    public void Dispose()   // RF-016/285: encerra o auxiliar
+    public override void Dispose()   // RF-016/285: encerra o auxiliar
     {
         try { _child?.Kill(); } catch { }
+        try { _child?.WaitForExit(2000); } catch { }
+        try { _child?.Dispose(); } catch { }
         try { _pipe?.Dispose(); } catch { }
         _child = null;
         _pipe = null;
         _handshake = null;
+        base.Dispose();
     }
 
     /// <summary>

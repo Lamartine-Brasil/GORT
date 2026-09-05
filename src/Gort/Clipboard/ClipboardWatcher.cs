@@ -23,6 +23,7 @@ public sealed class ClipboardWatcher
     private readonly DispatcherTimer _timer;
     private string _last = "";
     private bool _working;
+    private int _gen;   // Reset() invalida traduções em voo
 
     public ClipboardWatcher(
         Func<bool> enabled, Func<bool> idle, Func<bool> overlay, Func<bool> busy,
@@ -39,7 +40,7 @@ public sealed class ClipboardWatcher
     }
 
     /// <summary>RF-472: aplicar limpa o estado.</summary>
-    public void Reset() => _working = false;
+    public void Reset() { _working = false; _gen++; }
 
     /// <summary>RF-467: condições para traduzir pela área de transferência.</summary>
     internal bool ShouldTranslate(string? text) =>
@@ -53,11 +54,13 @@ public sealed class ClipboardWatcher
         catch { return; }
         if (!ShouldTranslate(text)) return;
         _working = true;                                     // RF-468: bloqueia
+        int gen = _gen;
         try
         {
             _last = text!;
             if (_showWorking()) _display("detectado — traduzindo");   // RF-469
             string tr = await _translate(text!).ConfigureAwait(true);
+            if (gen != _gen) return;   // aplicar no meio: descarta o velho
             string out0 = _showOriginal(text!) ? tr + "\n\n" + text : tr;  // RF-470
             _display(out0);                                   // RF-471
             _speak(tr);

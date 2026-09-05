@@ -35,13 +35,10 @@ public sealed class DisplayMemory
 
     private void Sweep(DateTime now)
     {
+        // Lista é newest-first: expira da cauda (mais antigos).
         int life = _seconds();
-        int i = 0;
-        while (i < _items.Count)
-        {
-            if ((now - _items[i].At).TotalSeconds <= life) break;  // para no 1º válido
-            i++;
-        }
-        if (i > 0) _items.RemoveRange(0, i);
+        while (_items.Count > 0
+            && (now - _items[^1].At).TotalSeconds > life)
+            _items.RemoveAt(_items.Count - 1);
     }
 }

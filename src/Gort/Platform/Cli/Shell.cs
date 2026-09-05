@@ -52,16 +52,22 @@ public static class Shell
             {
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                // stderr NÃO redirecionado: com redirect e sem drenagem o
+                // filho bloqueia ao encher o buffer (deadlock clássico).
+                RedirectStandardError = false,
                 CreateNoWindow = true,
             };
             p.Start();
-            string output = p.StandardOutput.ReadToEnd();
+            // Lê em background para o timeout valer mesmo se travar.
+            var outTask = p.StandardOutput.ReadToEndAsync();
             if (!p.WaitForExit(timeoutMs))
             {
-                try { p.Kill(); } catch { }
+                try { p.Kill(); p.WaitForExit(1000); } catch { }
                 return ("", -1);
             }
+            string output;
+            try { output = outTask.GetAwaiter().GetResult(); }
+            catch { return ("", -1); }
             return (output, p.ExitCode);
         }
         catch { return ("", -1); }
@@ -77,17 +83,17 @@ public static class Shell
             {
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                RedirectStandardError = false,
                 CreateNoWindow = true,
             };
             p.Start();
-            p.StandardOutput.ReadToEnd();
-            p.StandardError.ReadToEnd();
+            var outTask = p.StandardOutput.ReadToEndAsync();
             if (!p.WaitForExit(timeoutMs))
             {
-                try { p.Kill(); } catch { }
+                try { p.Kill(); p.WaitForExit(1000); } catch { }
                 return false;
             }
+            try { outTask.GetAwaiter().GetResult(); } catch { }
             return p.ExitCode == 0;
         }
         catch { return false; }

@@ -782,7 +782,8 @@ public partial class App : Application, UI.IRemoteHost
         Hotkeys.Reload(Config.Shortcuts, Config.Advanced);
         Hotkeys.ActionFired += HotkeyActions.Execute;
         Hotkeys.ScreenshotKey += () =>   // RF-347: atalho de captura do SO
-            Windows.OverlayWindowOrNull()?.SetScreenshotCapture();
+            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                Windows.OverlayWindowOrNull()?.SetScreenshotCapture());
         if (!Hotkeys.InstallHook())
             Trace.WriteLine("GORT: hook global indisponível; use o controle remoto.");  // RF-569
     }

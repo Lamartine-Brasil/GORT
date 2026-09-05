@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -14,6 +15,7 @@ namespace Gort.UI;
 public sealed class KeyManagerWindow : Window
 {
     private readonly string _service;
+    private readonly List<CredentialRecord> _shown = new();
     private readonly ListBox _list = new();
     private readonly TextBox _id = new();
     private readonly TextBox _secret = new();
@@ -31,10 +33,11 @@ public sealed class KeyManagerWindow : Window
         var del = new Button { Content = "Remover" };
         del.Click += (_, _) =>
         {
-            if (_list.SelectedItem is string sel)
+            // Remove pelo objeto (nunca por parse do texto exibido: Id com
+            // " [" truncaria e apagaria a chave errada).
+            if (_list.SelectedIndex is >= 0 and int i && i < _shown.Count)
             {
-                int at = sel.IndexOf(" [");
-                string id = at > 0 ? sel[..at] : sel;
+                string id = _shown[i].Id;
                 var keys = ConfigService.LoadCreds(_service);
                 keys.RemoveAll(k => k.Id == id);
                 ConfigService.SaveCreds(_service, keys);
@@ -86,8 +89,12 @@ public sealed class KeyManagerWindow : Window
     private void Refresh()
     {
         _list.Items.Clear();
+        _shown.Clear();
         foreach (var k in ConfigService.LoadCreds(_service))
+        {
+            _shown.Add(k);
             _list.Items.Add($"{k.Id} [{(k.Plan == "paid" ? "Paga" : "Gratuita")}]");
+        }
         RefreshSave();
     }
 

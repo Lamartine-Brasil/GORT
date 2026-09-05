@@ -60,10 +60,24 @@ public class LayerTests
             SKColors.White, SKColors.Black, SKColors.Black,
             SkiaText.HAlign.Left, 190, outline: false);
         Assert.True(w > 10 && h > 10);   // mesma extensão, só preenchimento
-        bool any = false;
+        int fill = CountAlpha(bmp);
+        // Com contorno, pinta estritamente mais pixels que só o recheio.
+        using var bmp2 = new SKBitmap(200, 60);
+        using var canvas2 = new SKCanvas(bmp2);
+        canvas2.Clear(SKColors.Transparent);
+        SkiaText.DrawOutlined(canvas2,
+            new List<string> { "Hi" }, 5, 5, face, 24,
+            SKColors.White, new SKColor(192, 192, 192), SKColors.Black,
+            SkiaText.HAlign.Left, 190, outline: true);
+        Assert.True(CountAlpha(bmp2) > fill);
+    }
+
+    private static int CountAlpha(SKBitmap bmp)
+    {
+        int n = 0;
         foreach (var px in bmp.Pixels)
-            if (px.Alpha > 10) { any = true; break; }
-        Assert.True(any);
+            if (px.Alpha > 10) n++;
+        return n;
     }
 
     [Fact]

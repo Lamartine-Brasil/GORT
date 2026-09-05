@@ -300,14 +300,18 @@ public partial class MainWindow : Window
         var shExchange = new Button { Content = "Trocar código por token" };
         shExchange.Click += async (_, _) =>
         {
-            var t = new Translate.SheetsTranslator(() => "", () => false);
-            bool ok = await t.ExchangeCodeAsync(
-                _u.SheetsClient.Text ?? "", _u.SheetsSecret.Text ?? "",
-                _u.SheetsCode.Text ?? "", "urn:ietf:wg:oauth:2.0:oob",
-                System.Threading.CancellationToken.None);
-            _u.SheetsToken.Text = "token: " + (t.HasToken() ? "ok" : "ausente");
-            Notify(ok ? "Planilha autenticada." :
-                "Falha ao trocar o código. Confira cliente, segredo e código.");
+            try
+            {
+                var t = new Translate.SheetsTranslator(() => "", () => false);
+                bool ok = await t.ExchangeCodeAsync(
+                    _u.SheetsClient.Text ?? "", _u.SheetsSecret.Text ?? "",
+                    _u.SheetsCode.Text ?? "", "urn:ietf:wg:oauth:2.0:oob",
+                    System.Threading.CancellationToken.None);
+                _u.SheetsToken.Text = "token: " + (t.HasToken() ? "ok" : "ausente");
+                Notify(ok ? "Planilha autenticada." :
+                    "Falha ao trocar o código. Confira cliente, segredo e código.");
+            }
+            catch (System.Exception ex) { Notify("Falha de rede: " + ex.Message); }
         };
         _u.PSheets.Children.Add(Row(_u.SheetsSecret, shAuth, shClear));
         _u.PSheets.Children.Add(Row(_u.SheetsCode, shExchange));
@@ -494,11 +498,15 @@ public partial class MainWindow : Window
 
     private async void PickFile(TextBox target, string ext)
     {
-        var sp = TopLevel.GetTopLevel(this)?.StorageProvider;
-        if (sp is null) return;
-        var files = await sp.OpenFilePickerAsync(
-            new Avalonia.Platform.Storage.FilePickerOpenOptions { AllowMultiple = false });
-        if (files.Count > 0) target.Text = files[0].Path.LocalPath;
+        try
+        {
+            var sp = TopLevel.GetTopLevel(this)?.StorageProvider;
+            if (sp is null) return;
+            var files = await sp.OpenFilePickerAsync(
+                new Avalonia.Platform.Storage.FilePickerOpenOptions { AllowMultiple = false });
+            if (files.Count > 0) target.Text = files[0].Path.LocalPath;
+        }
+        catch (System.Exception ex) { Notify("Falha ao abrir arquivo: " + ex.Message); }
     }
 
     private void LoadGroupFields()

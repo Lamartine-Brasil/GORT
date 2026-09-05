@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Gort.Translate;
@@ -75,16 +76,16 @@ public static class LangCodes
         return "";
     }
 
-    /// <summary>en ≡ en-US (RF-316).</summary>
+    /// <summary>en ≡ en-US (RF-316, sem diferenciar maiúsculas).</summary>
     public static bool SameCode(string a, string b)
     {
-        if (a == b) return true;
-        return a.Split('-')[0] == b.Split('-')[0];
+        if (a.Equals(b, StringComparison.OrdinalIgnoreCase)) return true;
+        return a.Split('-')[0].Equals(b.Split('-')[0], StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool IsRtl(string langKey)
     {
-        foreach (var e in All)
+        foreach (var e in All.ToArray())
             if (e.Key == langKey) return e.Rtl;
         return false;
     }

@@ -14,6 +14,7 @@ public sealed class CloudQuota
 {
     private readonly string _file;
     private readonly Dictionary<string, (int Used, int Year, int Month)> _rows = new();
+    private readonly object _gate = new();   // laço × UI concorrentes
 
     public CloudQuota()
     {
@@ -39,22 +40,28 @@ public sealed class CloudQuota
 
     public (int Used, int Limit) Status(string cred, int limit)
     {
-        var now = DateTime.UtcNow;
-        if (_rows.TryGetValue(cred, out var r) && r.Year == now.Year && r.Month == now.Month)
-            return (r.Used, limit);
-        return (0, limit);   // RF-124: zera ao mudar mês/ano
+        lock (_gate)
+        {
+            var now = DateTime.UtcNow;
+            if (_rows.TryGetValue(cred, out var r) && r.Year == now.Year && r.Month == now.Month)
+                return (r.Used, limit);
+            return (0, limit);   // RF-124: zera ao mudar mês/ano
+        }
     }
 
     public bool TryConsume(string cred, int limit)
     {
-        var now = DateTime.UtcNow;
-        int used = 0;
-        if (_rows.TryGetValue(cred, out var r) && r.Year == now.Year && r.Month == now.Month)
-            used = r.Used;
-        if (used >= limit) return false;                        // RF-125
-        _rows[cred] = (used + 1, now.Year, now.Month);
-        Save();
-        return true;
+        lock (_gate)
+        {
+            var now = DateTime.UtcNow;
+            int used = 0;
+            if (_rows.TryGetValue(cred, out var r) && r.Year == now.Year && r.Month == now.Month)
+                used = r.Used;
+            if (used >= limit) return false;                        // RF-125
+            _rows[cred] = (used + 1, now.Year, now.Month);
+            Save();
+            return true;
+        }
     }
 
     private void Save()

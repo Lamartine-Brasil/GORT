@@ -19,7 +19,12 @@ public static class Strings
 
     public static void Load(string path, string language)
     {
-        var parsed = File.Exists(path) ? ParseCsv(File.ReadAllText(path)) : new List<(string Key, List<string> Cols)>();
+        List<(string Key, List<string> Cols)> parsed;
+        try
+        {
+            parsed = File.Exists(path) ? ParseCsv(File.ReadAllText(path)) : new List<(string Key, List<string> Cols)>();
+        }
+        catch { parsed = new List<(string Key, List<string> Cols)>(); }   // ilegível: cai p/ chaves
         lock (Gate)
         {
             Table.Clear();

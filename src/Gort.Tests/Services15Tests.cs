@@ -240,7 +240,8 @@ public class Services15Tests
         foreach (var id in new[] { "web-free", "db", "web-nokey", "commercial-kr",
                      "sheets", "embedded-browser", "commercial-eu", "llm", "custom" })
             Assert.Contains(id, ids);
-        Assert.Contains(Services.List(), e => e.Display.StartsWith("Custom") == false);
+        Assert.Contains(Services.List(), e => e.Id == "custom");   // API própria existe
+        Assert.All(Services.List(), e => Assert.False(string.IsNullOrWhiteSpace(e.Display)));
         Assert.Equal("db", Services.ResolveOrFallback("preset-removido"));  // RF-307
         Assert.Equal("web-free", Services.ResolveOrFallback("web-free"));
     }

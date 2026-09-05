@@ -45,33 +45,47 @@ public sealed class CdpBrowser : IDisposable
             ?? throw new InvalidOperationException("Microsoft Edge não encontrado.");
         _dir = Path.Combine(Path.GetTempPath(), "gort-edge-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_dir);
-        _proc = new Process
+        try
         {
-            StartInfo = new ProcessStartInfo(edge,
-                "--headless=new --disable-gpu --no-first-run --no-default-browser-check " +
-                $"--remote-debugging-port=0 --user-data-dir=\"{_dir}\"")
+            _proc = new Process
             {
-                UseShellExecute = false,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-            },
-        };
-        if (!_proc.Start()) throw new InvalidOperationException("Edge não iniciou.");
-        // A porta sai no stderr: "DevTools listening on ws://127.0.0.1:PORT/…".
-        string? line = null;
-        var until = DateTime.UtcNow.AddSeconds(15);
-        while (DateTime.UtcNow < until)
-        {
-            line = await _proc.StandardError.ReadLineAsync(ct).ConfigureAwait(false);
-            if (line is not null && line.Contains("DevTools listening on ws://127.0.0.1:"))
-                break;
+                StartInfo = new ProcessStartInfo(edge,
+                    "--headless=new --disable-gpu --no-first-run --no-default-browser-check " +
+                    $"--remote-debugging-port=0 --user-data-dir=\"{_dir}\"")
+                {
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                },
+            };
+            if (!_proc.Start()) throw new InvalidOperationException("Edge não iniciou.");
+            // A porta sai no stderr: "DevTools listening on ws://127.0.0.1:PORT/…".
+            string? line = null;
+            var until = DateTime.UtcNow.AddSeconds(15);
+            while (DateTime.UtcNow < until)
+            {
+                line = await _proc.StandardError.ReadLineAsync(ct).ConfigureAwait(false);
+                if (line is not null && line.Contains("DevTools listening on ws://127.0.0.1:"))
+                    break;
+            }
+            if (line is null)
+                throw new InvalidOperationException("Depurador do Edge não respondeu.");
+            int p1 = line.LastIndexOf(':') + 1, p2 = line.IndexOf('/', p1);
+            // stderr malformado não pode derrubar o laço com exceção obscura.
+            if (p1 <= 0 || p2 <= p1 || !int.TryParse(line[p1..p2], out _port))
+                throw new InvalidOperationException("Depurador do Edge não respondeu.");
         }
-        if (line is null)
-            throw new InvalidOperationException("Depurador do Edge não respondeu.");
-        int p1 = line.LastIndexOf(':') + 1, p2 = line.IndexOf('/', p1);
-        // stderr malformado não pode derrubar o laço com exceção obscura.
-        if (p1 <= 0 || p2 <= p1 || !int.TryParse(line[p1..p2], out _port))
-            throw new InvalidOperationException("Depurador do Edge não respondeu.");
+        catch
+        {
+            // Falha no arranque: sem Edge zumbi nem pasta abandonada.
+            try { _proc?.Kill(); } catch { }
+            try { _proc?.WaitForExit(2000); } catch { }
+            try { _proc?.Dispose(); } catch { }
+            _proc = null;
+            try { if (_dir.Length > 0) Directory.Delete(_dir, true); } catch { }
+            _dir = "";
+            throw;
+        }
     }
 
     /// <summary>Navega num alvo novo (campo limpo) e extrai até estabilizar.</summary>

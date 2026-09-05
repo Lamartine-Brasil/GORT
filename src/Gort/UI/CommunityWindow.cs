@@ -94,27 +94,32 @@ public sealed class CommunityWindow : Window
         _list.ItemsSource = items;
     }
 
+    private int _selGen;   // trocas rápidas: só a última seleção pinta a tela
+
     private async void Select()
     {
         if (_list.SelectedIndex < 0) return;
+        int gen = ++_selGen;
         string shown = (string)_list.SelectedItem!;
         _sel = _entries.FirstOrDefault(e => (e.Title + "  /  " + e.TitleTr) == shown);
         if (_sel is null) return;
-        _title.Text = _sel.Title;
+        var sel = _sel;
+        _title.Text = sel.Title;
         _desc.Text = "Carregando…";
         _apply.Content = "Aplicar";
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
             string info = await http.GetStringAsync(
-                Update.Dist.CommunityBase + _sel.Path + "/info.txt");
-            ParseInfo(_sel, info);
-            _title.Text = _sel.InfoTitle != "" ? _sel.InfoTitle : _sel.Title;
-            _desc.Text = _sel.Desc + "\n" + _sel.Links;
-            if (_sel.Profile == "" && _sel.Db == "")
+                Update.Dist.CommunityBase + sel.Path + "/info.txt");
+            if (gen != _selGen) return;
+            ParseInfo(sel, info);
+            _title.Text = sel.InfoTitle != "" ? sel.InfoTitle : sel.Title;
+            _desc.Text = sel.Desc + "\n" + sel.Links;
+            if (sel.Profile == "" && sel.Db == "")
                 _apply.Content = "Ir para a página de download";   // RF-541
         }
-        catch { _desc.Text = "Falha ao carregar."; }
+        catch { if (gen == _selGen) _desc.Text = "Falha ao carregar."; }
     }
 
     internal static void ParseInfo(Entry e, string info)
@@ -132,31 +137,36 @@ public sealed class CommunityWindow : Window
 
     private async Task ApplyAsync()
     {
-        if (_sel is null) return;
+        var sel = _sel;
+        if (sel is null) return;
         var app = (App)Avalonia.Application.Current!;
-        if (_sel.Profile == "" && _sel.Db == "")
+        if (sel.Profile == "" && sel.Db == "")
         {
-            App.OpenUrl(Update.Dist.CommunityBase + _sel.Path);
+            App.OpenUrl(Update.Dist.CommunityBase + sel.Path);
             return;
         }
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
-            if (_sel.Profile != "")
+            if (sel.Profile != "")
             {
                 string p = await http.GetStringAsync(
-                    Update.Dist.CommunityBase + _sel.Path + "/" + _sel.Profile);
-                string dest = System.IO.Path.Combine(Core.Paths.ProfilesDir, _sel.Profile);
-                await System.IO.File.WriteAllTextAsync(dest, p);
+                    Update.Dist.CommunityBase + sel.Path + "/" + sel.Profile);
+                string dest = System.IO.Path.Combine(Core.Paths.ProfilesDir, sel.Profile);
+                string tmp = dest + ".tmp";
+                await System.IO.File.WriteAllTextAsync(tmp, p);
+                System.IO.File.Move(tmp, dest, overwrite: true);
                 app.Config.LoadProfileIntoMain(dest);
                 app.Regions.LoadFromProfile();
             }
-            if (_sel.Db != "")
+            if (sel.Db != "")
             {
                 string d = await http.GetStringAsync(
-                    Update.Dist.CommunityBase + _sel.Path + "/" + _sel.Db);
-                await System.IO.File.WriteAllTextAsync(
-                    System.IO.Path.Combine(Core.Paths.BaseDir, _sel.Db), d);
+                    Update.Dist.CommunityBase + sel.Path + "/" + sel.Db);
+                string dest = System.IO.Path.Combine(Core.Paths.BaseDir, sel.Db);
+                string tmp = dest + ".tmp";
+                await System.IO.File.WriteAllTextAsync(tmp, d);
+                System.IO.File.Move(tmp, dest, overwrite: true);
             }
             Close();
         }

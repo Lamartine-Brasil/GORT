@@ -19,8 +19,16 @@ public sealed class SingleInstance : IDisposable
         }
         if (OperatingSystem.IsWindows())
         {
-            _mutex = new Mutex(true, @"Global\GORT_SingleInstance", out bool created);
-            return created;
+            try
+            {
+                _mutex = new Mutex(false, @"Global\GORT_SingleInstance", out _);
+                try { return _mutex.WaitOne(0); }   // livre: nosso; ocupado: alheio
+                catch (System.Threading.AbandonedMutexException) { return true; }  // dono caiu: nosso
+            }
+            catch
+            {
+                return false;
+            }
         }
         // Unix: prefixo Global\ não existe — usa lock-file em BaseDir.
         try

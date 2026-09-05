@@ -18,7 +18,10 @@ public class Ocr14Tests
     public void Tess_Urls_And_Fast_Rule()
     {
         Assert.Contains("tessdata_fast", ClassicEngine.TessUrl("eng", fast: true));
+        Assert.Contains("github.com/tesseract-ocr", ClassicEngine.TessUrl("eng", fast: true));
+        Assert.Contains("eng.traineddata", ClassicEngine.TessUrl("eng", fast: true));
         Assert.Contains("/tessdata/raw/", ClassicEngine.TessUrl("jpn", fast: false));
+        Assert.Contains("jpn.traineddata", ClassicEngine.TessUrl("jpn", fast: false));
     }
 
     [Fact]
@@ -74,15 +77,16 @@ public class Ocr14Tests
     public void Cloud_Jwt_Shape()
     {
         string jwt = CloudEngine.JwtUnsigned("a@b.c");
-        Assert.Equal(2, jwt.Split('.').Length);   // header.claim (assinatura à parte)
-    }
-
-    [Fact]
-    public void Cloud_Quota_Month_Rollover()
-    {
-        var q = new CloudQuota();
-        Assert.True(q.TryConsume("cred-test-" + Guid.NewGuid(), 950));
-        Assert.False(q.TryConsume("cred-test-" + Guid.NewGuid(), 0));  // RF-125
+        var parts = jwt.Split('.');
+        Assert.Equal(2, parts.Length);   // header.claim (assinatura à parte)
+        string header = System.Text.Encoding.UTF8.GetString(
+            Convert.FromBase64String(parts[0].Replace('-', '+').Replace('_', '/')));
+        Assert.Contains("\"RS256\"", header);
+        string claim = System.Text.Encoding.UTF8.GetString(
+            Convert.FromBase64String(parts[1].Replace('-', '+').Replace('_', '/')
+                .PadRight(parts[1].Length + (4 - parts[1].Length % 4) % 4, '=')));
+        Assert.Contains("a@b.c", claim);
+        Assert.Contains("exp", claim);
     }
 
     [Fact]

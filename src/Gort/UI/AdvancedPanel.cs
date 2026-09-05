@@ -667,6 +667,8 @@ public sealed class AdvancedPanel : UserControl
         a.SelectBg = _selBg; a.SelectAccent = _selAccent;
         for (int i = 0; i < 4 && i < _openProfile.Count; i++)
         {
+            while (a.OpenProfile.Count <= i)
+                a.OpenProfile.Add(new OpenProfileShortcut());
             a.OpenProfile[i].Keys = _openProfile[i].Keys.Text ?? "";
             a.OpenProfile[i].File = _openProfile[i].File.Text ?? "";
         }

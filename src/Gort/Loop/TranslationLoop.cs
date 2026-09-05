@@ -290,7 +290,13 @@ public sealed class TranslationLoop : ILoopBody
                     osink.DrawSnapshot(frame, _cfg.Advanced.SnapshotStaySec);  // RF-384
                 else
                     osink.DrawOverlay(frame);
-                _effects.SideEffects("", string.Join("\n", areaTexts));
+                // Mesma Etapa 16 dos outros modos: clipboard/TTS/arquivo
+                // recebem a tradução (antes passava display vazio e emudecia).
+                var otexts = new List<string>();
+                foreach (var t in batch.PerText)
+                    if (!string.IsNullOrEmpty(t)) otexts.Add(t);
+                string odisplay = _effects.ApplyDisplayMemory(string.Join("\n", otexts));
+                _effects.SideEffects(odisplay, string.Join("\n", areaTexts));
                 return EndOfCycle(ctx, running: true);
             }
             var perRegion = new List<(int, List<(string, string)>)>();
@@ -299,7 +305,7 @@ public sealed class TranslationLoop : ILoopBody
             for (int r = 0; r < plan.Rects.Count; r++)
             {
                 var items = new List<(string, string)>();
-                for (int k = 0; k < areaCounts[r]; k++, bi++)
+                for (int k = 0; k < areaCounts[r] && bi < batch.PerText.Count; k++, bi++)
                 {
                     string tr = batch.Error ?? batch.PerText[bi] ?? "";
                     items.Add((flatBlocks[bi].Text, tr));

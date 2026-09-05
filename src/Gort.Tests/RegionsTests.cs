@@ -23,6 +23,22 @@ public class RegionsTests
     private static readonly List<(int R, int G, int B, int S1, int S2, int V1, int V2)> NoGroups = new();
 
     [Fact]
+    public void Guards_Reject_Empty_And_Oob()
+    {
+        var m = NewMgr();
+        m.AddArea(R(0, 0, 0, 0), exclusion: false);
+        m.AddArea(R(0, 0, -5, 10), exclusion: true);
+        Assert.Empty(m.Areas);   // vazias nunca entram
+        Assert.Empty(m.Exclusions);
+        m.AddArea(R(0, 0, 10, 10), exclusion: false);
+        Assert.Null(Record.Exception(() => m.RemoveAt(-1)));
+        Assert.Null(Record.Exception(() => m.RemoveAt(99)));
+        Assert.Null(Record.Exception(() => m.RemoveExclusionAt(7)));
+        Assert.Null(Record.Exception(() => m.RemoveColorGroup(99)));
+        Assert.Single(m.Areas);   // nada removido por índice inválido
+    }
+
+    [Fact]
     public void Five_Areas_Remove_Third_Reindexes()
     {
         var m = NewMgr();
@@ -155,7 +171,7 @@ public class RegionsTests
         var groups = new List<(int, int, int, int, int, int, int)> { (255, 0, 0, 0, 0, 0, 0) };
         Assert.True(ColorFilter.Passes(255, 0, 0, FilterMode.Rgb, groups, 127));
         Assert.False(ColorFilter.Passes(254, 0, 0, FilterMode.Rgb, groups, 127));
-        Assert.False(ColorFilter.Passes(255, 0, 0, FilterMode.None, NoGroups, 127) == false);
+        Assert.True(ColorFilter.Passes(0, 0, 0, FilterMode.None, NoGroups, 127));  // sem filtro passa tudo
     }
 
     [Fact]

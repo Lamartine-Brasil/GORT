@@ -189,8 +189,11 @@ public sealed class AreasWindow : Window
 
     // ---- fluxos ----
 
+    private SelectionWindow? _selWin;   // uma seleção por vez (sem órfãs)
+
     private void AddFlow(bool exclusion)
     {
+        try { _selWin?.Close(); } catch { }
         var v = Virtual();
         var sel = new SelectionWindow(v, Screens.Primary?.Scaling ?? 1.0,
             _cfg.Advanced.SelectBg, _cfg.Advanced.SelectAccent);
@@ -200,6 +203,8 @@ public sealed class AreasWindow : Window
             RebuildFrames();
             RefreshList();
         };
+        _selWin = sel;
+        sel.Closed += (_, _) => { if (_selWin == sel) _selWin = null; };
         sel.Show(this);
     }
 

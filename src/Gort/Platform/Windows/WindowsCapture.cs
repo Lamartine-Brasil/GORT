@@ -121,15 +121,19 @@ public sealed class WindowsCapture : IScreenCapture
         var full = CaptureRect(-1,
             new ScreenRect(pt.x, pt.y, cw, ch), needOriginal);
         if (full is null) return null;
-        int x1 = System.Math.Max(areaScreen.X, pt.x);
-        int y1 = System.Math.Max(areaScreen.Y, pt.y);
-        int x2 = System.Math.Min(areaScreen.X + areaScreen.W, pt.x + cw);
-        int y2 = System.Math.Min(areaScreen.Y + areaScreen.H, pt.y + ch);
+        // full pode ser menor que o cliente (clip na tela): origem e
+        // stride são os do recorte, não os do cliente cheio.
+        int fx = System.Math.Max(pt.x, VirtualScreen.X);
+        int fy = System.Math.Max(pt.y, VirtualScreen.Y);
+        int x1 = System.Math.Max(areaScreen.X, fx);
+        int y1 = System.Math.Max(areaScreen.Y, fy);
+        int x2 = System.Math.Min(areaScreen.X + areaScreen.W, fx + full.Width);
+        int y2 = System.Math.Min(areaScreen.Y + areaScreen.H, fy + full.Height);
         int w = x2 - x1, h = y2 - y1;
         if (w <= 0 || h <= 0) return null;
         var bytes = new byte[w * h * 4];
         for (int y = 0; y < h; y++)
-            System.Buffer.BlockCopy(full.Bytes, ((y1 - pt.y + y) * cw + (x1 - pt.x)) * 4,
+            System.Buffer.BlockCopy(full.Bytes, ((y1 - fy + y) * full.Width + (x1 - fx)) * 4,
                 bytes, y * w * 4, w * 4);
         return new RegionImage
         {

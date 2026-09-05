@@ -53,6 +53,7 @@ public sealed class RegionManager
         Areas.Clear();
         foreach (var a in _cfg.Profile.Areas)
         {
+            if (a.W <= 0 || a.H <= 0) continue;   // perfil corrompido: pula área vazia
             var def = new AreaDef
             {
                 Rect = new ScreenRect(a.X, a.Y, a.W, a.H),
@@ -65,7 +66,10 @@ public sealed class RegionManager
         }
         Exclusions.Clear();
         foreach (var e in _cfg.Profile.Exclusions)
+        {
+            if (e.W <= 0 || e.H <= 0) continue;
             Exclusions.Add(new ScreenRect(e.X, e.Y, e.W, e.H));
+        }
     }
 
     public void CommitToProfile()
@@ -128,6 +132,8 @@ public sealed class RegionManager
 
     public AreaDef AddArea(ScreenRect rect, bool exclusion)
     {
+        // Retângulo vazio nunca entra: captura quebraria à frente.
+        if (rect.W <= 0 || rect.H <= 0) return null!;
         if (exclusion) { TargetExcl.Add(rect); NotifyChanged(); return null!; }
         var def = new AreaDef { Rect = rect };
         for (int i = 0; i < _cfg.Profile.ColorGroups.Count; i++) def.Groups.Add(i);
@@ -136,8 +142,16 @@ public sealed class RegionManager
         return def;
     }
 
-    public void RemoveAt(int index) { Target.RemoveAt(index); NotifyChanged(); }  // RF-064: lista reindexa
-    public void RemoveExclusionAt(int index) { TargetExcl.RemoveAt(index); NotifyChanged(); }
+    public void RemoveAt(int index)
+    {
+        if (index < 0 || index >= Target.Count) return;   // índice obsoleto: ignora
+        Target.RemoveAt(index); NotifyChanged();
+    }  // RF-064: lista reindexa
+    public void RemoveExclusionAt(int index)
+    {
+        if (index < 0 || index >= TargetExcl.Count) return;
+        TargetExcl.RemoveAt(index); NotifyChanged();
+    }
 
     public void ClearAll()
     {
@@ -158,6 +172,7 @@ public sealed class RegionManager
     public void RemoveColorGroup(int idx)
     {
         if (_cfg.Profile.ColorGroups.Count <= 1) return;   // RF-507: ignora se único
+        if (idx < 0 || idx >= _cfg.Profile.ColorGroups.Count) return;
         _cfg.Profile.ColorGroups.RemoveAt(idx);
         RenumberGroups(Areas, idx);
         RenumberGroups(Working, idx);

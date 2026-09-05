@@ -102,8 +102,11 @@ public sealed class RemoteWindow : Window
 
         PointerPressed += (_, e) =>
         {
+            // Fora do canto de resize (esse é do OnPointerPressed).
+            var p = e.GetPosition(this);
             if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
-                && e.Source is not Button)
+                && e.Source is not Button
+                && p.X <= Width - 10 && p.Y <= Height - 10)
                 BeginMoveDrag(e);
         };
         PointerPressed += (_, e) => Opacity = 0.6;          // RF-522

@@ -66,13 +66,15 @@ public sealed class DeepLTranslator : HttpTranslator
                         msg = m.GetString() ?? msg;
                 }
                 catch { }
+                // Corpo pode ser HTML enorme: resume para exibir.
+                if (msg.Length > 200) msg = msg[..200] + "…";
                 return Fail(msg);
             }
             using var ok = JsonDocument.Parse(json);
             if (!ok.RootElement.TryGetProperty("translations", out var trs)
-                || trs.ValueKind != JsonValueKind.Array || trs.GetArrayLength() == 0)
+                || trs.ValueKind != JsonValueKind.Array || trs.GetArrayLength() == 0
+                || !trs[0].TryGetProperty("text", out var tr))
                 return Fail("Resposta inesperada do tradutor.");
-            var tr = trs[0].GetProperty("text");
             string out0 = tr.ValueKind == JsonValueKind.Array
                 ? string.Concat(ConcatAll(tr)) : tr.GetString() ?? "";
             return new ServiceResult { Translations = new List<string> { out0 } };

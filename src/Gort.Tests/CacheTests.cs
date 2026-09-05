@@ -31,6 +31,12 @@ public class CacheTests
     {
         var mem = new ResultMemory();
         mem.Store("s", "a", "b");
+        var f = typeof(ResultMemory).GetField("_writing",
+            System.Reflection.BindingFlags.NonPublic
+            | System.Reflection.BindingFlags.Instance)!;
+        f.SetValue(mem, true);   // simula flush em curso (RF-212)
+        Assert.Null(mem.TryGet("s", "a"));
+        f.SetValue(mem, false);
         Assert.Equal("b", mem.TryGet("s", "a"));
     }
 
@@ -41,6 +47,10 @@ public class CacheTests
         mem.Store("s", "k", "v");
         await mem.FlushAsync();
         Assert.Equal("v", mem.TryGet("s", "k"));
+        // O arquivo real recebeu o par (não só a memória).
+        string path = ResultMemory.FileFor("s");
+        Assert.True(File.Exists(path));
+        Assert.Contains("k", File.ReadAllText(path));
     }
 
     [Fact]
@@ -51,6 +61,18 @@ public class CacheTests
         var file = Path.Combine(dir, "g.txt");
         File.WriteAllText(file, "# Jogo X\n# v1\n/s\nhi\n/t\nolá\n/e\n");
         Assert.Equal("Jogo X\nv1", Collectanea.InfoOf(file));
+        // Exata de verdade: arquivo na pasta real da coletânea (limpo depois).
+        string dest = Path.Combine(Gort.Core.Paths.CollectDir, "g-test-tmp.txt");
+        try
+        {
+            Gort.Core.Paths.EnsureAll();
+            File.WriteAllText(dest, "/s\nhi\n/t\nolá\n/e\n");
+            var col = new Collectanea(
+                () => new List<string> { "g-test-tmp.txt" }, () => false, () => false);
+            Assert.Equal("olá", col.TryGet("hi", "en"));
+            Assert.Null(col.TryGet("bye", "en"));
+        }
+        finally { try { File.Delete(dest); } catch { } }
     }
 
     [Fact]
@@ -60,6 +82,18 @@ public class CacheTests
         // Sem arquivos: nulo, sem erro.
         Assert.Null(col.TryGet("hello world", "en"));
         Assert.Null(col.TryGet("hello world", "fr"));   // RF-219: cai p/ exata
+        // Modo banco de verdade: parcial casa em en, exata em fr.
+        string dest = Path.Combine(Gort.Core.Paths.CollectDir, "g-test-tmp2.txt");
+        try
+        {
+            Gort.Core.Paths.EnsureAll();
+            File.WriteAllText(dest, "/s\nHello World\n/t\nOlá Mundo\n/e\n");
+            var col2 = new Collectanea(
+                () => new List<string> { "g-test-tmp2.txt" }, () => true, () => false);
+            Assert.Equal("Olá Mundo", col2.TryGet("say Hello World please", "en"));
+            Assert.Null(col2.TryGet("say Hello World please", "fr"));
+        }
+        finally { try { File.Delete(dest); } catch { } }
     }
 
     [Fact]

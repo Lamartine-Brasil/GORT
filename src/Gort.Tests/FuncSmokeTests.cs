@@ -134,6 +134,11 @@ public class FuncSmokeTests
         var res = Gort.Overlay.ColorAnalysis.Analyze(
             bytes, w, h, 4, 20, 5, 160, 50, words);
         Assert.False(res.Failed);
+        Assert.True(res.Contrast > 1);   // par distinguível (legível)
+        int dr = System.Math.Abs(res.Font.R - res.Background.R);
+        int dg = System.Math.Abs(res.Font.G - res.Background.G);
+        int db = System.Math.Abs(res.Font.B - res.Background.B);
+        Assert.True(dr + dg + db > 200);   // fonte e fundo bem distintos
         _out.WriteLine($"COR fg=({res.Font.R},{res.Font.G},{res.Font.B}) " +
             $"bg=({res.Background.R},{res.Background.G},{res.Background.B}) " +
             $"contraste={res.Contrast:F1}");

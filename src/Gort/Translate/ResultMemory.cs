@@ -41,11 +41,14 @@ public sealed class ResultMemory : ITranslationMemory
     public void LoadAll()
     {
         Paths.EnsureAll();
-        _mem.Clear();
-        foreach (var f in Directory.GetFiles(Paths.BaseDir, "memory-*.txt"))
+        lock (_gate)
         {
-            string id = Path.GetFileNameWithoutExtension(f)["memory-".Length..];
-            _mem[id] = Parse(File.ReadAllText(f));
+            _mem.Clear();
+            foreach (var f in Directory.GetFiles(Paths.BaseDir, "memory-*.txt"))
+            {
+                string id = Path.GetFileNameWithoutExtension(f)["memory-".Length..];
+                _mem[id] = Parse(File.ReadAllText(f));
+            }
         }
     }
 

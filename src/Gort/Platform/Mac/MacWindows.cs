@@ -24,7 +24,13 @@ public sealed class MacWindows : IWindowService
         get
         {
             if (!OperatingSystem.IsMacOS()) return false;
-            try { return CGWindowListCopyWindowInfo(0, 0) != nint.Zero; }
+            try
+            {
+                nint arr = CGWindowListCopyWindowInfo(0, 0);
+                if (arr == nint.Zero) return false;
+                try { return true; }
+                finally { CFRelease(arr); }
+            }
             catch { return false; }
         }
     }
@@ -173,6 +179,7 @@ public sealed class MacWindows : IWindowService
     private static extern long CFStringGetLength(nint str);
 
     [DllImport("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.I1)]
     private static extern bool CFStringGetCString(nint str, byte[] buffer, long size, uint encoding);
 
     [DllImport("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
@@ -185,6 +192,7 @@ public sealed class MacWindows : IWindowService
     private static extern int CFNumberGetTypeID();
 
     [DllImport("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.I1)]
     private static extern bool CFNumberGetValue(nint num, int type, out double value);
 
     private const uint kCFStringEncodingUTF8 = 0x08000100;

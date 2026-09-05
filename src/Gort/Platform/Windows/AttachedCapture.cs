@@ -14,27 +14,34 @@ public sealed class AttachedBuffer
     private readonly record struct Frame(byte[] Bytes, int W, int H, DateTime At);
     private readonly Queue<Frame> _frames = new();
     private readonly Func<DateTime> _now;
+    private readonly object _gate = new();   // laço × UI (Stop)
 
     public AttachedBuffer(Func<DateTime>? now = null) => _now = now ?? (() => DateTime.UtcNow);
 
     public void Push(byte[] bytes, int w, int h)
     {
-        _frames.Enqueue(new Frame(bytes, w, h, _now()));
-        while (_frames.Count > Params.P17_AttachedBuffer) _frames.Dequeue();  // 🔒 5
+        lock (_gate)
+        {
+            _frames.Enqueue(new Frame(bytes, w, h, _now()));
+            while (_frames.Count > Params.P17_AttachedBuffer) _frames.Dequeue();  // 🔒 5
+        }
     }
 
     /// <summary>Último quadro válido se fresco (RF-095: P-19).</summary>
     public (byte[] Bytes, int W, int H)? Fresh()
     {
-        if (_frames.Count == 0) return null;
-        var arr = _frames.ToArray();
-        var last = arr[^1];
-        if ((_now() - last.At).TotalSeconds > Params.P19_AttachedMaxAgeSec) return null;  // 🔒 0,1
-        return (last.Bytes, last.W, last.H);
+        lock (_gate)
+        {
+            if (_frames.Count == 0) return null;
+            var arr = _frames.ToArray();
+            var last = arr[^1];
+            if ((_now() - last.At).TotalSeconds > Params.P19_AttachedMaxAgeSec) return null;  // 🔒 0,1
+            return (last.Bytes, last.W, last.H);
+        }
     }
 
-    public int Count => _frames.Count;
-    public void Clear() => _frames.Clear();
+    public int Count { get { lock (_gate) return _frames.Count; } }
+    public void Clear() { lock (_gate) _frames.Clear(); }
 }
 
 /// <summary>
@@ -164,15 +171,22 @@ public static class AttachedCapture
     private static RegionImage? Crop(int index, ScreenRect area, ScreenRect client,
         (byte[] Bytes, int W, int H) frame, bool needOriginal)
     {
+        // O quadro pode ser de antes de um resize: ancora na origem do
+        // cliente mas limita tudo aos limites reais do quadro.
         int x1 = Math.Max(area.X, client.X), y1 = Math.Max(area.Y, client.Y);
         int x2 = Math.Min(area.X + area.W, client.X + client.W);
         int y2 = Math.Min(area.Y + area.H, client.Y + client.H);
+        x2 = Math.Min(x2, client.X + frame.W);
+        y2 = Math.Min(y2, client.Y + frame.H);
         int w = x2 - x1, h = y2 - y1;
         if (w <= 0 || h <= 0) return null;
         var bytes = new byte[w * h * 4];
         for (int y = 0; y < h; y++)
-            Buffer.BlockCopy(frame.Bytes, ((y1 - client.Y + y) * frame.W + (x1 - client.X)) * 4,
-                bytes, y * w * 4, w * 4);
+        {
+            int src = ((y1 - client.Y + y) * frame.W + (x1 - client.X)) * 4;
+            if (src < 0 || src + w * 4 > frame.Bytes.Length) return null;
+            Buffer.BlockCopy(frame.Bytes, src, bytes, y * w * 4, w * 4);
+        }
         return new RegionImage
         {
             Index = index, Width = w, Height = h, Channels = 4, Bytes = bytes,

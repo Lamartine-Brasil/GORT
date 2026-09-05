@@ -194,7 +194,10 @@ public sealed class RapidOcrEngine : IOcrEngine, IDisposable
         }
         catch { }
         // Forma 3 (RF-129 🔒): caminho puramente ASCII — caminhos com
-        // caracteres não-ASCII quebram a biblioteca nativa.
+        // caracteres não-ASCII quebram a biblioteca nativa. Recria a
+        // instância: a forma 2 pode ter inicializado pela metade.
+        try { _ocr?.Dispose(); } catch { }
+        _ocr = new RapidOcr();
         string ascii = Path.Combine(Path.GetTempPath(), "gort-ocr-modern");
         Directory.CreateDirectory(ascii);
         string det = CopyAscii(p.Det, ascii), cls = CopyAscii(p.Cls, ascii);

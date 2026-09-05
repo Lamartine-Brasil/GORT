@@ -34,8 +34,10 @@ public class Update18Tests
         {
             RemoteConfig.Apply("{token-default}@@@\n{browser-url}\n");
             Assert.Equal("@@@", RemoteDefaults.DefaultToken);              // RF-417
+            Assert.Contains("translate.google.com", RemoteDefaults.BrowserUrlFormat);  // ausente: preservado
             RemoteConfig.Apply("{advanced-token}1\n");
             Assert.True(RemoteDefaults.AdvancedToken);
+            Assert.Equal("@@@", RemoteDefaults.DefaultToken);              // anterior mantido
         }
         finally
         {

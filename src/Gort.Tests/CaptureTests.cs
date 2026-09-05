@@ -96,8 +96,8 @@ public class CaptureTests
         if (!RequireWindows()) return;
         var ws = PlatformFactory.Current.Windows;
         Assert.True(ws.IsAvailable);
-        // Pode ser nulo sem janela; só valida que não lança.
-        _ = ws.ForegroundWindow();
+        var fg = ws.ForegroundWindow();
+        Assert.NotNull(fg);   // no Windows com janela ativa há sempre uma
         Assert.NotEmpty(ws.ListCapturableWindows());
     }
 }

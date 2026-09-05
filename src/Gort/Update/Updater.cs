@@ -86,9 +86,11 @@ public static class Updater
                     VersionFile.ForceHttps(url), ct).ConfigureAwait(false);
                 string dest = Path.Combine(Paths.DictDir,
                     lang == "ja" ? "jaDic.txt" : "myDic.txt");
-                // RF-433: UTF-8 sem BOM.
-                await File.WriteAllTextAsync(dest, text,
+                // RF-433: UTF-8 sem BOM; tmp+rename contra queda no meio.
+                string tmp = dest + ".tmp";
+                await File.WriteAllTextAsync(tmp, text,
                     new System.Text.UTF8Encoding(false), ct).ConfigureAwait(false);
+                File.Move(tmp, dest, overwrite: true);
                 versions[lang] = ver;
             }
             DataVersions.Save(versions);

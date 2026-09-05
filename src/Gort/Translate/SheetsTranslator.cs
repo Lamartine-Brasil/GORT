@@ -79,12 +79,14 @@ public sealed class SheetsTranslator : HttpTranslator
         {
             using var doc = JsonDocument.Parse(body);
             if (!doc.RootElement.TryGetProperty("refresh_token", out var rt)) return false;
-            File.WriteAllText(_tokenFile, JsonSerializer.Serialize(new Dictionary<string, string>
+            string tmp = _tokenFile + ".tmp";
+            File.WriteAllText(tmp, JsonSerializer.Serialize(new Dictionary<string, string>
             {
                 ["refresh_token"] = rt.GetString() ?? "",
                 ["client_id"] = clientId,
                 ["client_secret"] = clientSecret,
             }));
+            File.Move(tmp, _tokenFile, overwrite: true);
             return true;
         }
         catch { return false; }
@@ -151,12 +153,10 @@ public sealed class SheetsTranslator : HttpTranslator
         return doc2.RootElement.GetProperty("access_token").GetString() ?? "";
     }
 
-    private static readonly Random Rng = new();
-
     /// <summary>RF-255/256: linha aleatória 1..P-57, apóstrofo anti-fórmula.</summary>
     internal static (int Row, string Formula) BuildCell(string text, string src, string dst)
     {
-        int row = Rng.Next(1, Params.P57_SheetMinRows + 1);   // 🔒 1..50
+        int row = Random.Shared.Next(1, Params.P57_SheetMinRows + 1);   // 🔒 1..50
         string formula = $"=GOOGLETRANSLATE(A{row},\"{src}\",\"{dst}\")";
         return (row, formula);
     }

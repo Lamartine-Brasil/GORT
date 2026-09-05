@@ -52,16 +52,19 @@ public class VisualRenderTests
             if (!app.Styles.OfType<Avalonia.Themes.Fluent.FluentTheme>().Any())
                 app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
             var w = make();
-            setup?.Invoke(w);
-            w.Show();
-            AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
-            AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
-            using var bmp = w.CaptureRenderedFrame();
-            Assert.NotNull(bmp);
-            string path = Path.Combine(OutDir, name + ".png");
-            bmp.Save(path, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
-            Console.WriteLine($"SHOT {path} {bmp.PixelSize}");
-            w.Close();
+            try
+            {
+                setup?.Invoke(w);
+                w.Show();
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                using var bmp = w.CaptureRenderedFrame();
+                Assert.NotNull(bmp);
+                string path = Path.Combine(OutDir, name + ".png");
+                bmp.Save(path, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+                Console.WriteLine($"SHOT {path} {bmp.PixelSize}");
+            }
+            finally { w.Close(); }   // falha no meio não vaza a janela na sessão
         }, default).GetAwaiter().GetResult();
     }
 
@@ -146,15 +149,19 @@ public class VisualRenderTests
         {
             Directory.CreateDirectory(OutDir);
             var dark = new Gort.UI.DarkWindow();
-            // Ordem de produção (DarkSink): texto primeiro (Show interno).
-            dark.ShowTranslation(
-                "Linha traduzida 1\nLinha traduzida 2", "OCR: Hello", true, false);
-            for (int i = 0; i < 10; i++)
-                AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
-            using var bmp = dark.CaptureRenderedFrame();
-            Assert.NotNull(bmp);
-            bmp.Save(Path.Combine(OutDir, "dark.png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
-            dark.Close();
+            try
+            {
+                // Ordem de produção (DarkSink): texto primeiro (Show interno).
+                dark.ShowTranslation(
+                    "Linha traduzida 1\nLinha traduzida 2", "OCR: Hello", true, false);
+                for (int i = 0; i < 10; i++)
+                    AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                using var bmp = dark.CaptureRenderedFrame();
+                Assert.NotNull(bmp);
+                AssertPainted(bmp);   // texto branco representa tinta real
+                bmp.Save(Path.Combine(OutDir, "dark.png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+            }
+            finally { dark.Close(); }
         }, default).GetAwaiter().GetResult();
         Shot(() => new Gort.UI.LayerWindow(cfg), "layer",
             w => ((Gort.UI.LayerWindow)w).SetText(
@@ -223,19 +230,23 @@ public class VisualRenderTests
             Directory.CreateDirectory(OutDir);
             var sel = new Gort.UI.SelectionWindow(
                 new Gort.Platform.ScreenRect(0, 0, 1280, 720), 1.0, "#FFFFFFFF", "#FF000000");
-            sel.Show();
-            AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
-            sel.MouseDown(new Avalonia.Point(200, 150),
-                Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
-            sel.MouseMove(new Avalonia.Point(600, 400),
-                Avalonia.Input.RawInputModifiers.None);
-            AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
-            using var bmp = sel.CaptureRenderedFrame();
-            Assert.NotNull(bmp);
-            bmp.Save(Path.Combine(OutDir, "selection-drag.png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
-            sel.MouseUp(new Avalonia.Point(600, 400),
-                Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
-            sel.Close();
+            try
+            {
+                sel.Show();
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                sel.MouseDown(new Avalonia.Point(200, 150),
+                    Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+                sel.MouseMove(new Avalonia.Point(600, 400),
+                    Avalonia.Input.RawInputModifiers.None);
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                using var bmp = sel.CaptureRenderedFrame();
+                Assert.NotNull(bmp);
+                AssertPainted(bmp);   // elástico tem tinta (fill + borda)
+                bmp.Save(Path.Combine(OutDir, "selection-drag.png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+                sel.MouseUp(new Avalonia.Point(600, 400),
+                    Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+            }
+            finally { sel.Close(); }
         }, default).GetAwaiter().GetResult();
     }
 
@@ -247,8 +258,10 @@ public class VisualRenderTests
         {
             Directory.CreateDirectory(OutDir);
             var overlay = new Gort.UI.OverlayWindow(cfg, _ => 1.0);
-            overlay.ApplyRunning(true);
-            overlay.Show();
+            try
+            {
+                overlay.ApplyRunning(true);
+                overlay.Show();
             var frame = new Gort.Loop.OverlayFrame();
             var reg = new Gort.Loop.OverlayRegion
             {
@@ -285,8 +298,12 @@ public class VisualRenderTests
             using var bmp = overlay.CaptureRenderedFrame();
             Assert.NotNull(bmp);
             bmp.Save(Path.Combine(OutDir, "overlay-content.png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
-            overlay.ApplyRunning(false);
-            overlay.Close();
+            }
+            finally
+            {
+                overlay.ApplyRunning(false);
+                overlay.Close();
+            }
         }, default).GetAwaiter().GetResult();
     }
 }

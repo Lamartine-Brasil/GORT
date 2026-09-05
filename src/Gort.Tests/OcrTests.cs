@@ -67,6 +67,9 @@ public class OcrTests
         var modern = list.First(e => e.Id == "modern");
         _out.WriteLine("modern available=" + modern.Available + " reason=" + modern.Reason);
         Assert.True(modern.Available);   // modelos latinos inclusos no pacote
+        Assert.Equal(list.Count, list.Select(e => e.Id).Distinct().Count());  // sem duplicata
+        foreach (var id in new[] { "modern", "classic", "venv", "cloud" })
+            Assert.Contains(list, e => e.Id == id);   // "os" só entra se disponível
     }
 
     [Fact]

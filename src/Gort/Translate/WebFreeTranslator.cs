@@ -128,6 +128,8 @@ public sealed class WebFreeTranslator : ITranslationService
         if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() == 0)
             throw new InvalidOperationException("Resposta inesperada do tradutor.");
         var parts = new List<string>();
+        if (root[0].ValueKind != JsonValueKind.Array)
+            throw new InvalidOperationException("Resposta inesperada do tradutor.");
         foreach (var seg in root[0].EnumerateArray())
         {
             if (seg.ValueKind == JsonValueKind.Array && seg.GetArrayLength() > 0

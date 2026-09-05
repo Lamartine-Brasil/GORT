@@ -28,7 +28,6 @@ public sealed class BrowserTranslator : HttpTranslator, IDisposable
     private string _previousResult = "";
     private bool _firstDone;
     private string _lastUrl = "";
-    private static readonly Random Rng = new();
 
     public BrowserTranslator(Func<ITranslationService?> fallback, Func<bool> useFallback,
         HttpMessageHandler? handler = null)
@@ -47,7 +46,7 @@ public sealed class BrowserTranslator : HttpTranslator, IDisposable
         try
         {
             // RF-266: atraso aleatório antes de navegar.
-            await Task.Delay(Rng.Next(Params.P63_BeforeNavigateJitterMs + 1), ct)
+            await Task.Delay(Random.Shared.Next(Params.P63_BeforeNavigateJitterMs + 1), ct)
                 .ConfigureAwait(false);
             string raw = await _browser.TranslatePageAsync(url,
                 RemoteDefaults.BrowserExtractScript, _previousResult, timeout, ct)
@@ -59,7 +58,7 @@ public sealed class BrowserTranslator : HttpTranslator, IDisposable
             // RF-266: bloqueio aleatório após receber.
             try
             {
-                await Task.Delay(Rng.Next(Params.P56_PostRequestJitterMs + 1), ct)
+                await Task.Delay(Random.Shared.Next(Params.P56_PostRequestJitterMs + 1), ct)
                     .ConfigureAwait(false);
             }
             catch { }
@@ -119,7 +118,7 @@ public sealed class BrowserTranslator : HttpTranslator, IDisposable
         {
             string? edge = CdpBrowser.FindEdge();
             if (edge is null || _lastUrl == "") return;
-            Process.Start(new ProcessStartInfo(edge, "--new-window \"" + _lastUrl + "\"")
+            using var p = Process.Start(new ProcessStartInfo(edge, "--new-window \"" + _lastUrl + "\"")
             {
                 UseShellExecute = false,
             });
@@ -127,5 +126,5 @@ public sealed class BrowserTranslator : HttpTranslator, IDisposable
         catch { }
     }
 
-    public void Dispose() => _browser.Dispose();   // RF-016: sem Edge órfão
+    public override void Dispose() { _browser.Dispose(); base.Dispose(); }   // RF-016
 }

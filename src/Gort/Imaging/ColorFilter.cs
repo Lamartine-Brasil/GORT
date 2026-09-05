@@ -72,6 +72,7 @@ public static class ColorFilter
     /// </summary>
     public static bool IsBlack(byte[] bgra, int channels)
     {
+        if (bgra.Length == 0) return true;   // vazio = nada a traduzir
         int ch = Math.Max(channels, 1);
         int pixels = Math.Max(1, bgra.Length / ch);
         int step = Math.Max(1, pixels / 4096);   // amostra esparsa limitada

@@ -140,6 +140,27 @@ public class Etapa1Tests
     }
 
     [Fact]
+    public void Normalize_Clamps_Garbage_Without_Throw()
+    {
+        var p = Profile.Defaults();
+        p.ColorFilter = "zzz"; p.TextOrder = "x"; p.CopyFormat = "y";
+        p.DeepLEndpoint = "w"; p.Zoom = double.NaN; p.FontSize = double.NaN;
+        p.AutoMinPt = 50; p.AutoMaxPt = 10;
+        p.TextColor = [255]; p.BgColor = null!;
+        p.Normalize(out var notices);
+        Assert.Equal("none", p.ColorFilter);
+        Assert.Equal("left", p.TextOrder);
+        Assert.Equal("ocr-only", p.CopyFormat);
+        Assert.Equal("free", p.DeepLEndpoint);
+        Assert.InRange(p.Zoom, 0.1, 10);
+        Assert.InRange(p.FontSize, 8, 72);
+        Assert.True(p.AutoMinPt <= p.AutoMaxPt);
+        Assert.Equal(3, p.TextColor.Length);
+        Assert.Equal(4, p.BgColor.Length);
+        Assert.NotEmpty(notices);
+    }
+
+    [Fact]
     public void Unknown_Ids_Fall_Back_With_Notice()
     {
         var path = TempToml("schema_version = 1\ntranslation_service = \"nope\"\nocr_engine = \"nope\"\n");

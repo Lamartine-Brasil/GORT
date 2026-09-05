@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Gort.Config;
 using Gort.Imaging;
@@ -223,5 +224,11 @@ public class PreprocessTests
         Assert.Equal(2.5, Preprocess.ClampZoomSteps(2.3));       // passos P-25
         Assert.Equal(2.0, Preprocess.ClampZoomSteps(2.2));
         Assert.Equal(2.0, Preprocess.DefaultZoom);               // P-22 🔒 RF-115
+    }
+
+    [Fact]
+    public void IsBlack_Empty_Is_Black()
+    {
+        Assert.True(ColorFilter.IsBlack(Array.Empty<byte>(), 4));  // sem ler fora
     }
 }

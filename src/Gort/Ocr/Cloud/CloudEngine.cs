@@ -74,30 +74,63 @@ public sealed class CloudEngine : IOcrEngine
         string? cred = CredPath();
         if (cred is null)
             return OcrResult.Fail("Selecione o arquivo de credencial do motor de nuvem.");
-        if (!_quota.TryConsume(cred, _limit()))                     // RF-124/125
+        int limit = _limit();
+        if (_quota.Status(cred, limit).Used >= limit)                 // RF-124/125
             return OcrResult.Fail(
                 "Cota mensal do motor de nuvem esgotada. (A contagem local pode " +
                 "divergir da contagem real do serviço.)");
         try
         {
             string token = await AccessTokenAsync(cred, ct).ConfigureAwait(false);
-            string b64 = ToPngBase64(img);
-            string body = await AnnotateAsync(token, b64, ct).ConfigureAwait(false);
-            return Parse(body);
+            var (b64, scale) = ToScaledBase64(img);
+            string body = await AnnotateAsync(token, b64, ocrLang, ct).ConfigureAwait(false);
+            var res = Parse(body);
+            if (res.Error is not null) return res;
+            if (scale != 1) res = Rescale(res, scale);
+            _quota.TryConsume(cred, limit);   // conta só o sucesso (sem queimar cota à toa)
+            return res;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { return OcrResult.Fail(ex.Message); }  // RF-145
     }
 
-    private static string ToPngBase64(ProcessedImage img)
+    /// <summary>Reduz o lado maior p/ 1600 px (payload) e devolve a escala p/ voltar as caixas.</summary>
+    private static (string B64, double Scale) ToScaledBase64(ProcessedImage img)
     {
+        const int maxSide = 1600;
         byte[] bgra = img.Channels == 4 ? img.Bytes
             : Preprocess.ConvertChannels(img.Bytes, img.Width, img.Height, img.Channels, 4);
-        using var bmp = new SKBitmap(img.Width, img.Height,
+        int w = img.Width, h = img.Height;
+        double scale = 1;
+        if (System.Math.Max(w, h) > maxSide)
+        {
+            scale = (double)System.Math.Max(w, h) / maxSide;
+            w = (int)(w / scale); h = (int)(h / scale);
+        }
+        using var src = new SKBitmap(img.Width, img.Height,
             SKColorType.Bgra8888, SKAlphaType.Opaque);
-        System.Runtime.InteropServices.Marshal.Copy(bgra, 0, bmp.GetPixels(), bgra.Length);
-        using var data = bmp.Encode(SKEncodedImageFormat.Png, 100);
-        return Convert.ToBase64String(data.ToArray());
+        System.Runtime.InteropServices.Marshal.Copy(bgra, 0, src.GetPixels(), bgra.Length);
+        using var resized = (w == img.Width && h == img.Height)
+            ? null : src.Resize(new SKImageInfo(w, h), SKFilterQuality.High);
+        using var data = (resized ?? src).Encode(SKEncodedImageFormat.Png, 100);
+        if (data is null) throw new InvalidOperationException("Falha ao codificar imagem.");
+        return (Convert.ToBase64String(data.ToArray()), scale);
+    }
+
+    private static OcrResult Rescale(OcrResult res, double scale)
+    {
+        var words = new List<OcrWord>();
+        foreach (var wd in res.Words)
+            words.Add(new OcrWord
+            {
+                Text = wd.Text,
+                X = (int)(wd.X * scale), Y = (int)(wd.Y * scale),
+                W = (int)(wd.W * scale), H = (int)(wd.H * scale),
+            });
+        return new OcrResult
+        {
+            LineCount = res.LineCount, Words = words, WordsPerLine = res.WordsPerLine,
+        };
     }
 
     internal static string JwtUnsigned(string email)
@@ -153,25 +186,27 @@ public sealed class CloudEngine : IOcrEngine
     }
 
     private async Task<string> AnnotateAsync(string token, string b64,
-        CancellationToken ct)
+        string ocrLang, CancellationToken ct)
     {
         using var req = new HttpRequestMessage(HttpMethod.Post,
             "https://vision.googleapis.com/v1/images:annotate");
         req.Headers.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var request = new Dictionary<string, object>
+        {
+            ["image"] = new Dictionary<string, object> { ["content"] = b64 },
+            ["features"] = new object[]
+            {
+                new Dictionary<string, object> { ["type"] = "DOCUMENT_TEXT_DETECTION" },
+            },
+        };
+        // Dica de idioma: eng/ja melhoram segmentação; demais omitem (auto).
+        if (ocrLang == "eng" || ocrLang == "jpn")
+            request["imageContext"] = new Dictionary<string, object>
+                { ["languageHints"] = new[] { ocrLang == "jpn" ? "ja" : "en" } };
         req.Content = new StringContent(JsonSerializer.Serialize(new Dictionary<string, object>
         {
-            ["requests"] = new object[]
-            {
-                new Dictionary<string, object>
-                {
-                    ["image"] = new Dictionary<string, object> { ["content"] = b64 },
-                    ["features"] = new object[]
-                    {
-                        new Dictionary<string, object> { ["type"] = "DOCUMENT_TEXT_DETECTION" },
-                    },
-                },
-            },
+            ["requests"] = new object[] { request },
         }), Encoding.UTF8, "application/json");
         using var resp = await Http.SendAsync(req, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
