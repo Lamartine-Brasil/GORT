@@ -614,9 +614,13 @@ public partial class App : Application, UI.IRemoteHost
         try
         {
             double scale = MainWin?.Screens.Primary?.Scaling ?? 1.0;
-            foreach (var w in new Avalonia.Controls.Window?[]
-                     { MainWin, Remote, _areasWin, Windows.DarkWindowOrNull(),
-                       Windows.LayerWindowOrNull(), Windows.OverlayWindowOrNull() })
+            var own = new System.Collections.Generic.List<Avalonia.Controls.Window?>
+            {
+                MainWin, Remote, _areasWin, Windows.DarkWindowOrNull(),
+                Windows.LayerWindowOrNull(),
+            };
+            foreach (var w in Windows.OverlayWindows()) own.Add(w);
+            foreach (var w in own)
             {
                 if (w is null || !w.IsVisible) continue;
                 try
@@ -797,7 +801,7 @@ public partial class App : Application, UI.IRemoteHost
         Hotkeys.ActionFired += HotkeyActions.Execute;
         Hotkeys.ScreenshotKey += () =>   // RF-347: atalho de captura do SO
             Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                Windows.OverlayWindowOrNull()?.SetScreenshotCapture());
+                Windows.SetOverlayScreenshotCapture());
         if (!Hotkeys.InstallHook())
             Trace.WriteLine("GORT: hook global indisponível; use o controle remoto.");  // RF-569
     }

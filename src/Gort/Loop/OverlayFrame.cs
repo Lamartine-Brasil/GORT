@@ -20,6 +20,7 @@ public sealed class OverlayRegion
     public Platform.ScreenRect Rect;   // captura em tela
     public double Zoom = 1;
     public int ClientX, ClientY;       // RF-353: origem limita por baixo (anexada)
+    public bool HasClient;             // só a anexada informa cliente; (0,0) é ausência
     public byte[]? OrigBytes;          // original p/ cor automática (RF-098)
     public int OrigW, OrigH;
     public List<OverlayBlock> Blocks { get; } = new();

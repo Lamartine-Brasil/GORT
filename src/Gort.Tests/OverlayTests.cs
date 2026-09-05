@@ -135,4 +135,26 @@ public class OverlayTests
         Assert.Equal(200 * 200, TranslationWindows.Overlap(0, 0, 1920, 1080, area));
         Assert.Equal(100 * 100, TranslationWindows.Overlap(150, 150, 100, 100, area));
     }
+
+    [Fact]
+    public void ClientClamp_NoClient_KeepsOrigin()
+    {
+        // Sem cliente (captura normal), (0,0) é ausência: origem intacta
+        // mesmo com janela em coordenada negativa.
+        var (x, y) = OverlayWindow.ClampToClient(95, 60, false, 0, 0, -1920, -1080);
+        Assert.Equal(95, x);
+        Assert.Equal(60, y);
+    }
+
+    [Fact]
+    public void ClientClamp_Attached_FloorsAtClient()
+    {
+        // Com cliente (anexada), limita por baixo na posição do cliente.
+        var (x, y) = OverlayWindow.ClampToClient(50, 40, true, 100, 200, 0, 0);
+        Assert.Equal(100, x);
+        Assert.Equal(200, y);
+        var (x2, y2) = OverlayWindow.ClampToClient(150, 250, true, 100, 200, 0, 0);
+        Assert.Equal(150, x2);
+        Assert.Equal(250, y2);
+    }
 }

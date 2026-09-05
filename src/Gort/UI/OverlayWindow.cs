@@ -152,6 +152,17 @@ public sealed class OverlayWindow : Window
         }
     }
 
+    /// <summary>
+    /// RF-353 puro e testável: limita a origem por baixo à posição do
+    /// cliente quando há cliente (janela anexada); sem cliente, devolve
+    /// intacto — (0,0) significa ausência, não coordenada.
+    /// </summary>
+    internal static (float X, float Y) ClampToClient(float ox, float oy,
+        bool hasClient, int clientX, int clientY, int winX, int winY) =>
+        hasClient
+            ? (Math.Max(ox, clientX - winX), Math.Max(oy, clientY - winY))
+            : (ox, oy);
+
     private void DrawInner(OverlayFrame frame)
     {
         var p = _cfg.Profile;
@@ -176,15 +187,18 @@ public sealed class OverlayWindow : Window
                 _accX2 = Math.Max(_accX2, ux1 + uw); _accY2 = Math.Max(_accY2, uy1 + uh);
             }
         }
-        Dispatcher.UIThread.InvokeAsync(() =>
+        // Posiciona junto (já roda na thread da UI via OverlaySink): itens
+        // e janela sempre concordam na origem — sem atraso de um quadro.
+        // Escala do monitor onde a janela está (não o primário): cada
+        // janela usa a sua, resolvida na hora.
         {
             double s = 1.0;
-            try { s = Screens.Primary?.Scaling ?? 1.0; } catch { }
+            try { s = Screens.ScreenFromWindow(this)?.Scaling ?? Screens.Primary?.Scaling ?? 1.0; } catch { }
             Position = new PixelPoint(_accX1, _accY1);
             _winX = _accX1; _winY = _accY1;
             Width = Math.Max(1, (_accX2 - _accX1) / s);
             Height = Math.Max(1, (_accY2 - _accY1) / s);
-        });
+        }
 
         // Monta itens: origem RF-352, recorte RF-354, reuso RF-203.
         var items = new List<OverlayLayout.Item>();
@@ -199,9 +213,11 @@ public sealed class OverlayWindow : Window
                 var (ox, oy, ow, oh) = OverlayLayout.Origin(
                     rg.Rect.X, rg.Rect.Y, borderHalf,
                     b.OX, b.OY, b.OW, b.OH, rg.Zoom, _winX, _winY);   // RF-352
-                // RF-353: limita por baixo à posição do cliente (anexada).
-                ox = Math.Max(ox, rg.ClientX - _winX);
-                oy = Math.Max(oy, rg.ClientY - _winY);
+                // RF-353: limita por baixo à posição do cliente — só
+                // quando há cliente (anexada). Sem ele, (0,0) é ausência:
+                // aplicar o máximo deslocava o texto para o lugar errado.
+                (ox, oy) = ClampToClient(ox, oy, rg.HasClient,
+                    rg.ClientX, rg.ClientY, _winX, _winY);
                 // Recorta pelo retângulo da área (RF-354).
                 float cx1 = Math.Max(ox, rg.Rect.X - _winX);
                 float cy1 = Math.Max(oy, rg.Rect.Y - _winY);
@@ -591,7 +607,7 @@ public sealed class OverlayWindow : Window
         var total = System.Diagnostics.Stopwatch.StartNew();   // RF-494
         var p = _cfg.Profile;
         double s = 1.0;
-        try { s = Screens.Primary?.Scaling ?? 1.0; } catch { }
+        try { s = Screens.ScreenFromWindow(this)?.Scaling ?? Screens.Primary?.Scaling ?? 1.0; } catch { }
         int pw = Math.Max(1, (int)Math.Round(Width * s));
         int ph = Math.Max(1, (int)Math.Round(Height * s));
         if (_canvas is null || _canvas.Width != pw || _canvas.Height != ph)  // RF-379

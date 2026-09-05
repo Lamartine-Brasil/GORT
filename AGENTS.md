@@ -4,7 +4,8 @@
 
 - **GORT - Game Ocr RealTime**, de Lamartine Barbosa: tradutor de tela em
   tempo real (inglês e japonês → português do Brasil). O `README.md` da raiz
-  é a página do GitHub, em português.
+  é a página do GitHub, em português; o `MANUAL.md` da raiz é o manual
+  de funções em texto (cada tela, botão e opção).
 - **Linguagem e bibliotecas:** C# no .NET 9 (`net9.0`, `Nullable enable`),
   interface Avalonia 12 (Desktop, tema Fluent, fonte Inter, conta-gotas),
   desenho SkiaSharp. Reconhecimento: RapidOcrNet (moderno embarcado),
@@ -120,9 +121,26 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
 
 ## 5. Concluído (só o relevante)
 
-- **Último estado verificado (05/09/2026):** build 0 erros, 302 testes
-  verdes (288 de unidade + 14 visuais, com a cadeia do Aplicar coberta).
+- **Último estado verificado (05/09/2026):** build 0 erros, 305 testes
+  verdes (290 de unidade + 15 visuais, com a cadeia do Aplicar coberta).
   Publicado `releases/windows-x64/Gort.exe` com autorização do dono.
+- **Sobreposição/Substituição por área (pedido do dono):** em vez de
+  uma janela na união das áreas (quebrava com monitores e escalas
+  mistos), agora é uma janela por área, ancorada no retângulo com a
+  escala do próprio monitor — monitores e escala se resolvem na hora,
+  sem saber antes. Criação preguiçosa com reuso, sem roubar foco,
+  Substitute e estado propagados; `OverlaySink` virou repasse ao
+  gerente. Prova: `Overlay_PerRegion_Anchored` (tamanhos, tinta,
+  poda). MANUAL ajustado.
+- **Sobreposição em lugar errado (diagnóstico + correção):** a conta
+  de origem fecha no monitor único (origem, zoom único, recorte).
+  Defeitos reais achados: o limite pela posição do cliente usava o
+  (0,0) de ausência como piso (deslocava/zerava com origem negativa
+  ou janela ativa) — agora só com cliente (`HasClient`, só anexada)
+  via `ClampToClient` puro; e a janela era posicionada por
+  `InvokeAsync` (origem defasada um quadro) — agora direto na
+  thread da UI. Provas: 2 testes do limite + conta auditada. Se
+  persistir, pedir monitores/escala do usuário.
 - **Troca para LLM mostrando erro do Google (diagnóstico):** a fiação
   da troca confere (perfil fresco por ciclo, impressão digital com
   serviço, pipeline resolve por chamada, Aplicar salva). O vetor
@@ -163,6 +181,10 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
   `ModeRequirementsTests` (+8).
 - **Cobertura pura:** `DeepReviewTests.cs` (+42 casos sem interface:
   TOML, versão, molduras, memória, rastreador, cache, tradutor web).
+- **MANUAL.md (pedido do dono):** manual de funções em texto na raiz
+  (16 seções: telas, serviços, avançada, remoto, bandeja, áreas,
+  dicionário, atalhos, arquivos). Prova: 2 revisores (acharão 8
+  divergências de rótulo, todas corrigidas).
 - **README 1.5 (pedido do dono):** página nova padrão capa com selos,
   capa `00-capa.png` composta na identidade (índigo/violeta) e 10
   capturas frescas dos renders com cantos arredondados e moldura;

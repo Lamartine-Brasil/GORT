@@ -181,6 +181,85 @@ public class VisualRenderTests
         }, default).GetAwaiter().GetResult();
     }
 
+    /// <summary>
+    /// Uma janela por área: cada janela cobre o seu retângulo (tamanho do
+    /// retângulo × folga) e esconde quando a região sai do quadro (reuso).
+    /// </summary>
+    [Fact]
+    public void Overlay_PerRegion_Anchored()
+    {
+        var cfg = new ConfigService();
+        cfg.Profile.AutoFontSize = true;
+        Gort.Loop.OverlayFrame Frame2()
+        {
+            var frame = new Gort.Loop.OverlayFrame();
+            var r0 = new Gort.Loop.OverlayRegion
+            {
+                Index = 0,
+                Rect = new Gort.Platform.ScreenRect(500, 300, 800, 200),
+                Zoom = 2,
+            };
+            var b0 = new Gort.Loop.OverlayBlock
+            {
+                Text = "Ola mundo", OX = 200, OY = 100, OW = 400, OH = 80,
+            };
+            b0.LineBoxes.Add((200, 100, 400, 60));
+            b0.WordBoxes.Add((200, 100, 190, 60));
+            r0.Blocks.Add(b0);
+            frame.Regions.Add(r0);
+            var r1 = new Gort.Loop.OverlayRegion
+            {
+                Index = 1,
+                Rect = new Gort.Platform.ScreenRect(100, 100, 200, 100),
+                Zoom = 2,
+            };
+            var b1 = new Gort.Loop.OverlayBlock
+            {
+                Text = "Oi", OX = 0, OY = 0, OW = 200, OH = 100,
+            };
+            b1.LineBoxes.Add((0, 0, 200, 60));
+            b1.WordBoxes.Add((0, 0, 90, 60));
+            r1.Blocks.Add(b1);
+            frame.Regions.Add(r1);
+            return frame;
+        }
+        HeadlessSetup.Session.Dispatch(() =>
+        {
+            var wins = new Gort.UI.TranslationWindows(cfg);
+            try
+            {
+                var frame = Frame2();
+                wins.DrawOverlayFrame(frame);
+                for (int i = 0; i < 5; i++)
+                    AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                int visible = 0;
+                bool big = false, small = false;
+                foreach (var w in wins.OverlayWindows())
+                {
+                    using var bmp = w.CaptureRenderedFrame();
+                    Assert.NotNull(bmp);
+                    AssertPainted(bmp);
+                    if (w.IsVisible) visible++;
+                    if (bmp.PixelSize.Width == 1040 && bmp.PixelSize.Height == 260) big = true;
+                    if (bmp.PixelSize.Width == 260 && bmp.PixelSize.Height == 130) small = true;
+                }
+                Assert.Equal(2, visible);
+                Assert.True(big && small);
+                // Volta só com a região 0: a outra esconde (reuso).
+                var one = new Gort.Loop.OverlayFrame();
+                one.Regions.Add(frame.Regions[0]);
+                wins.DrawOverlayFrame(one);
+                for (int i = 0; i < 5; i++)
+                    AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                int visible2 = 0;
+                foreach (var w in wins.OverlayWindows())
+                    if (w.IsVisible) visible2++;
+                Assert.Equal(1, visible2);
+            }
+            finally { wins.HideAll(); }
+        }, default).GetAwaiter().GetResult();
+    }
+
     [Fact]
     public void Render_MainWindow_AllTabs()
     {
@@ -521,16 +600,10 @@ public class VisualRenderTests
                 Assert.Empty(sink.OutputOccluders());
             }
             finally { if (dark.IsVisible) dark.Close(); }
-            var over = new Gort.UI.OverlayWindow(cfg, _ => 1.0);
-            try
-            {
-                Gort.Loop.IDisplaySink sink = new Gort.UI.OverlaySink(over);
-                over.ApplyRunning(true);
-                over.Show();
-                AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
-                Assert.Empty(sink.OutputOccluders());
-            }
-            finally { over.ApplyRunning(false); over.Close(); }
+            var wins = new Gort.UI.TranslationWindows(cfg);
+            Gort.Loop.IDisplaySink osink = new Gort.UI.OverlaySink(wins);
+            Assert.True(osink.IsAlive);
+            Assert.Empty(osink.OutputOccluders());
         }, default).GetAwaiter().GetResult();
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -148,7 +149,14 @@ public sealed class TranslationWindows
 
     private DarkWindow? _dark;
     private LayerWindow? _layer;
-    private OverlayWindow? _overlay;
+    // Sobreposição/Substituição: uma janela por área, ancorada no
+    // retângulo da captura com a escala do próprio monitor. Nada de
+    // conta global: monitores e escala se resolvem na hora, por janela
+    // (pedido do dono — o texto sai dentro do retângulo em qualquer
+    // combinação de monitores). Janelas escondem, nunca morrem.
+    private readonly Dictionary<int, OverlayWindow> _overlays = new();
+    private bool _overlayRunning;
+    private bool _overlaySubstitute;
     private bool _darkPlaced, _layerPlaced;   // estreia posicionada: não mexer depois
 
     /// <summary>Escala do monitor da área (RF-075); o App injeta via Screens.</summary>
@@ -163,22 +171,16 @@ public sealed class TranslationWindows
         bool overlayLike = mode == "overlay" || mode == "replace";
         if (overlayLike)
         {
-            if (_overlay is null)
-            {
-                _overlay = new OverlayWindow(_cfg, ScaleOf);
-                _overlay.Closed += (_, _) => _overlay = null;
-            }
             // Fase 2: modo novo substitui o original sob a tradução.
-            _overlay.Substitute = mode == "replace";
-            // Reutiliza em vez de abandonar: Close() aqui só oculta (OnClosing
-            // cancela) e a referência perdida vazava a janela oculta.
+            _overlaySubstitute = mode == "replace";
+            foreach (var w in _overlays.Values) w.Substitute = _overlaySubstitute;
+            // Janelas nascem no primeiro quadro, já ancoradas — sem roubar
+            // foco no meio do jogo.
             _dark?.Hide();
             _layer?.Hide();
-            if (!_overlay.IsVisible) _overlay.Show();
-            _overlay.Activate();
             return;
         }
-        _overlay?.Hide();
+        foreach (var w in _overlays.Values) w.Hide();
         if (mode == "layer")
         {
             _dark?.Hide();
@@ -339,13 +341,69 @@ public sealed class TranslationWindows
 
     public DarkWindow? DarkWindowOrNull() => _dark;
     public LayerWindow? LayerWindowOrNull() => _layer;
-    public OverlayWindow? OverlayWindowOrNull() => _overlay;
+    public IEnumerable<OverlayWindow> OverlayWindows() => _overlays.Values;
+
+    /// <summary>Alguma janela de sobreposição visível (bandeja/esconder).</summary>
+    public bool AnyOverlayVisible()
+    {
+        foreach (var w in _overlays.Values)
+            if (w.IsVisible) return true;
+        return false;
+    }
 
     public void HideAll()
     {
         if (_dark is not null) { Platform.GuiFx.SetCaptureExclusion(_dark, false); _dark.Hide(); }
         if (_layer is not null) { Platform.GuiFx.SetCaptureExclusion(_layer, false); _layer.Hide(); }
-        _overlay?.Hide();
+        foreach (var w in _overlays.Values) w.Hide();
+    }
+
+    /// <summary>
+    /// Desenha o quadro da sobreposição: uma janela por região, cada uma
+    /// ancorada no seu retângulo de captura. Regiões sumidas têm a janela
+    /// escondida (reuso). Roda na thread da UI (o sink posta).
+    /// </summary>
+    public void DrawOverlayFrame(Loop.OverlayFrame frame, int staySeconds = 0)
+    {
+        var present = new HashSet<int>();
+        foreach (var rg in frame.Regions)
+        {
+            present.Add(rg.Index);
+            if (!_overlays.TryGetValue(rg.Index, out var w) || w is null)
+            {
+                w = new OverlayWindow(_cfg, ScaleOf);
+                int idx = rg.Index;
+                w.Closed += (_, _) => _overlays.Remove(idx);
+                w.ApplyRunning(_overlayRunning);   // clique/exclusão desde o nascimento
+                _overlays[rg.Index] = w;
+            }
+            w.Substitute = _overlaySubstitute;
+            if (!w.IsVisible) w.Show();
+            var single = new Loop.OverlayFrame();
+            single.Regions.Add(rg);
+            w.DrawOverlay(single, staySeconds);
+        }
+        foreach (var kv in _overlays)
+            if (!present.Contains(kv.Key)) kv.Value.Hide();
+    }
+
+    /// <summary>Estado correndo para as janelas existentes e as futuras.</summary>
+    public void SetOverlayRunning(bool running)
+    {
+        _overlayRunning = running;
+        foreach (var w in _overlays.Values) w.ApplyRunning(running);
+    }
+
+    /// <summary>Atalho de captura: todas ficam capturáveis por P-91.</summary>
+    public void SetOverlayScreenshotCapture()
+    {
+        foreach (var w in _overlays.Values) w.SetScreenshotCapture();
+    }
+
+    /// <summary>Janela anexada: todas sempre capturáveis (RF-348).</summary>
+    public void SetOverlayAttachedMode(bool attached)
+    {
+        foreach (var w in _overlays.Values) w.SetAttachedMode(attached);
     }
 
     public void SetRunning(bool running)
@@ -353,7 +411,7 @@ public sealed class TranslationWindows
         _dark?.SetRunning(running, _cfg.Profile, _cfg.Advanced, _cfg.App);
         _dark?.ApplySettings(_cfg.Profile, _cfg.Advanced, _cfg.App);
         if (_layer is not null) _layer.ApplyRunning(running);
-        if (_overlay is not null) _overlay.ApplyRunning(running);
+        SetOverlayRunning(running);
     }
 
     public void SaveLayerGeometry()
@@ -367,9 +425,8 @@ public sealed class TranslationWindows
     {
         if (_cfg.Profile.WindowMode == "layer" && _layer is not null)
             return new LayerSink(_layer);
-        if ((_cfg.Profile.WindowMode == "overlay" || _cfg.Profile.WindowMode == "replace")
-            && _overlay is not null)
-            return new OverlaySink(_overlay);
+        if (_cfg.Profile.WindowMode == "overlay" || _cfg.Profile.WindowMode == "replace")
+            return new OverlaySink(this);   // janelas nascem no primeiro quadro
         return new DarkSink(Dark());
     }
 }

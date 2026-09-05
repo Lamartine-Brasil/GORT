@@ -137,9 +137,8 @@ public sealed class HotkeyActions
         {
             var dark = _app.Windows.DarkWindowOrNull();
             var layer = _app.Windows.LayerWindowOrNull();
-            var over = _app.Windows.OverlayWindowOrNull();
             bool anyVisible = (dark?.IsVisible ?? false)
-                || (layer?.IsVisible ?? false) || (over?.IsVisible ?? false);
+                || (layer?.IsVisible ?? false) || _app.Windows.AnyOverlayVisible();
             if (anyVisible) _app.Windows.HideAll();
             else _app.Windows.ShowForMode(_app.Config.Profile.WindowMode);
             if (_app.Config.Advanced.HideAlsoTranslates) Toggle();   // RF-322

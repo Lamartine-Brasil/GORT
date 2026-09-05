@@ -106,7 +106,7 @@ public sealed class TranslationLoop : ILoopBody
             var treatedPerArea = new List<List<string>>();
             var regionsKept = new List<Text.RegionText?>();
             var blocksKept = new List<List<Text.Block>>();
-            var clientPerArea = new List<(bool Gone, int CX, int CY)>();
+            var clientPerArea = new List<(bool Gone, int CX, int CY, bool Has)>();
             // RF-098: original só com sobreposição + cor automática.
             bool needOrig = overlay && p.AutoColorMaster
                 && (p.AutoColorFg || p.AutoColorBg);
@@ -281,6 +281,7 @@ public sealed class TranslationLoop : ILoopBody
                     {
                         Index = r, Rect = plan.Rects[r], Zoom = p.Zoom,
                         ClientX = clientPerArea[r].CX, ClientY = clientPerArea[r].CY,
+                        HasClient = clientPerArea[r].Has,
                     };
                     var oi = origKept[r];
                     if (oi?.OrigBytes is not null)
@@ -385,7 +386,7 @@ public sealed class TranslationLoop : ILoopBody
     /// Passo 7: tela, janela ativa (cliente cheio + recorte) ou anexada
     /// (RF-097: janela morta encerra o laço).
     /// </summary>
-    private (Imaging.RegionImage? Img, (bool Gone, int CX, int CY) Client) CaptureArea(
+    private (Imaging.RegionImage? Img, (bool Gone, int CX, int CY, bool Has) Client) CaptureArea(
         int index, Platform.ScreenRect rect, bool needOrig, Profile p, LoopContext ctx)
     {
         if (Platform.Windows.AttachedCapture.IsActive)
@@ -393,21 +394,21 @@ public sealed class TranslationLoop : ILoopBody
             if (!Platform.Windows.AttachedCapture.IsAlive())
             {
                 Platform.Windows.AttachedCapture.Stop();   // RF-090
-                return (null, (true, 0, 0));               // RF-097
+                return (null, (true, 0, 0, false));        // RF-097
             }
             var client = Platform.Windows.AttachedCapture.ClientRect();
             var img = Platform.Windows.AttachedCapture.CaptureRect(
                 index, rect, needOrig, () => ctx.StopRequested);
-            return (img, (false, client.X, client.Y));
+            return (img, (false, client.X, client.Y, true));
         }
         if (p.CaptureActiveWindow
             && PlatformFactory.Current.Capture.SupportsClientArea)
         {
             var img = PlatformFactory.Current.Capture.CaptureClientArea(index, rect, needOrig);
-            return (img, (false, 0, 0));
+            return (img, (false, 0, 0, false));
         }
         return (PlatformFactory.Current.Capture.CaptureRect(index, rect, needOrig),
-            (false, 0, 0));
+            (false, 0, 0, false));
     }
 
     /// <summary>
