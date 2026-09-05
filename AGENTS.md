@@ -126,6 +126,8 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
   (291 de unidade + 15 visuais). `releases/windows-x64/Gort.exe`
   publicado 1.6 (pasta limpa, zip 1.5 removido, dll 1.6.0.0);
   Manual aponta para `blob/master/MANUAL.md` (app + README).
+  Republicado 1.6 com a caça-bugs (17:13); publicação é sempre do
+  código atual, arquivo é com o dono (zip dele intacto).
 - **Correções multiplataforma (pedido do dono):** navegador some no
   Mac/Linux (lista + criação, catálogo intacto); Verificar estado
   desabilita sem Edge; relatório do Mac honesto; aviso Wayland nos
