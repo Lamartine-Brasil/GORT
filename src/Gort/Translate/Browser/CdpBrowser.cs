@@ -190,6 +190,7 @@ public sealed class CdpBrowser : IDisposable
     public void Dispose()
     {
         try { _proc?.Kill(); } catch { }
+        try { _proc?.WaitForExit(2000); } catch { }
         try { _proc?.Dispose(); } catch { }
         _proc = null;
         try { if (_dir.Length > 0) Directory.Delete(_dir, true); } catch { }

@@ -24,6 +24,4 @@ public interface IOcrEngine
     IReadOnlyList<string> SupportedOcrLanguages();
     Task<OcrResult> RecognizeAsync(ProcessedImage img, string ocrLang,
         CancellationToken ct);
-    /// <summary>RF-131: libera nova tentativa após reinício da tradução.</summary>
-    void NotifyTranslationRestart();
 }

@@ -56,8 +56,6 @@ public sealed class RapidOcrEngine : IOcrEngine, IDisposable
         return langs;
     }
 
-    public void NotifyTranslationRestart() => _blocked = false;   // RF-131
-
     public void Dispose()   // RF-016
     {
         try { _ocr?.Dispose(); } catch { }

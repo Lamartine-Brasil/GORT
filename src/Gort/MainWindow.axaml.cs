@@ -436,7 +436,7 @@ public partial class MainWindow : Window
 
     private void UpdateMemory()
     {
-        var proc = Process.GetCurrentProcess();
+        using var proc = Process.GetCurrentProcess();
         var mb = proc.WorkingSet64 / 1048576.0;
         // CPU multiplataforma sem API de SO: fração do tempo de processador
         // consumido entre dois tiques, dividida pelos núcleos. O _memTimer
@@ -459,7 +459,7 @@ public partial class MainWindow : Window
     {
         // RF-559: detalhamento (imagens de região / cache / bitmap da sobreposição
         // ganham valores reais nas Etapas 6–12).
-        var p = Process.GetCurrentProcess();
+        using var p = Process.GetCurrentProcess();
         var box = new Window
         {
             Title = Strings._("memory.title"), Width = 420, Height = 240,

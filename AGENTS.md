@@ -133,6 +133,14 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
   janela. Updater já era por SO (sem mudança). Empacotamento segue
   só-Windows (cada um compila no seu sistema). Pequenos intactos
   (risco de quebrar o Windows).
+- **Caça-bugs + mortos (pedido do dono, pipeline com agentes):**
+  8 achados → 5 confirmados e corrigidos (bitmap da sobreposição sem
+  dispose, `Process` sem dispose no rodapé, `Reset` liberando Poll
+  duplo, `ComputeFit` com fonte errada, `Dispose` do Edge sem espera);
+  rejeitados 3 (falso positivo: nulo silencioso, timer, hook).
+  6 mortos removidos (`NotifyTranslationRestart` + 5 impls,
+  `Language`/`FilePath`, `AddLanguageColumn`, 3 usings). Verificadores
+  aprovaram sem retorno. 306 verdes.
 - **Auditoria multiplataforma (05/09/2026, só leitura):** Windows
   completo; Linux X11 e macOS parciais (sem anexada/exclusão/clique
   em Wayland); achados: Edge só-Windows, relatório mente em

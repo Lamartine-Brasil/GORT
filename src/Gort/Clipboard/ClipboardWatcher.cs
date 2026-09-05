@@ -40,7 +40,7 @@ public sealed class ClipboardWatcher
     }
 
     /// <summary>RF-472: aplicar limpa o estado.</summary>
-    public void Reset() { _working = false; _gen++; }
+    public void Reset() { _gen++; }
 
     /// <summary>Para o temporizador (encerramento): sem novas sondagens.</summary>
     public void Stop()

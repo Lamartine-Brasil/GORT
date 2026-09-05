@@ -682,6 +682,8 @@ public sealed class OverlayWindow : Window
             PixelFormat.Bgra8888, AlphaFormat.Premul);
         using (var fb = wb.Lock())
             Marshal.Copy(_canvas.Bytes, 0, fb.Address, _canvas.Bytes.Length);
+        // Descarta o quadro anterior antes de trocar (sem vazamento por quadro).
+        (_view.Source as IDisposable)?.Dispose();
         _view.Source = wb;
         total.Stop();
         if (Debug.DebugFlags.SaveAnalysis) WriteDrawFile(items, colors, total);  // RF-493

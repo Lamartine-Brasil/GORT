@@ -57,8 +57,6 @@ public sealed class CloudEngine : IOcrEngine
     public IReadOnlyList<string> SupportedOcrLanguages() =>
         new List<string> { "eng", "jpn", "auto" };   // +automático (RF-121)
 
-    public void NotifyTranslationRestart() { }
-
     /// <summary>RF-127: "usadas / limite" para a credencial vigente.</summary>
     public string UsageText()
     {

@@ -24,8 +24,6 @@ public sealed class OsEngine : IOcrEngine
 
     public IReadOnlyList<string> SupportedOcrLanguages() => new List<string>();
 
-    public void NotifyTranslationRestart() { }
-
     public Task<OcrResult> RecognizeAsync(ProcessedImage img, string ocrLang,
         CancellationToken ct) =>
         Task.FromResult(OcrResult.Fail(UnavailableReason ?? "Indisponível."));

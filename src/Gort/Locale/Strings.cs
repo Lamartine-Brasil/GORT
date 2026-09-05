@@ -14,8 +14,6 @@ public static class Strings
 {
     private static readonly Dictionary<string, Dictionary<string, string>> Table = new();
     private static readonly object Gate = new();
-    public static string Language { get; private set; } = "pt-BR";
-    public static string FilePath { get; private set; } = "";
 
     public static void Load(string path, string language)
     {
@@ -28,8 +26,6 @@ public static class Strings
         lock (Gate)
         {
             Table.Clear();
-            FilePath = path;
-            Language = language;
             foreach (var (key, cols) in parsed)
             {
                 var map = new Dictionary<string, string>();
@@ -39,9 +35,6 @@ public static class Strings
             }
         }
     }
-
-    /// <summary>Acrescentar idioma = acrescentar coluna de dados (RF-483).</summary>
-    public static void AddLanguageColumn() { }
 
     public static string Get(string key)
     {

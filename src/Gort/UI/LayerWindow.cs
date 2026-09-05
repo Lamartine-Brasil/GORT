@@ -144,7 +144,7 @@ public sealed class LayerWindow : Window
         double scale = Screens.ScreenFromWindow(this)?.Scaling
             ?? Screens.Primary?.Scaling ?? 1.0;
         double floorPt = System.Math.Clamp(p.AutoMinPt, 6, 72);
-        var (w, h, pt) = ComputeFit(_text, p.FontSize, scale, p.LayerMaxW, p.LayerMaxH, floorPt);
+        var (w, h, pt) = ComputeFit(p.FontFamily, _text, p.FontSize, scale, p.LayerMaxW, p.LayerMaxH, floorPt);
         // Trava na área útil do monitor e mantém a janela toda visível.
         var scr = Screens.ScreenFromWindow(this);
         var wa = scr?.WorkingArea;
@@ -169,7 +169,7 @@ public sealed class LayerWindow : Window
     /// A fonte encolhe para caber, nunca abaixo de minPt (legibilidade).
     /// </summary>
     internal static (double WDip, double HDip, double FontPt) ComputeFit(
-        string text, double fontPt, double scale, double maxWDip, double maxHDip,
+        string? fontFamily, string text, double fontPt, double scale, double maxWDip, double maxHDip,
         double minPt)
     {
         double margin = Core.Params.P86_LayerMargin;
@@ -177,7 +177,9 @@ public sealed class LayerWindow : Window
         if (string.IsNullOrWhiteSpace(text))
             return (Core.Params.P87_LayerMinW, Core.Params.P88_LayerMinH,
                 Math.Max(minPt, fontPt));
-        using var face = SkiaText.ResolveFont(null);
+        // Mede com a mesma fonte do usuário usada em Render/Measure.
+        using var face = SkiaText.ResolveFont(
+            string.IsNullOrWhiteSpace(fontFamily) ? null : fontFamily);
         double fitPt = Math.Max(minPt, fontPt);
         double wrapDip = maxWDip > 0 ? Math.Max(50, maxWDip - 2 * margin) : 10000;
         double hCapDip = maxHDip > 0 ? Math.Max(1, maxHDip - 2 * margin)

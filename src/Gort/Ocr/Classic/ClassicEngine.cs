@@ -64,8 +64,6 @@ public sealed class ClassicEngine : IOcrEngine, IDisposable
         return list;
     }
 
-    public void NotifyTranslationRestart() { }
-
     public void Dispose()   // RF-016
     {
         try { _engine?.Dispose(); } catch { }
