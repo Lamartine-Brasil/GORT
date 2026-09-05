@@ -121,9 +121,11 @@ dotnet test Gort.sln -c Release --no-build --nologo -v q --results-directory ../
 
 ## 5. Concluído (só o relevante)
 
-- **Último estado verificado (05/09/2026):** build 0 erros, 305 testes
-  verdes (290 de unidade + 15 visuais, com a cadeia do Aplicar coberta).
-  Publicado `releases/windows-x64/Gort.exe` com autorização do dono.
+- **Último estado verificado (05/09/2026):** versão 1.6 no `csproj`
+  (rodapé, capa e selo refeitos), build 0 erros, 305 testes verdes
+  (290 de unidade + 15 visuais). `releases/windows-x64/Gort.exe`
+  publicado 1.6 (pasta limpa, zip 1.5 removido, dll 1.6.0.0);
+  Manual aponta para `blob/master/MANUAL.md` (app + README).
 - **Sobreposição/Substituição por área (pedido do dono):** em vez de
   uma janela na união das áreas (quebrava com monitores e escalas
   mistos), agora é uma janela por área, ancorada no retângulo com a

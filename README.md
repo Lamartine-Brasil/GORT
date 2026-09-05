@@ -188,7 +188,7 @@ versionado), `docs/imagens/` (imagens desta página, versionadas).
 | Repositório | https://github.com/Lamartine-Brasil/GORT |
 | Página do projeto | https://github.com/Lamartine-Brasil/GORT |
 | Comunidade | https://github.com/Lamartine-Brasil/GORT |
-| Manual | https://github.com/Lamartine-Brasil/GORT |
+| Manual | https://github.com/Lamartine-Brasil/GORT/blob/master/MANUAL.md |
 | Erros conhecidos | https://github.com/Lamartine-Brasil/GORT |
 | Doações | https://github.com/Lamartine-Brasil/GORT |
 

@@ -73,7 +73,7 @@ public static class Catalogs
         public const string Repo = GitHub;
         public const string ProjectPage = GitHub;
         public const string Community = GitHub;
-        public const string Manual = GitHub;
+        public const string Manual = GitHub + "/blob/master/MANUAL.md";
         public const string KnownErrors = GitHub;
     }
 }
