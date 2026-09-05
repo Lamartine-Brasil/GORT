@@ -23,6 +23,9 @@ public abstract class HttpTranslator : ITranslationService, IDisposable
     protected HttpTranslator(HttpMessageHandler? handler, int timeoutMs)
     {
         Http = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        // Teto por chamada, não do cliente: o padrão de 100 s do HttpClient
+        // engoliria o P-77 (300 s do LLM). Cada chamada tem seu CTS.
+        Http.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
         TimeoutMs = timeoutMs;
     }
 

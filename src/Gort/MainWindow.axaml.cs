@@ -320,6 +320,10 @@ public partial class MainWindow : Window
             if (!ok)
             {
                 Notify("Não foi possível aplicar: a tradução não parou a tempo.");
+                // Nada foi aplicado: recarrega a UI do perfil para o combo
+                // não mentir com o valor não salvo (e limpa o "Aplicando…").
+                LoadUiFromConfig();
+                Req<TextBlock>("ApplyHint").Text = "";
                 return;
             }
             app.ClipWatcher?.Reset();                        // RF-472
@@ -333,6 +337,14 @@ public partial class MainWindow : Window
                 // a janela nova e fechando a velha — o laço sozinho não mostra.
                 app.Windows.ShowForMode(_cfg.Profile.WindowMode,
                     app.Regions.CaptureRects());
+                // O sink do laço nasceu com a janela antiga (oculta): sem
+                // trocar, a tradução seguia desenhando fora da vista.
+                if (app.CurrentLoop is not null)
+                {
+                    var sink = app.Windows.MakeSink();
+                    app.CurrentLoop.ReplaceSink(sink);
+                    sink.SetRunning(true);   // nova janela: topo/clique/exclusão
+                }
                 app.CheckSelfCapture();
             }
             _u.LlmKeyState.Text = Store.ConfigService.LoadCreds("llm")
@@ -342,6 +354,12 @@ public partial class MainWindow : Window
             Req<TextBlock>("ApplyHint").Text = "✔ " + Strings._("msg.applied");
             _applyTimer.Stop();
             _applyTimer.Start();
+        }
+        catch (Exception ex)
+        {
+            // change() sem try: erro de save/IO não pode matar o app em silêncio.
+            try { Notify("Falha ao aplicar: " + ex.Message); } catch { }
+            Req<TextBlock>("ApplyHint").Text = "";
         }
         finally
         {

@@ -25,7 +25,7 @@ public sealed class TranslationLoop : ILoopBody
     private readonly ConfigService _cfg;
     private readonly RegionManager _regions;
     private readonly TranslationPipeline _pipe;
-    private readonly IDisplaySink _sink;
+    private IDisplaySink _sink;
     private readonly ILoopEffects _effects;
     private readonly DictionaryStore _dict = new();
     private ChangeTracker _change = new();
@@ -38,6 +38,8 @@ public sealed class TranslationLoop : ILoopBody
     private readonly Dictionary<int, (Text.RegionText? Region, List<Text.Block> Blocks)> _lastKept = new();
     private int _lastFingerprint;
     private bool _hasFingerprint;
+    private int _lastTfp;
+    private bool _hasTfp;
     /// <summary>Avisos à UI (fundo preto — RF-570).</summary>
     public Action<string>? Notice { get; set; }
     private int _blackStreak;
@@ -50,6 +52,12 @@ public sealed class TranslationLoop : ILoopBody
 
     public void ReloadDict() =>
         _dict.Load(Path.Combine(Paths.DictDir, _cfg.Profile.DictFile));
+
+    /// <summary>
+    /// Troca de modo com laço vivo: o sink nasceu com a janela antiga
+    /// (oculta) — aponta para a vigente sem recriar o laço.
+    /// </summary>
+    public void ReplaceSink(IDisplaySink sink) => _sink = sink;
 
     public void Begin(LoopMode mode)
     {
@@ -112,6 +120,16 @@ public sealed class TranslationLoop : ILoopBody
                 _lastKept.Clear();
                 _lastFingerprint = fingerprint;
                 _hasFingerprint = true;
+            }
+            // Troca de serviço/par (e afins) com a tela parada: o texto
+            // tratado não muda, então só zerar o ChangeTracker força a
+            // retradução — sem isso a troca "não pegava".
+            int tfp = TranslationFingerprint(p, _cfg.Advanced);
+            if (!_hasTfp || tfp != _lastTfp)
+            {
+                _change = new();
+                _lastTfp = tfp;
+                _hasTfp = true;
             }
             for (int r = 0; r < plan.Rects.Count; r++)
             {
@@ -416,6 +434,30 @@ public sealed class TranslationLoop : ILoopBody
         { h.Add(g.R); h.Add(g.G); h.Add(g.B); h.Add(g.S1); h.Add(g.S2); h.Add(g.V1); h.Add(g.V2); }
         foreach (var e in plan.Exclusions) { h.Add(e.X); h.Add(e.Y); h.Add(e.W); h.Add(e.H); }
         foreach (var g in plan.GroupsPerRect) foreach (var i in g) h.Add(i);
+        return h.ToHashCode();
+    }
+
+    /// <summary>
+    /// Assinatura do que influencia a TRADUÇÃO (não os pixels): trocar
+    /// serviço, par de códigos ou parâmetro com a tela parada precisa
+    /// retraduzir mesmo com o texto tratado idêntico.
+    /// </summary>
+    internal static int TranslationFingerprint(Config.Profile p, Config.AdvancedOptions adv)
+    {
+        var h = new HashCode();
+        h.Add(p.TranslationService);
+        h.Add(p.OcrLanguage);
+        h.Add(p.TargetLanguage);
+        h.Add(p.WebQuality);
+        h.Add(p.DbFile); h.Add(p.DbIgnoreCase); h.Add(p.DbPartial);
+        h.Add(p.SheetsSheetId);
+        h.Add(p.LlmModel);
+        h.Add(p.DeepLEndpoint);
+        h.Add(p.CustomPresetSubkey);
+        foreach (var kv in p.ServiceSource) { h.Add(kv.Key); h.Add(kv.Value); }
+        foreach (var kv in p.ServiceTarget) { h.Add(kv.Key); h.Add(kv.Value); }
+        h.Add(adv.Bridge);
+        h.Add(adv.FallbackTranslator);
         return h.ToHashCode();
     }
 

@@ -441,6 +441,29 @@ public sealed class DeepReviewTests
         // Idêntico continua igual (sem invalidação espúria).
         Assert.Equal(base1, TranslationLoop.Fingerprint(Profile.Defaults(), PlanoBase(), false, adv, false, false));
     }
+
+    [Fact]
+    public void TranslationFingerprint_Muda_Com_Servico_E_Par()
+    {
+        // Trocar de serviço com a tela parada tem que retraduzir (antes a
+        // troca "não pegava" até o texto do jogo mudar).
+        var adv = new AdvancedOptions();
+        var p1 = Profile.Defaults();
+        int base1 = TranslationLoop.TranslationFingerprint(p1, adv);
+        var p2 = Profile.Defaults();
+        p2.TranslationService = "db";
+        Assert.NotEqual(base1, TranslationLoop.TranslationFingerprint(p2, adv));
+        var p3 = Profile.Defaults();
+        p3.TargetLanguage = "en";
+        Assert.NotEqual(base1, TranslationLoop.TranslationFingerprint(p3, adv));
+        var p4 = Profile.Defaults();
+        p4.ServiceSource["web-free"] = "ja";
+        Assert.NotEqual(base1, TranslationLoop.TranslationFingerprint(p4, adv));
+        var p5 = Profile.Defaults();
+        p5.OcrLanguage = "ja";   // origem global do par quando sem mapa
+        Assert.NotEqual(base1, TranslationLoop.TranslationFingerprint(p5, adv));
+        Assert.Equal(base1, TranslationLoop.TranslationFingerprint(Profile.Defaults(), new AdvancedOptions()));
+    }
 }
 
 /// <summary>

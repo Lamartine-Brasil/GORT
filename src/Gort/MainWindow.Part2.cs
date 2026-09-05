@@ -447,7 +447,8 @@ public partial class MainWindow
         }
     }
 
-    private void ApplyFromUi()
+    /// <summary>UI → configuração (interno p/ teste headless dirigir a UI).</summary>
+    internal void ApplyFromUi()
     {
         var p = _cfg.Profile;
         var a = _cfg.Advanced;

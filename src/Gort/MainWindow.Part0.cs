@@ -517,7 +517,11 @@ public partial class MainWindow : Window
 
     private string TrId()
     {
+        // Ids podem conter espaço (custom: "Meu Preset"): casa pelo id
+        // conhecido como o SetComboById, não cortando no 1º espaço.
         string s = _u.TrService.SelectedItem as string ?? "";
+        foreach (var (id, _) in Translate.Services.List())
+            if (s == id || s.StartsWith(id + " ")) return id;
         int cut = s.IndexOf(' ');
         return cut > 0 ? s[..cut] : s;
     }

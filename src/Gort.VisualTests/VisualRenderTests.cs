@@ -84,7 +84,10 @@ public class VisualRenderTests
     private static void EnsureEngines() => Gort.Ocr.OcrEngines.Initialize(() => false);
 
     /// <summary>Quadro de demonstração da sobreposição (texto PT-BR).</summary>
-    private static Gort.Loop.OverlayFrame DemoFrame()
+    private static Gort.Loop.OverlayFrame DemoFrame() => DemoFrameFor("Olá, mundo traduzido!");
+
+    /// <summary>Quadro de demonstração com texto arbitrário (mesma geometria).</summary>
+    private static Gort.Loop.OverlayFrame DemoFrameFor(string text)
     {
         var frame = new Gort.Loop.OverlayFrame();
         var reg = new Gort.Loop.OverlayRegion
@@ -95,7 +98,7 @@ public class VisualRenderTests
         };
         var block = new Gort.Loop.OverlayBlock
         {
-            Text = "Olá, mundo traduzido!",
+            Text = text,
             OX = 100, OY = 100, OW = 600, OH = 200,
         };
         block.LineBoxes.Add((100, 100, 600, 90));
@@ -104,6 +107,55 @@ public class VisualRenderTests
         reg.Blocks.Add(block);
         frame.Regions.Add(reg);
         return frame;
+    }
+
+    /// <summary>
+    /// Sobreposição com 5 textos diferentes (+1 substituição): prova visual
+    /// de posição/tamanho/quebra em cada caso.
+    /// </summary>
+    [Fact]
+    public void Render_Overlay_Texts()
+    {
+        var cfg = new ConfigService();
+        // Fonte automática: com a fixa de 14 pt o texto sairia minúsculo e
+        // irrepresentativo (o padrão continua intacto no produto).
+        cfg.Profile.AutoFontSize = true;
+        var cases = new (string Shot, string Text, bool Substitute)[]
+        {
+            ("overlay-t1-curto", "Oi!", false),
+            ("overlay-t2-medio", "Olá, mundo traduzido!", false),
+            ("overlay-t3-longo", "Esta é uma frase bem mais longa que precisa quebrar em várias linhas para caber no retângulo da área de captura do jogo.", false),
+            ("overlay-t4-linhas", "Linha um\nLinha dois\nLinha três", false),
+            ("overlay-t5-cjk", "日本語テストです", false),
+            ("replace-t2-medio", "Olá, mundo traduzido!", true),
+        };
+        foreach (var (shot, text, substitute) in cases)
+        {
+            HeadlessSetup.Session.Dispatch(() =>
+            {
+                Directory.CreateDirectory(OutDir);
+                var overlay = new Gort.UI.OverlayWindow(cfg, _ => 1.0);
+                try
+                {
+                    overlay.Substitute = substitute;
+                    overlay.ApplyRunning(true);
+                    overlay.Show();
+                    using (overlay.CaptureRenderedFrame()) { }   // drena o ClearCanvas
+                    overlay.DrawOverlay(DemoFrameFor(text));
+                    for (int i = 0; i < 5; i++)
+                        AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
+                    using var bmp = overlay.CaptureRenderedFrame();
+                    Assert.NotNull(bmp);
+                    AssertPainted(bmp);
+                    bmp.Save(Path.Combine(OutDir, shot + ".png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+                }
+                finally
+                {
+                    overlay.ApplyRunning(false);
+                    overlay.Close();
+                }
+            }, default).GetAwaiter().GetResult();
+        }
     }
 
     [Fact]

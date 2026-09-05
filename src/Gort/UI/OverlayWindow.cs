@@ -94,6 +94,7 @@ public sealed class OverlayWindow : Window
         else
         {
             _hasAcc = false;                                       // RF-350: zera
+            _stayTimer?.Stop();   // sem isso um snapshot antigo apagava o quadro novo
             ClearCanvas();
         }
     }

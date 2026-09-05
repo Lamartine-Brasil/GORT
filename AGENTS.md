@@ -4,6 +4,16 @@
 > jornada. Todo o resto das regras segue valendo.
 > Dono/autor único: **Lamartine Barbosa**.
 
+## Modos de exibição (referência do dono)
+
+- **Sobreposição** (`overlay`): tradução desenhada EM CIMA do original,
+  no mesmo lugar e tamanho parecido (posição das palavras do OCR).
+  Original visível por baixo (sem fundo). Exige OCR com posição.
+- **Substituição** (`replace`, Fase 2): igual, mas TAMPA o original com
+  fundo opaco antes de desenhar — só o português fica visível.
+- Ambos: janela transparente a cliques e fora da captura (OCR nunca lê
+  a própria tradução).
+
 ## Estado (05/09/2026 — reforma 5 abas, AUTORIZADA)
 
 - **Build 0 erros · 259/259 testes verdes** (252+7).
@@ -33,6 +43,11 @@
   larguras (não demonstrado). **Lições: NUNCA editar via bash
   Get-Content/WriteAllText (PS 5.1 corrompe UTF-8 sem BOM); conferir
   build por EXIT code, não por grep; sem edit "no-op".** 275/275.
+- **Troca de serviço que "não pegava" (corrigido):** com a tela parada
+  o texto tratado não mudava e o laço nunca retraduzia — `tfp`
+  (`TranslationFingerprint`: serviço, par, qualidade/parâmetros)
+  zera o `ChangeTracker`; `TrId` casa id com espaço (custom);
+  falha no Aplicar recarrega a UI (combo não mente). 276/276.
 - **Build ZERO warnings (regra nova, 05/09/2026):** os "nullable
   antigos" foram zerados de verdade — `Req<T>` fail-fast nos
   `FindControl`, `?.` defensivo, `?? throw` no save, invariante

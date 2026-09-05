@@ -57,8 +57,8 @@ public sealed class LayerWindow : Window
         {
             if (_warning.HasValue && DateTime.UtcNow >= _warning.Value.Until)
             { _warning = null; Render(); }
+            if (!_warning.HasValue) _warnTimer.Stop();   // sem aviso, sem pulso
         };
-        _warnTimer.Start();
 
         ApplyRunning(false);
     }
@@ -111,6 +111,7 @@ public sealed class LayerWindow : Window
     public void ShowWarning(string text, int seconds)
     {
         _warning = (text, DateTime.UtcNow.AddSeconds(seconds));
+        _warnTimer.Start();
         Render();
     }
 
